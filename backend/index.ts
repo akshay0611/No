@@ -32,7 +32,7 @@ connectDB()
 
 const app = express();
 
-// CORS configuration for frontend communication
+// CORS configuration for frontend communications
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Setting up CORS...');
 
