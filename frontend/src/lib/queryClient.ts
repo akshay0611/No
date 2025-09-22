@@ -27,7 +27,12 @@ export async function apiRequest(
     console.log('apiRequest - Authorization header set:', headers["Authorization"]);
   }
 
-  const res = await fetch(url, {
+  // Use full backend URL
+  const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+  const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
+  console.log('Making API request to:', fullUrl);
+
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -71,7 +76,12 @@ export const getQueryFn: <T>(options: {
       console.log('getQueryFn - Authorization header set:', headers["Authorization"]);
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    // Use full backend URL for query functions
+    const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+    const url = queryKey.join("/") as string;
+    const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
+    
+    const res = await fetch(fullUrl, {
       headers,
       credentials: "include",
     });

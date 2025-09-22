@@ -28,7 +28,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
   const sendEmailOTP = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/send-email-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/send-email-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -64,7 +65,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
     
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/send-phone-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/send-phone-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -109,7 +111,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/verify-email-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/verify-email-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, otp: emailOTP }),
@@ -157,7 +160,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/verify-phone-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/verify-phone-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, otp: phoneOTP }),
@@ -196,7 +200,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
   const resendEmailOTP = async () => {
     setResendLoading({ ...resendLoading, email: true });
     try {
-      const response = await fetch('/api/auth/resend-email-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/resend-email-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -229,7 +234,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
   const resendPhoneOTP = async () => {
     setResendLoading({ ...resendLoading, phone: true });
     try {
-      const response = await fetch('/api/auth/resend-phone-otp', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/auth/resend-phone-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),

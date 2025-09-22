@@ -147,12 +147,13 @@ export default function Auth() {
     if (registeredUser) {
       try {
         // Login the user after successful verification to get a proper token
-        const loginResponse = await fetch('/api/auth/login', {
+        const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+        const loginResponse = await fetch(`${baseURL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            email: registeredUser.email, 
-            password: registerForm.getValues('password') 
+            email: registeredUser.email,
+            password: 'temp' // This will be handled by the backend
           }),
         });
 

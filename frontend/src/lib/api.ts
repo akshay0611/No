@@ -95,7 +95,8 @@ export const api = {
     
     getBySalon: async (salonId: string) => {
       // Use fetch directly without authentication for this public endpoint
-      const response = await fetch(`/api/salons/${salonId}/public-offers`, {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${salonId}/public-offers`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

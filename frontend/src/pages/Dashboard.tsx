@@ -86,7 +86,8 @@ export default function Dashboard() {
       const token = localStorage.getItem('smartq_token');
       console.log('Using token:', token ? 'Token exists' : 'No token');
       
-      const response = await fetch(`/api/salons/${selectedSalonId}/offers`, {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${selectedSalonId}/offers`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -173,7 +174,8 @@ export default function Dashboard() {
             console.log('Token exists:', !!token);
             
             try {
-              const response = await fetch(uploadUrl, {
+              const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+              const response = await fetch(`${baseURL}${uploadUrl}`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -191,7 +193,8 @@ export default function Dashboard() {
                 // If image upload fails, delete the created salon
                 if (createdSalon) {
                   try {
-                    await fetch(`/api/salons/${createdSalon.id}`, {
+                    const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+                    await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
                       method: 'DELETE',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -220,7 +223,8 @@ export default function Dashboard() {
           if (createdSalon) {
             const token = localStorage.getItem('smartq_token');
             try {
-              await fetch(`/api/salons/${createdSalon.id}`, {
+              const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+              await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
                 method: 'DELETE',
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -239,7 +243,8 @@ export default function Dashboard() {
         if (createdSalon) {
           const token = localStorage.getItem('smartq_token');
           try {
-            await fetch(`/api/salons/${createdSalon.id}`, {
+            const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+            await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
               method: 'DELETE',
               headers: {
                 'Authorization': `Bearer ${token}`,

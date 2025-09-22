@@ -120,7 +120,8 @@ export default function SalonProfile() {
   const { data: photos = [], isLoading: photosLoading } = useQuery<SalonPhoto[]>({
     queryKey: ['salon-photos', id],
     queryFn: async () => {
-      const response = await fetch(`/api/salons/${id}/photos`);
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${id}/photos`);
       if (!response.ok) {
         throw new Error('Failed to fetch photos');
       }

@@ -28,7 +28,8 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
   const { data: photos = [], isLoading: photosLoading } = useQuery<SalonPhoto[]>({
     queryKey: ['salon-photos', salonId],
     queryFn: async () => {
-      const response = await fetch(`/api/salons/${salonId}/photos`);
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${salonId}/photos`);
       if (!response.ok) {
         throw new Error('Failed to fetch photos');
       }
@@ -45,7 +46,8 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
         const formData = new FormData();
         formData.append('image', file);
         
-        const response = await fetch(`/api/salons/${salonId}/photos`, {
+        const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+        const response = await fetch(`${baseURL}/api/salons/${salonId}/photos`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -84,7 +86,8 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
   const deletePhotoMutation = useMutation({
     mutationFn: async (photoId: string) => {
       const token = localStorage.getItem('smartq_token');
-      const response = await fetch(`/api/salons/${salonId}/photos/${photoId}`, {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${salonId}/photos/${photoId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
