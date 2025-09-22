@@ -83,16 +83,6 @@ const authenticateToken = (req: Express.Request, res: Express.Response, next: Fu
   }
 };
 
-// Add healthcheck route early (before registerRoutes)
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    mongo: isMongoConnected ? "connected" : "disconnected",
-    uptime: process.uptime(),
-  });
-});
-
-
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 

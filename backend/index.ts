@@ -45,6 +45,25 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Health check route for Railway
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    mongo: isMongoConnected ? "connected" : "disconnected",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Basic root route
+app.get("/", (req, res) => {
+  res.json({
+    message: "SMART-Q Backend API",
+    status: "running",
+    version: "1.0.0"
+  });
+});
+
 // Request logging
 app.use((req, res, next) => {
   const start = Date.now();
