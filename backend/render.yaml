@@ -3,6 +3,7 @@ services:
     name: smart-q-backend
     env: node
     plan: free   # change if you want paid plan
+    rootDir: backend
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
