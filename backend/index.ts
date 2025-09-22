@@ -33,13 +33,32 @@ connectDB()
 const app = express();
 
 // CORS configuration for frontend communication
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Setting up CORS...');
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://noline-woad.vercel.app'] // Your Vercel frontend URL
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: function (origin, callback) {
+    console.log('CORS request from origin:', origin);
+    
+    const allowedOrigins = [
+      'https://noline-woad.vercel.app',  // Production frontend
+      'http://localhost:3000',          // Local development
+      'http://127.0.0.1:3000',         // Local development alternative
+      undefined                         // Allow requests with no origin (mobile apps, etc.)
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
+      callback(null, true);
+    } else {
+      console.log('Origin blocked:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200 // For legacy browser support
 }));
 
 app.use(express.json());
@@ -60,7 +79,18 @@ app.get("/", (req, res) => {
   res.json({
     message: "SMART-Q Backend API",
     status: "running",
-    version: "1.0.0"
+    version: "1.0.0",
+    env: process.env.NODE_ENV,
+    cors_info: "CORS should allow https://noline-woad.vercel.app"
+  });
+});
+
+// CORS test endpoint
+app.get("/api/cors-test", (req, res) => {
+  res.json({
+    message: "CORS is working!",
+    origin: req.get('Origin'),
+    timestamp: new Date().toISOString()
   });
 });
 
