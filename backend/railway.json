@@ -6,7 +6,7 @@
     },
     "deploy": {
       "startCommand": "npm start",
-      "healthcheckPath": "/auth",
+      "healthcheckPath": "/health",
       "restartPolicyType": "ON_FAILURE",
       "restartPolicyMaxRetries": 3
     }
