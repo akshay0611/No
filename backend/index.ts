@@ -35,7 +35,7 @@ const app = express();
 // CORS configuration for frontend communication
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.vercel.app'] // Update with your Vercel domain
+    ? ['https://noline-woad.vercel.app'] // Your Vercel frontend URL
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
