@@ -6,14 +6,14 @@ import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { insertUserSchema, loginSchema } from "../lib/schemas";
-import { Eye, EyeOff, Sparkles, User, Mail, Phone, Lock, UserCheck, ArrowLeft, Home } from "lucide-react";
+import { Eye, EyeOff, Sparkles, User, Mail, Phone, Lock, UserCheck, ArrowLeft } from "lucide-react";
 import OTPVerification from "../components/OTPVerification";
+import type { User as UserType } from "../types";
 
 const registerFormSchema = insertUserSchema.extend({
   confirmPassword: z.string().min(6),
@@ -31,7 +31,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState(null);
+  const [registeredUser, setRegisteredUser] = useState<(UserType & { password?: string }) | null>(null);
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -74,12 +74,30 @@ export default function Auth() {
         title: "Welcome back!",
         description: "You've been successfully logged in.",
       });
-      setLocation(data.user.role === 'salon_owner' ? '/dashboard' : '/');
+
+      // Redirect based on user role after login
+      if (data.user.role === 'salon_owner') {
+        // Salon owners go to dashboard where they can create/manage salons
+        setLocation('/dashboard');
+      } else {
+        // Customers go to home page where they can browse and book salons
+        setLocation('/');
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       // Check if user needs verification
       if (error.message.includes('not verified') && error.requiresVerification) {
-        const userData = { id: error.userId, email: loginForm.getValues('email') };
+        const userData = {
+          id: error.userId,
+          name: '', // Will be filled from server
+          email: loginForm.getValues('email'),
+          phone: '',
+          role: 'customer',
+          loyaltyPoints: 0,
+          favoriteSalons: [],
+          createdAt: new Date(),
+          password: loginForm.getValues('password') // Store password for auto-login after verification
+        };
         setRegisteredUser(userData);
         setShowOTPVerification(true);
         toast({
@@ -97,24 +115,24 @@ export default function Auth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: (userData) => {
-      // Ensure role is explicitly set to "salon_owner" for salon owners
-      if (userData.role === "salon") {
-        userData.role = "salon_owner";
-      }
+    mutationFn: (userData: Omit<RegisterForm, 'confirmPassword'>) => {
       console.log("Sending registration with role:", userData.role);
       return api.auth.register(userData);
     },
-    onSuccess: (data) => {
-      // Store user data for OTP verification
-      setRegisteredUser(data.user);
+    onSuccess: (data: any) => {
+      // Store user data for OTP verification including password for auto-login
+      const registrationData = registerForm.getValues();
+      setRegisteredUser({
+        ...data.user,
+        password: registrationData.password // Store password for auto-login after verification
+      });
       setShowOTPVerification(true);
       toast({
         title: "Account Created!",
         description: "Please verify your email and phone number to complete registration.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Registration failed",
         description: error.message,
@@ -131,56 +149,63 @@ export default function Auth() {
   const onRegisterSubmit = (data: RegisterForm) => {
     console.log('Register form submitted with:', data);
     const { confirmPassword, ...userData } = data;
-    
-    // Force set the role to "salon" if salon owner is selected
-    if (userData.role === "salon") {
-      console.log('Setting role to salon for salon owner');
-    } else {
-      console.log('Keeping role as customer');
-    }
-    
+
     console.log('Sending to API with role:', userData.role);
     registerMutation.mutate(userData);
   };
 
   const handleVerificationComplete = async () => {
-    if (registeredUser) {
+    if (registeredUser && registeredUser.password) {
       try {
-        // Login the user after successful verification to get a proper token
-        const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-        const loginResponse = await fetch(`${baseURL}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: registeredUser.email,
-            password: 'temp' // This will be handled by the backend
-          }),
+        // Automatically log in the user after successful verification
+        const loginData = {
+          email: registeredUser.email,
+          password: registeredUser.password
+        };
+
+        console.log('Auto-logging in user after verification...', {
+          email: loginData.email,
+          hasPassword: !!loginData.password,
+          userRole: registeredUser.role
+        });
+        const data = await api.auth.login(loginData);
+
+        // Log the user in
+        login(data.user, data.token);
+
+        toast({
+          title: "Welcome to SmartQ!",
+          description: "Your account has been verified successfully.",
         });
 
-        if (loginResponse.ok) {
-          const data = await loginResponse.json();
-          login(data.user, data.token);
-          toast({
-            title: "Welcome to SmartQ!",
-            description: "Your account has been verified successfully.",
-          });
-          setLocation(data.user.role === 'salon_owner' ? '/dashboard' : '/');
+        // Redirect based on user role after verification
+        console.log('Redirecting user based on role:', data.user.role);
+        if (data.user.role === 'salon_owner') {
+          // Salon owners go to dashboard where they can create/manage salons
+          console.log('Redirecting salon owner to dashboard');
+          setLocation('/dashboard');
         } else {
-          // Fallback if login fails
-          toast({
-            title: "Verification Complete!",
-            description: "Please login with your credentials to continue.",
-          });
-          setShowOTPVerification(false);
-          setIsLogin(true);
+          // Customers go to home page where they can browse and book salons
+          console.log('Redirecting customer to home');
+          setLocation('/');
         }
+
+        // Clean up
+        setRegisteredUser(null);
+        setShowOTPVerification(false);
+
       } catch (error) {
+        console.error('Auto-login after verification failed:', error);
         toast({
           title: "Verification Complete!",
           description: "Please login with your credentials to continue.",
         });
+
+        // Fallback: redirect to login form with email pre-filled
+        loginForm.setValue('email', registeredUser.email);
         setShowOTPVerification(false);
         setIsLogin(true);
+        setRegisteredUser(null);
       }
     }
   };
@@ -235,11 +260,10 @@ export default function Auth() {
                     setShowPassword(false);
                     setShowConfirmPassword(false);
                   }}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                    isLogin
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
+                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${isLogin
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-800'
+                    }`}
                 >
                   Sign In
                 </button>
@@ -250,254 +274,259 @@ export default function Auth() {
                     setShowPassword(false);
                     setShowConfirmPassword(false);
                   }}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                    !isLogin
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
+                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${!isLogin
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-800'
+                    }`}
                 >
                   Sign Up
                 </button>
               </div>
             </div>
 
-        {/* Main Auth Card */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                {isLogin ? "Welcome back!" : "Join SmartQ"}
-              </h2>
-              <p className="text-gray-600">
-                {isLogin 
-                  ? "Sign in to your account to continue" 
-                  : "Create your account and start skipping queues"}
-              </p>
+            {/* Main Auth Card */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+              <div className="p-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                    {isLogin ? "Welcome back!" : "Join SmartQ"}
+                  </h2>
+                  <p className="text-gray-600">
+                    {isLogin
+                      ? "Sign in to your account to continue"
+                      : "Create your account and start skipping queues"}
+                  </p>
+                </div>
+
+                {isLogin ? (
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                    {/* Email Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="email"
+                          placeholder="Enter your email address"
+                          className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                          {...loginForm.register("email")}
+                          data-testid="input-email"
+                        />
+                      </div>
+                      {loginForm.formState.errors.email && (
+                        <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                          {loginForm.formState.errors.email.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Password Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                          {...loginForm.register("password")}
+                          data-testid="input-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {loginForm.formState.errors.password && (
+                        <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
+                          {loginForm.formState.errors.password.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Sign In Button */}
+                    <Button
+                      type="submit"
+                      disabled={loginMutation.isPending}
+                      className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                      data-testid="button-login"
+                    >
+                      {loginMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Signing in...
+                        </div>
+                      ) : (
+                        "Sign In"
+                      )}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-5">
+                    {/* Full Name Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Full Name
+                      </label>
+                      <Input
+                        placeholder="Enter your full name"
+                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        {...registerForm.register("name")}
+                        data-testid="input-name"
+                      />
+                      {registerForm.formState.errors.name && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.name.message}</p>
+                      )}
+                    </div>
+
+                    {/* Email Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email Address
+                      </label>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email address"
+                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        {...registerForm.register("email")}
+                        data-testid="input-email"
+                      />
+                      {registerForm.formState.errors.email && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                      )}
+                    </div>
+
+                    {/* Phone Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Phone Number
+                      </label>
+                      <Input
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        {...registerForm.register("phone")}
+                        data-testid="input-phone"
+                      />
+                      {registerForm.formState.errors.phone && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.phone.message}</p>
+                      )}
+                    </div>
+
+                    {/* Account Type Select */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <UserCheck className="w-4 h-4" />
+                        Account Type
+                      </label>
+                      <Select
+                        defaultValue="customer"
+                        onValueChange={(value) => {
+                          if (value === "salon_owner") {
+                            registerForm.setValue("role", "salon_owner");
+                          } else {
+                            registerForm.setValue("role", "customer");
+                          }
+                        }}
+                        data-testid="select-role"
+                      >
+                        <SelectTrigger className="h-14 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50">
+                          <SelectValue placeholder="Select account type" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-2">
+                          <SelectItem value="customer" className="text-base py-3">Customer</SelectItem>
+                          <SelectItem value="salon_owner" className="text-base py-3">Salon Owner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {registerForm.formState.errors.role && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.role.message}</p>
+                      )}
+                    </div>
+
+                    {/* Password Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Create a strong password"
+                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                          {...registerForm.register("password")}
+                          data-testid="input-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {registerForm.formState.errors.password && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                      )}
+                    </div>
+
+                    {/* Confirm Password Input */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Lock className="w-4 h-4" />
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm your password"
+                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                          {...registerForm.register("confirmPassword")}
+                          data-testid="input-confirm-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {registerForm.formState.errors.confirmPassword && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                      )}
+                    </div>
+
+                    {/* Create Account Button */}
+                    <Button
+                      type="submit"
+                      disabled={registerMutation.isPending}
+                      className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mt-6"
+                      data-testid="button-register"
+                    >
+                      {registerMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Creating account...
+                        </div>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
             </div>
-
-            {isLogin ? (
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
-                {/* Email Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Input 
-                      type="email" 
-                      placeholder="Enter your email address"
-                      className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                      {...loginForm.register("email")}
-                      data-testid="input-email"
-                    />
-                  </div>
-                  {loginForm.formState.errors.email && (
-                    <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
-                      {loginForm.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Input 
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                      {...loginForm.register("password")}
-                      data-testid="input-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {loginForm.formState.errors.password && (
-                    <p className="text-sm text-red-500 flex items-center gap-1 mt-1">
-                      {loginForm.formState.errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Sign In Button */}
-                <Button 
-                  type="submit" 
-                  disabled={loginMutation.isPending}
-                  className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-                  data-testid="button-login"
-                >
-                  {loginMutation.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing in...
-                    </div>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-5">
-                {/* Full Name Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Full Name
-                  </label>
-                  <Input 
-                    placeholder="Enter your full name"
-                    className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                    {...registerForm.register("name")}
-                    data-testid="input-name"
-                  />
-                  {registerForm.formState.errors.name && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.name.message}</p>
-                  )}
-                </div>
-
-                {/* Email Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email Address
-                  </label>
-                  <Input 
-                    type="email" 
-                    placeholder="Enter your email address"
-                    className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                    {...registerForm.register("email")}
-                    data-testid="input-email"
-                  />
-                  {registerForm.formState.errors.email && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-
-                {/* Phone Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Phone Number
-                  </label>
-                  <Input 
-                    type="tel" 
-                    placeholder="Enter your phone number"
-                    className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                    {...registerForm.register("phone")}
-                    data-testid="input-phone"
-                  />
-                  {registerForm.formState.errors.phone && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.phone.message}</p>
-                  )}
-                </div>
-
-                {/* Account Type Select */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <UserCheck className="w-4 h-4" />
-                    Account Type
-                  </label>
-                  <Select 
-                    defaultValue="customer" 
-                    onValueChange={(value) => registerForm.setValue("role", value === "salon" ? "salon_owner" : value)}
-                    data-testid="select-role"
-                  >
-                    <SelectTrigger className="h-14 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50">
-                      <SelectValue placeholder="Select account type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-2">
-                      <SelectItem value="customer" className="text-base py-3">Customer</SelectItem>
-                      <SelectItem value="salon" className="text-base py-3">Salon Owner</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {registerForm.formState.errors.role && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.role.message}</p>
-                  )}
-                </div>
-
-                {/* Password Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Input 
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a strong password"
-                      className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                      {...registerForm.register("password")}
-                      data-testid="input-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {registerForm.formState.errors.password && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                {/* Confirm Password Input */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Input 
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
-                      className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                      {...registerForm.register("confirmPassword")}
-                      data-testid="input-confirm-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  {registerForm.formState.errors.confirmPassword && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                  )}
-                </div>
-
-                {/* Create Account Button */}
-                <Button 
-                  type="submit" 
-                  disabled={registerMutation.isPending}
-                  className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mt-6"
-                  data-testid="button-register"
-                >
-                  {registerMutation.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Creating account...
-                    </div>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-            )}
-          </div>
-        </div>
 
             {/* Footer Text */}
             <div className="text-center mt-6">
