@@ -14,6 +14,11 @@ import SalonProfile from "./pages/SalonProfile";
 import QueueSummary from "./pages/QueueSummary";
 import Queue from "./pages/Queue";
 import Dashboard from "./pages/Dashboard";
+import ContactUs from "./pages/ContactUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import HelpCenter from "./pages/HelpCenter";
+import Profile from "./pages/Profile";
 import NotFound from "@/pages/not-found";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -26,6 +31,11 @@ function Router() {
       <Route path="/queue-summary" component={QueueSummary} />
       <Route path="/queue" component={Queue} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/contact" component={ContactUs} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/help" component={HelpCenter} />
+      <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -9,8 +9,8 @@ export default function Footer() {
           {/* Company Info */}
           <div className="col-span-1 sm:col-span-2 md:col-span-1">
             <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(342, 95%, 62%)' }}>
+                <Clock className="h-4 w-4 text-white" />
               </div>
               <span className="text-lg sm:text-xl font-bold text-foreground">SmartQ</span>
             </div>
@@ -18,29 +18,29 @@ export default function Footer() {
               Revolutionizing salon experiences with smart queue management and real-time updates.
             </p>
             <div className="flex space-x-3 sm:space-x-4">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors duration-200"
                 data-testid="link-facebook"
               >
                 <Facebook className="h-4 w-4 sm:h-4 sm:w-4" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors duration-200"
                 data-testid="link-twitter"
               >
                 <Twitter className="h-4 w-4 sm:h-4 sm:w-4" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors duration-200"
                 data-testid="link-instagram"
               >
                 <Instagram className="h-4 w-4 sm:h-4 sm:w-4" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors duration-200"
                 data-testid="link-linkedin"
               >
@@ -48,7 +48,7 @@ export default function Footer() {
               </a>
             </div>
           </div>
-          
+
           {/* Quick Links Container - spans remaining columns */}
           <div className="col-span-1 sm:col-span-2 md:col-span-3">
             <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-8">
@@ -57,8 +57,8 @@ export default function Footer() {
                 <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">For Customers</h4>
                 <ul className="space-y-1.5 sm:space-y-2">
                   <li>
-                    <Link 
-                      href="/" 
+                    <Link
+                      href="/"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-find-salons"
                     >
@@ -66,8 +66,8 @@ export default function Footer() {
                     </Link>
                   </li>
                   <li>
-                    <Link 
-                      href="/queue" 
+                    <Link
+                      href="/queue"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-track-queue"
                     >
@@ -75,8 +75,8 @@ export default function Footer() {
                     </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-loyalty"
                     >
@@ -84,8 +84,8 @@ export default function Footer() {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-reviews"
                     >
@@ -94,14 +94,14 @@ export default function Footer() {
                   </li>
                 </ul>
               </div>
-              
+
               {/* For Salons */}
               <div>
                 <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">For Salons</h4>
                 <ul className="space-y-1.5 sm:space-y-2">
                   <li>
-                    <Link 
-                      href="/auth" 
+                    <Link
+                      href="/auth"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-join"
                     >
@@ -109,8 +109,8 @@ export default function Footer() {
                     </Link>
                   </li>
                   <li>
-                    <Link 
-                      href="/dashboard" 
+                    <Link
+                      href="/dashboard"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-dashboard-footer"
                     >
@@ -118,8 +118,8 @@ export default function Footer() {
                     </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-analytics"
                     >
@@ -127,8 +127,8 @@ export default function Footer() {
                     </a>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <a
+                      href="#"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-pricing"
                     >
@@ -137,53 +137,53 @@ export default function Footer() {
                   </li>
                 </ul>
               </div>
-              
+
               {/* Support */}
               <div>
                 <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">Support</h4>
                 <ul className="space-y-1.5 sm:space-y-2">
                   <li>
-                    <a 
-                      href="#" 
+                    <Link
+                      href="/help"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-help"
                     >
                       Help Center
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <Link
+                      href="/contact"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-contact"
                     >
                       Contact Us
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <Link
+                      href="/privacy"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-privacy"
                     >
                       Privacy Policy
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <Link
+                      href="/terms"
                       className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
                       data-testid="link-terms"
                     >
                       Terms of Service
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="hidden md:block border-t border-border mt-8 pt-8 text-center">
           <p className="text-sm text-muted-foreground">
             © 2025 SmartQ. All rights reserved.
