@@ -35,14 +35,34 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
 
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+  console.log('Google Maps API Key configured:', !!googleMapsApiKey);
+  console.log('API Key (first 10 chars):', googleMapsApiKey?.substring(0, 10));
+
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: googleMapsApiKey,
     libraries,
+    version: "weekly", // Use the latest version
   });
+
+  // Log any load errors
+  useEffect(() => {
+    if (loadError) {
+      console.error('Google Maps load error:', loadError);
+    }
+    if (isLoaded) {
+      console.log('Google Maps loaded successfully');
+    }
+  }, [isLoaded, loadError]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-    geocoderRef.current = new google.maps.Geocoder();
+    try {
+      geocoderRef.current = new google.maps.Geocoder();
+      console.log('Google Maps loaded successfully, Geocoder initialized');
+    } catch (error) {
+      console.error('Error initializing Geocoder:', error);
+      geocoderRef.current = null;
+    }
   }, []);
 
   const onMapUnmount = useCallback(() => {
@@ -51,22 +71,44 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
   }, []);
 
   const reverseGeocode = async (lat: number, lng: number) => {
-    if (!geocoderRef.current) return "";
+    // Always provide a fallback address first
+    const fallbackAddress = `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+    if (!geocoderRef.current) {
+      console.warn("Geocoder not initialized, using fallback address");
+      setAddress(fallbackAddress);
+      onLocationSelect({ latitude: lat, longitude: lng, address: fallbackAddress });
+      return fallbackAddress;
+    }
+
     setIsLoading(true);
+    console.log('Starting reverse geocoding for:', { lat, lng });
+
     try {
       const response = await geocoderRef.current.geocode({ location: { lat, lng } });
-      if (response.results && response.results.length > 0) {
+      console.log('Geocoding response:', response);
+
+      // Check if response exists and has the expected structure
+      if (response && response.results && Array.isArray(response.results) && response.results.length > 0) {
         const newAddress = response.results[0].formatted_address;
+        console.log('Reverse geocoding successful:', newAddress);
         setAddress(newAddress);
         onLocationSelect({ latitude: lat, longitude: lng, address: newAddress });
         return newAddress;
+      } else {
+        console.warn("No results found for reverse geocoding, using fallback:", { lat, lng, response });
+        setAddress(fallbackAddress);
+        onLocationSelect({ latitude: lat, longitude: lng, address: fallbackAddress });
+        return fallbackAddress;
       }
     } catch (error) {
-      console.error("Google Maps Reverse geocoding failed:", error);
+      console.error("Google Maps Reverse geocoding failed, using fallback:", error);
+      setAddress(fallbackAddress);
+      onLocationSelect({ latitude: lat, longitude: lng, address: fallbackAddress });
+      return fallbackAddress;
     } finally {
       setIsLoading(false);
     }
-    return "";
   };
 
   const searchLocation = async () => {
@@ -75,7 +117,9 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
     setIsLoading(true);
     try {
       const response = await geocoderRef.current.geocode({ address: searchQuery });
-      if (response.results && response.results.length > 0) {
+
+      // Check if response exists and has the expected structure
+      if (response && response.results && Array.isArray(response.results) && response.results.length > 0) {
         const result = response.results[0];
         const lat = result.geometry.location.lat();
         const lng = result.geometry.location.lng();
@@ -88,9 +132,13 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
           address: result.formatted_address
         });
         mapRef.current?.panTo({ lat, lng });
+      } else {
+        console.warn("No results found for search query:", searchQuery, response);
+        // Could show a toast or error message to user here
       }
     } catch (error) {
       console.error("Google Maps Search failed:", error);
+      // Could show a toast or error message to user here
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +274,38 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
     window.open(url, '_blank');
   };
 
-  if (loadError) return <div>Error loading maps</div>;
+  if (loadError) {
+    console.error('Maps loading error:', loadError);
+    return (
+      <div className="space-y-2">
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+          📍 Maps service unavailable. Please enter your salon address manually.
+        </div>
+        <Input
+          placeholder="Enter complete salon address (e.g., 123 Main St, City, State, ZIP)"
+          value={address}
+          onChange={(e) => {
+            const value = e.target.value;
+            setAddress(value);
+            if (value.trim()) {
+              onLocationSelect({
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
+                address: value
+              });
+            }
+          }}
+          className="h-12"
+        />
+        {address && (
+          <div className="p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+            ✅ Address saved: {address}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!isLoaded) return <div>Loading Maps...</div>;
 
   return (
@@ -247,22 +326,43 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
           </DialogHeader>
           <div className="space-y-4">
             {/* Search and Current Location */}
-            <div className="flex gap-2">
-              <div className="flex-1 flex gap-2">
-                <Input
-                  placeholder="Search address..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && searchLocation()}
-                />
-                <Button
-                  onClick={searchLocation}
-                  disabled={isLoading}
-                  size="sm"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1 flex gap-2">
+                  <Input
+                    placeholder="Search address..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchLocation()}
+                  />
+                  <Button
+                    onClick={searchLocation}
+                    disabled={isLoading}
+                    size="sm"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+
+              {/* Manual address input as fallback */}
+              <div className="text-xs text-gray-500 text-center">or</div>
+              <Input
+                placeholder="Enter address manually if search doesn't work"
+                value={address}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAddress(value);
+                  if (value.trim()) {
+                    onLocationSelect({
+                      latitude: coordinates.latitude,
+                      longitude: coordinates.longitude,
+                      address: value
+                    });
+                  }
+                }}
+                className="text-sm"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

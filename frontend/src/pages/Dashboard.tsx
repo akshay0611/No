@@ -12,14 +12,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, 
-  Clock, 
-  Star, 
-  DollarSign, 
-  Plus, 
-  Percent, 
-  BarChart3, 
+import {
+  Users,
+  Clock,
+  Star,
+  DollarSign,
+  Plus,
+  Percent,
+  BarChart3,
   Settings,
   TrendingUp,
   UserCheck,
@@ -85,7 +85,7 @@ export default function Dashboard() {
       console.log('Fetching offers for salon:', selectedSalonId);
       const token = localStorage.getItem('smartq_token');
       console.log('Using token:', token ? 'Token exists' : 'No token');
-      
+
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/salons/${selectedSalonId}/offers`, {
         headers: {
@@ -93,7 +93,7 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       console.log('Response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
@@ -115,11 +115,12 @@ export default function Dashboard() {
     defaultValues: {
       name: "",
       description: "",
-      location: "",
+      location: "", // Will be set by LocationPicker
       type: "unisex",
       operatingHours: {},
       images: [],
     },
+    mode: "onChange", // Enable real-time validation
   });
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -148,131 +149,82 @@ export default function Dashboard() {
   // Mutations
   const createSalonMutation = useMutation({
     mutationFn: async (data: any) => {
-      let createdSalon = null;
-      
+      console.log('=== STARTING SALON CREATION ===');
+      console.log('Salon data:', data);
+      console.log('Selected images count:', selectedImages.length);
+
       try {
         // First create the salon
-        createdSalon = await api.salons.create(data);
-        console.log('Salon created:', createdSalon);
-        
+        console.log('Step 1: Creating salon...');
+        const createdSalon = await api.salons.create(data);
+        console.log('✅ Salon created successfully:', createdSalon);
+
         // Then upload images if any are selected
         if (selectedImages.length > 0) {
-          console.log('=== STARTING IMAGE UPLOAD PROCESS ===');
-          console.log('Number of images to upload:', selectedImages.length);
-          console.log('Created salon ID:', createdSalon.id);
-          
+          console.log('Step 2: Starting image upload process...');
+
           for (let i = 0; i < selectedImages.length; i++) {
             const image = selectedImages[i];
-            console.log(`Uploading image ${i + 1}/${selectedImages.length}:`, image.name);
-            
+            console.log(`Uploading image ${i + 1}/${selectedImages.length}: ${image.name}`);
+
             const formData = new FormData();
             formData.append('image', image);
-            
+
             const token = localStorage.getItem('smartq_token');
-            const uploadUrl = `/api/salons/${createdSalon.id}/photos`;
-            console.log('Upload URL:', uploadUrl);
-            console.log('Token exists:', !!token);
-            
-            try {
-              const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-              const response = await fetch(`${baseURL}${uploadUrl}`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-              });
-              
-              console.log('Upload response status:', response.status);
-              console.log('Upload response headers:', Object.fromEntries(response.headers.entries()));
-              
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Image upload failed:', response.status, errorText);
-                
-                // If image upload fails, delete the created salon
-                if (createdSalon) {
-                  try {
-                    const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-                    await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
-                      method: 'DELETE',
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                      },
-                    });
-                    console.log('Salon deleted due to image upload failure');
-                  } catch (deleteError) {
-                    console.error('Failed to delete salon after image upload failure:', deleteError);
-                  }
-                }
-                
-                throw new Error(`Failed to upload image: ${response.status} ${errorText}`);
-              }
-              
-              const result = await response.json();
-              console.log('Image uploaded successfully:', result);
-            } catch (fetchError) {
-              console.error('Fetch error during image upload:', fetchError);
-              throw fetchError;
-            }
-          }
-          
-          console.log('=== IMAGE UPLOAD PROCESS COMPLETED ===');
-        } else {
-          // If no images selected but required, delete the salon
-          if (createdSalon) {
-            const token = localStorage.getItem('smartq_token');
-            try {
-              const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-              await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
-            } catch (deleteError) {
-              console.error('Failed to delete salon:', deleteError);
-            }
-          }
-          throw new Error('At least one image is required');
-        }
-        
-        return createdSalon;
-      } catch (error) {
-        // If any error occurs and salon was created, try to delete it
-        if (createdSalon) {
-          const token = localStorage.getItem('smartq_token');
-          try {
             const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-            await fetch(`${baseURL}/api/salons/${createdSalon.id}`, {
-              method: 'DELETE',
+            const uploadUrl = `${baseURL}/api/salons/${createdSalon.id}/photos`;
+
+            const response = await fetch(uploadUrl, {
+              method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
+              body: formData,
             });
-          } catch (deleteError) {
-            console.error('Failed to delete salon after error:', deleteError);
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('❌ Image upload failed:', response.status, errorText);
+              throw new Error(`Failed to upload image ${image.name}: ${response.status} ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Image ${i + 1} uploaded successfully:`, result);
           }
+
+          console.log('✅ All images uploaded successfully');
         }
-        
-        console.error('Salon creation error:', error);
+
+        console.log('=== SALON CREATION COMPLETED SUCCESSFULLY ===');
+        return createdSalon;
+
+      } catch (error) {
+        console.error('❌ Salon creation failed:', error);
         throw error;
       }
     },
     onSuccess: (createdSalon) => {
+      console.log('🎉 Salon creation success callback triggered');
       toast({
-        title: "Success",
+        title: "Success!",
         description: "Salon created successfully!",
       });
+
+      // Refresh the salons list
       queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
+
+      // Reset form and state
       salonForm.reset();
       setSelectedImages([]);
+      setSelectedLocation(null);
+
+      console.log('✅ Form reset and queries invalidated');
     },
-    onError: (error) => {
-      console.error('Salon creation error:', error);
+    onError: (error: any) => {
+      console.error('❌ Salon creation error callback triggered:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create salon",
+        description: error.message || "Failed to create salon. Please try again.",
         variant: "destructive",
       });
     },
@@ -306,8 +258,8 @@ export default function Dashboard() {
       });
       offerForm.reset();
       // Invalidate offers query to refresh the list
-      queryClient.invalidateQueries({ 
-        queryKey: ['salon-offers', selectedSalonId] 
+      queryClient.invalidateQueries({
+        queryKey: ['salon-offers', selectedSalonId]
       });
     },
     onError: (error) => {
@@ -320,7 +272,7 @@ export default function Dashboard() {
   });
 
   const updateQueueMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: any }) => 
+    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
       api.queue.update(id, updates),
     onSuccess: () => {
       toast({
@@ -339,15 +291,15 @@ export default function Dashboard() {
   });
 
   const updateOfferMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<OfferForm> }) => 
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<OfferForm> }) =>
       api.offers.update(id, updates),
     onSuccess: () => {
       toast({
         title: "Offer updated successfully!",
         description: "Your promotion has been updated.",
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['salon-offers', selectedSalonId] 
+      queryClient.invalidateQueries({
+        queryKey: ['salon-offers', selectedSalonId]
       });
     },
     onError: (error) => {
@@ -366,8 +318,8 @@ export default function Dashboard() {
         title: "Offer deleted successfully!",
         description: "The promotion has been removed.",
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['salon-offers', selectedSalonId] 
+      queryClient.invalidateQueries({
+        queryKey: ['salon-offers', selectedSalonId]
       });
     },
     onError: (error) => {
@@ -379,16 +331,74 @@ export default function Dashboard() {
     },
   });
 
-  const onSalonSubmit = (data: SalonForm) => {
+  const onSalonSubmit = async (data: SalonForm) => {
+    console.log('🚀 Form submission started');
+    console.log('Form data:', data);
+    console.log('Selected location:', selectedLocation);
+    console.log('Selected images count:', selectedImages.length);
+    console.log('User:', user);
+
+    // Validation checks
+    if (selectedImages.length === 0) {
+      console.log('❌ Validation failed: No images selected');
+      toast({
+        title: "Images Required",
+        description: "Please select at least one salon photo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      console.log('❌ Validation failed: No user ID');
+      toast({
+        title: "Authentication Error",
+        description: "Please log in again to create a salon.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.name?.trim()) {
+      console.log('❌ Validation failed: No salon name');
+      toast({
+        title: "Salon Name Required",
+        description: "Please enter a salon name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if location is provided
+    const locationAddress = selectedLocation?.address || data.location;
+    if (!locationAddress?.trim()) {
+      console.log('❌ Validation failed: No location provided');
+      toast({
+        title: "Location Required",
+        description: "Please select or enter a salon location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare salon data
     const salonData = {
       ...data,
-      location: selectedLocation?.address || data.location || "",
+      location: locationAddress.trim(),
       ownerId: user.id,
       latitude: selectedLocation?.latitude,
       longitude: selectedLocation?.longitude,
       fullAddress: selectedLocation?.address,
     };
-    createSalonMutation.mutate(salonData);
+
+    console.log('✅ Validation passed, submitting salon data:', salonData);
+
+    try {
+      await createSalonMutation.mutateAsync(salonData);
+      console.log('🎉 Salon creation completed successfully');
+    } catch (error) {
+      console.error('❌ Salon creation failed in submit handler:', error);
+    }
   };
 
   const onServiceSubmit = (data: ServiceForm) => {
@@ -402,7 +412,7 @@ export default function Dashboard() {
   const onOfferSubmit = (data: OfferForm) => {
     if (!selectedSalonId) return;
     console.log('Offer form data:', data);
-    
+
     // Ensure all required fields are present and properly formatted
     const offerData = {
       title: data.title.trim(),
@@ -412,7 +422,7 @@ export default function Dashboard() {
       isActive: Boolean(data.isActive),
       salonId: selectedSalonId,
     };
-    
+
     console.log('Sending offer data:', offerData);
     createOfferMutation.mutate(offerData);
   };
@@ -479,7 +489,7 @@ export default function Dashboard() {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salon Dashboard</h1>
             <p className="text-sm sm:text-base text-muted-foreground">Manage your salons and track performance</p>
           </div>
-          
+
           {salons.length === 0 && (
             <Dialog>
               <DialogTrigger asChild>
@@ -496,7 +506,33 @@ export default function Dashboard() {
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...salonForm}>
-                  <form onSubmit={salonForm.handleSubmit(onSalonSubmit)} className="space-y-3">
+                  <form
+                    onSubmit={(e) => {
+                      console.log('🔥 Form submit event triggered');
+                      console.log('Form errors:', salonForm.formState.errors);
+                      console.log('Form values:', salonForm.getValues());
+                      console.log('Form is valid:', salonForm.formState.isValid);
+                      salonForm.handleSubmit(
+                        (data) => {
+                          console.log('✅ Form validation passed, calling onSalonSubmit');
+                          onSalonSubmit(data);
+                        },
+                        (errors) => {
+                          console.log('❌ Form validation failed:', errors);
+                          // Show validation errors to user
+                          const errorMessages = Object.entries(errors)
+                            .map(([field, error]) => `${field}: ${error?.message}`)
+                            .join(', ');
+                          toast({
+                            title: "Form Validation Error",
+                            description: `Please fix the following: ${errorMessages}`,
+                            variant: "destructive",
+                          });
+                        }
+                      )(e);
+                    }}
+                    className="space-y-3"
+                  >
                     <FormField
                       control={salonForm.control}
                       name="name"
@@ -539,9 +575,9 @@ export default function Dashboard() {
                         <FormItem>
                           <FormLabel>Description</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="Describe your salon..." 
-                              {...field} 
+                            <Textarea
+                              placeholder="Describe your salon..."
+                              {...field}
                               value={field.value || ""}
                               data-testid="textarea-salon-description"
                             />
@@ -551,15 +587,38 @@ export default function Dashboard() {
                       )}
                     />
                     {/* Location Picker */}
-                    <LocationPicker 
-                      onLocationSelect={setSelectedLocation}
-                      initialLocation={selectedLocation}
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Salon Location <span className="text-red-500">*</span>
+                      </label>
+                      <LocationPicker
+                        onLocationSelect={(location) => {
+                          setSelectedLocation(location);
+                          // Update the form's location field
+                          salonForm.setValue('location', location.address);
+                        }}
+                        initialLocation={selectedLocation}
+                      />
+                      {/* Hidden field to satisfy form validation */}
+                      <FormField
+                        control={salonForm.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem className="hidden">
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">
                         Salon Photos <span className="text-red-500">*</span>
                       </label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-3">
+                      <div className={`border-2 border-dashed rounded-lg p-3 ${selectedImages.length === 0 ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'
+                        }`}>
                         <input
                           type="file"
                           accept="image/*"
@@ -568,11 +627,13 @@ export default function Dashboard() {
                             const files = Array.from(e.target.files || []);
                             setSelectedImages(files);
                           }}
-                          className="w-full text-sm"
+                          className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                           data-testid="input-salon-images"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Select at least one photo. You can add more later.
+                        <p className={`text-xs mt-1 ${selectedImages.length === 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {selectedImages.length === 0
+                            ? "⚠️ Please select at least one photo to continue"
+                            : `✅ ${selectedImages.length} photo${selectedImages.length !== 1 ? 's' : ''} selected`}
                         </p>
                         {selectedImages.length > 0 && (
                           <div className="mt-2">
@@ -603,14 +664,45 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
+                    {/* Debug button - remove in production */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        console.log('🔍 DEBUG - Form State:');
+                        console.log('Values:', salonForm.getValues());
+                        console.log('Errors:', salonForm.formState.errors);
+                        console.log('Is Valid:', salonForm.formState.isValid);
+                        console.log('Selected Location:', selectedLocation);
+                        console.log('Selected Images:', selectedImages.length);
+                      }}
+                    >
+                      Debug Form State
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      className="w-full"
                       disabled={createSalonMutation.isPending || selectedImages.length === 0}
                       data-testid="button-submit-salon"
                     >
-                      {createSalonMutation.isPending ? "Creating..." : "Create Salon"}
+                      {createSalonMutation.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Creating Salon...
+                        </div>
+                      ) : selectedImages.length === 0 ? (
+                        "Select at least 1 image to continue"
+                      ) : (
+                        "Create Salon"
+                      )}
                     </Button>
+                    {selectedImages.length === 0 && (
+                      <p className="text-xs text-red-500 text-center mt-1">
+                        ⚠️ Please select at least one salon photo to create your salon
+                      </p>
+                    )}
                   </form>
                 </Form>
               </DialogContent>
@@ -746,109 +838,108 @@ export default function Dashboard() {
                             {queues
                               .filter(q => q.status === 'waiting' || q.status === 'in-progress')
                               .map((queue) => (
-                              <div key={queue.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg" data-testid={`queue-item-${queue.id}`}>
-                                <div className="flex items-center space-x-4">
-                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                                    queue.status === 'in-progress' ? 'bg-primary' : 'bg-muted border-2 border-dashed border-border text-muted-foreground'
-                                  }`}>
-                                    {queue.position}
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-foreground" data-testid={`text-customer-name-${queue.id}`}>
-                                      {queue.user?.name || 'Customer'}
-                                    </p>
-                                    <div className="text-sm text-muted-foreground" data-testid={`text-services-${queue.id}`}>
-                                      {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
-                                        <div>
-                                          <p className="font-medium">Services:</p>
-                                          <div className="mt-1">
-                                            {queue.services.map((service) => (
-                                              <p key={service.id} className="text-xs">
-                                                - {service.name} • {service.duration}min • ${service.price}
-                                              </p>
-                                            ))}
+                                <div key={queue.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg" data-testid={`queue-item-${queue.id}`}>
+                                  <div className="flex items-center space-x-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${queue.status === 'in-progress' ? 'bg-primary' : 'bg-muted border-2 border-dashed border-border text-muted-foreground'
+                                      }`}>
+                                      {queue.position}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-foreground" data-testid={`text-customer-name-${queue.id}`}>
+                                        {queue.user?.name || 'Customer'}
+                                      </p>
+                                      <div className="text-sm text-muted-foreground" data-testid={`text-services-${queue.id}`}>
+                                        {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
+                                          <div>
+                                            <p className="font-medium">Services:</p>
+                                            <div className="mt-1">
+                                              {queue.services.map((service) => (
+                                                <p key={service.id} className="text-xs">
+                                                  - {service.name} • {service.duration}min • ${service.price}
+                                                </p>
+                                              ))}
+                                            </div>
+                                            <p className="text-xs font-medium mt-1">Total: ${queue.totalPrice}</p>
                                           </div>
-                                          <p className="text-xs font-medium mt-1">Total: ${queue.totalPrice}</p>
-                                        </div>
-                                      ) : (
-                                        <p>{queue.service?.name} • {queue.service?.duration}min • ${queue.service?.price}</p>
+                                        ) : (
+                                          <p>{queue.service?.name} • {queue.service?.duration}min • ${queue.service?.price}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Badge
+                                      variant={queue.status === 'in-progress' ? 'default' : 'secondary'}
+                                      data-testid={`badge-status-${queue.id}`}
+                                    >
+                                      {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
+                                    </Badge>
+                                    <div className="flex space-x-2">
+                                      {queue.user && queue.user.phone && (
+                                        <>
+                                          <a
+                                            href={`tel:${queue.user.phone}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              data-testid={`button-call-${queue.id}`}
+                                            >
+                                              <span role="img" aria-label="phone">📞</span> Call
+                                            </Button>
+                                          </a>
+                                          <a
+                                            href={`https://wa.me/${queue.user.phone.replace(/\D/g, '')}?text=Hello%20Your%20turn%20has%20come%20at%20SmartQ%20Salon`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              data-testid={`button-whatsapp-${queue.id}`}
+                                            >
+                                              <span role="img" aria-label="whatsapp">💬</span> WhatsApp
+                                            </Button>
+                                          </a>
+                                        </>
                                       )}
+                                      {queue.status === 'waiting' ? (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => startService(queue.id)}
+                                          disabled={updateQueueMutation.isPending}
+                                          data-testid={`button-start-${queue.id}`}
+                                        >
+                                          <PlayCircle className="h-4 w-4 mr-1" />
+                                          Start
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => completeService(queue.id)}
+                                          disabled={updateQueueMutation.isPending}
+                                          data-testid={`button-complete-${queue.id}`}
+                                        >
+                                          <UserCheck className="h-4 w-4 mr-1" />
+                                          Complete
+                                        </Button>
+                                      )}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => markNoShow(queue.id)}
+                                        disabled={updateQueueMutation.isPending}
+                                        data-testid={`button-no-show-${queue.id}`}
+                                      >
+                                        <UserX className="h-4 w-4 mr-1" />
+                                        No Show
+                                      </Button>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <Badge 
-                                    variant={queue.status === 'in-progress' ? 'default' : 'secondary'}
-                                    data-testid={`badge-status-${queue.id}`}
-                                  >
-                                    {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
-                                  </Badge>
-                                  <div className="flex space-x-2">
-                                    {queue.user && queue.user.phone && (
-                                      <>
-                                        <a 
-                                          href={`tel:${queue.user.phone}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            data-testid={`button-call-${queue.id}`}
-                                          >
-                                            <span role="img" aria-label="phone">📞</span> Call
-                                          </Button>
-                                        </a>
-                                        <a 
-                                          href={`https://wa.me/${queue.user.phone.replace(/\D/g, '')}?text=Hello%20Your%20turn%20has%20come%20at%20SmartQ%20Salon`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        >
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            data-testid={`button-whatsapp-${queue.id}`}
-                                          >
-                                            <span role="img" aria-label="whatsapp">💬</span> WhatsApp
-                                          </Button>
-                                        </a>
-                                      </>
-                                    )}
-                                    {queue.status === 'waiting' ? (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => startService(queue.id)}
-                                        disabled={updateQueueMutation.isPending}
-                                        data-testid={`button-start-${queue.id}`}
-                                      >
-                                        <PlayCircle className="h-4 w-4 mr-1" />
-                                        Start
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => completeService(queue.id)}
-                                        disabled={updateQueueMutation.isPending}
-                                        data-testid={`button-complete-${queue.id}`}
-                                      >
-                                        <UserCheck className="h-4 w-4 mr-1" />
-                                        Complete
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => markNoShow(queue.id)}
-                                      disabled={updateQueueMutation.isPending}
-                                      data-testid={`button-no-show-${queue.id}`}
-                                    >
-                                      <UserX className="h-4 w-4 mr-1" />
-                                      No Show
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         )}
                       </CardContent>
@@ -901,9 +992,9 @@ export default function Dashboard() {
                                         <FormItem>
                                           <FormLabel>Duration (minutes)</FormLabel>
                                           <FormControl>
-                                            <Input 
-                                              type="number" 
-                                              {...field} 
+                                            <Input
+                                              type="number"
+                                              {...field}
                                               onChange={(e) => field.onChange(parseInt(e.target.value))}
                                               data-testid="input-service-duration"
                                             />
@@ -933,9 +1024,9 @@ export default function Dashboard() {
                                       <FormItem>
                                         <FormLabel>Description</FormLabel>
                                         <FormControl>
-                                          <Textarea 
-                                            placeholder="Service description..." 
-                                            {...field} 
+                                          <Textarea
+                                            placeholder="Service description..."
+                                            {...field}
                                             value={field.value || ""}
                                             data-testid="textarea-service-description"
                                           />
@@ -944,9 +1035,9 @@ export default function Dashboard() {
                                       </FormItem>
                                     )}
                                   />
-                                  <Button 
-                                    type="submit" 
-                                    className="w-full" 
+                                  <Button
+                                    type="submit"
+                                    className="w-full"
                                     disabled={createServiceMutation.isPending}
                                     data-testid="button-submit-service"
                                   >
@@ -980,11 +1071,11 @@ export default function Dashboard() {
                               </Badge>
                             </div>
                           )) || (
-                            <div className="text-center py-8">
-                              <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                              <p className="text-muted-foreground">No services added yet</p>
-                            </div>
-                          )}
+                              <div className="text-center py-8">
+                                <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">No services added yet</p>
+                              </div>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1035,9 +1126,9 @@ export default function Dashboard() {
                                       <FormItem>
                                         <FormLabel>Description</FormLabel>
                                         <FormControl>
-                                          <Textarea 
-                                            placeholder="Describe your offer..." 
-                                            {...field} 
+                                          <Textarea
+                                            placeholder="Describe your offer..."
+                                            {...field}
                                             data-testid="textarea-offer-description"
                                           />
                                         </FormControl>
@@ -1053,15 +1144,15 @@ export default function Dashboard() {
                                         <FormItem>
                                           <FormLabel>Discount (%)</FormLabel>
                                           <FormControl>
-                                            <Input 
-                                              type="number" 
-                                              min="1" 
-                                              max="99" 
-                                              step="0.01" 
-                                              placeholder="10.00" 
-                                              {...field} 
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              max="99"
+                                              step="0.01"
+                                              placeholder="10.00"
+                                              {...field}
                                               onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                              data-testid="input-offer-discount" 
+                                              data-testid="input-offer-discount"
                                             />
                                           </FormControl>
                                           <FormMessage />
@@ -1075,8 +1166,8 @@ export default function Dashboard() {
                                         <FormItem>
                                           <FormLabel>Valid Until</FormLabel>
                                           <FormControl>
-                                            <Input 
-                                              type="date" 
+                                            <Input
+                                              type="date"
                                               {...field}
                                               min={new Date().toISOString().split('T')[0]}
                                               value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
@@ -1084,7 +1175,7 @@ export default function Dashboard() {
                                                 const selectedDate = new Date(e.target.value);
                                                 const today = new Date();
                                                 today.setHours(0, 0, 0, 0);
-                                                
+
                                                 if (selectedDate < today) {
                                                   toast({
                                                     title: "Invalid date",
@@ -1093,7 +1184,7 @@ export default function Dashboard() {
                                                   });
                                                   return;
                                                 }
-                                                
+
                                                 field.onChange(selectedDate);
                                               }}
                                               data-testid="input-offer-validity"
@@ -1104,9 +1195,9 @@ export default function Dashboard() {
                                       )}
                                     />
                                   </div>
-                                  <Button 
-                                    type="submit" 
-                                    className="w-full" 
+                                  <Button
+                                    type="submit"
+                                    className="w-full"
                                     disabled={createOfferMutation.isPending}
                                     data-testid="button-submit-offer"
                                   >
