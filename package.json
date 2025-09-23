@@ -10,6 +10,7 @@
     "dev:frontend": "cd frontend && npm run dev"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
     "concurrently": "^8.2.2"
   },
   "engines": {
