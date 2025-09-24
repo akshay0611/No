@@ -33,20 +33,23 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     }
 
     // Create WebSocket connection
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+    const wsUrl = baseURL.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
     
+    console.log('Attempting WebSocket connection to:', wsUrl);
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('✅ WebSocket connected successfully to:', wsUrl);
       setConnected(true);
       
       // Authenticate with user ID
-      ws.send(JSON.stringify({
+      const authMessage = {
         type: 'authenticate',
         userId: user.id,
-      }));
+      };
+      console.log('Sending authentication message:', authMessage);
+      ws.send(JSON.stringify(authMessage));
     };
 
     ws.onmessage = (event) => {
@@ -98,7 +101,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('❌ WebSocket error:', error);
+      console.error('Failed to connect to:', wsUrl);
       setConnected(false);
     };
 

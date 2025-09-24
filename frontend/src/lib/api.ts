@@ -18,6 +18,22 @@ export const api = {
       const response = await apiRequest('GET', '/api/auth/profile');
       return response.json();
     },
+
+    // Phone authentication endpoints
+    sendOTP: async (phoneNumber: string) => {
+      const response = await apiRequest('POST', '/api/auth/send-otp', { phoneNumber });
+      return response.json();
+    },
+
+    verifyOTP: async (phoneNumber: string, otp: string): Promise<AuthResponse> => {
+      const response = await apiRequest('POST', '/api/auth/verify-otp', { phoneNumber, otp });
+      return response.json();
+    },
+
+    completeProfile: async (name: string, email?: string) => {
+      const response = await apiRequest('PUT', '/api/user/complete', { name, email });
+      return response.json();
+    },
   },
 
   salons: {
