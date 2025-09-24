@@ -2,8 +2,24 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorDetail = res.statusText; // Default error detail
+    try {
+      // Try to parse as JSON first
+      const errorJson = await res.json();
+      if (errorJson && typeof errorJson === 'object' && errorJson.message) {
+        errorDetail = errorJson.message;
+      } else if (errorJson) {
+        // If it's a JSON object but no 'message' field, stringify it
+        errorDetail = JSON.stringify(errorJson);
+      }
+    } catch (e) {
+      // If not JSON, fall back to text
+      const text = await res.text();
+      if (text) {
+        errorDetail = text;
+      }
+    }
+    throw new Error(`API Error ${res.status}: ${errorDetail}`);
   }
 }
 
@@ -39,10 +55,13 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  // Clone the response to allow multiple reads of the body
+  const clonedRes = res.clone();
+
   // Handle token update response
-  if (res.status === 401) {
+  if (clonedRes.status === 401) {
     try {
-      const errorData = await res.json();
+      const errorData = await clonedRes.json(); // Read from cloned response
       if (errorData.newToken) {
         // Update token in localStorage
         localStorage.setItem('smartq_token', errorData.newToken);
