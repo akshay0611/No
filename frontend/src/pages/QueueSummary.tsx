@@ -8,6 +8,8 @@ import { ArrowLeft, Trash2, Tag, ShoppingCart, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useProfileCompletion } from "../hooks/useProfileCompletion";
+import BookingDetailsModal from "../components/BookingDetailsModal";
 import { api } from "../lib/api";
 
 export default function QueueSummary() {
@@ -16,6 +18,12 @@ export default function QueueSummary() {
   const { items, removeItem, clearCart, getTotalPrice } = useCart();
   const { toast } = useToast();
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
+  const { 
+    isModalOpen, 
+    requireProfileCompletion, 
+    completeProfile, 
+    cancelProfileCompletion 
+  } = useProfileCompletion();
 
   // Fetch offers for the salon
   const { data: availableOffers = [], isLoading: offersLoading } = useQuery({
@@ -78,7 +86,11 @@ export default function QueueSummary() {
       setLocation('/auth');
       return;
     }
-    joinQueueMutation.mutate();
+    
+    // Use profile completion hook to ensure user has complete profile
+    requireProfileCompletion(() => {
+      joinQueueMutation.mutate();
+    });
   };
 
   if (items.length === 0) {
@@ -237,6 +249,15 @@ export default function QueueSummary() {
             `Confirm & Join Queue - $${finalTotal.toFixed(2)}`
           )}
         </Button>
+
+        {/* Profile Completion Modal */}
+        <BookingDetailsModal
+          isOpen={isModalOpen}
+          onComplete={completeProfile}
+          onCancel={cancelProfileCompletion}
+          salonName={items[0]?.salonName || "the salon"}
+          serviceName={items.length === 1 ? items[0].service.name : `${items.length} services`}
+        />
       </div>
     </div>
   );

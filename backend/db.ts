@@ -21,10 +21,10 @@ export const connectDB = async (): Promise<void> => {
 // Define schemas
 const userSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  name: { type: String }, // Made optional for phone auth
+  email: { type: String, unique: true, sparse: true }, // Made optional and sparse
   phone: { type: String, unique: true, sparse: true },
-  password: { type: String, required: true },
+  password: { type: String }, // Made optional for phone auth
   role: { type: String, required: true, default: 'customer', enum: ['customer', 'salon_owner'] },
   loyaltyPoints: { type: Number, default: 0 },
   favoriteSalons: { type: [String], default: [] },

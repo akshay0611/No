@@ -3,7 +3,6 @@ import { z } from 'zod';
 import multer from 'multer';
 
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { MongoStorage } from "./mongoStorage";
 import {
   insertUserSchema,
@@ -86,41 +85,13 @@ const authenticateToken = (req: Express.Request, res: Express.Response, next: Fu
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  const clients = new Map<string, WebSocket>();
-
-  wss.on('connection', (ws: WebSocket, req) => {
-    console.log('New WebSocket connection');
-
-    ws.on('message', (message: string) => {
-      try {
-        const data = JSON.parse(message);
-        if (data.type === 'authenticate' && data.userId) {
-          clients.set(data.userId, ws);
-          console.log(`User ${data.userId} connected to WebSocket`);
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-
-    ws.on('close', () => {
-      for (const [userId, client] of Array.from(clients.entries())) {
-        if (client === ws) {
-          clients.delete(userId);
-          console.log(`User ${userId} disconnected from WebSocket`);
-          break;
-        }
-      }
-    });
-  });
-
+  // Use the centralized WebSocket manager for queue updates
   const broadcastQueueUpdate = (salonId: string, queueData: any) => {
-    const message = JSON.stringify({ type: 'queue_update', salonId, data: queueData });
-    clients.forEach((ws) => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(message);
-    });
+    wsManager.broadcastToAll(JSON.stringify({ 
+      type: 'queue_update', 
+      salonId, 
+      data: queueData 
+    }));
   };
 
   // ====================
@@ -201,6 +172,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ...user, password: undefined });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error });
+    }
+  });
+
+  // ====================
+  // PHONE AUTHENTICATION ROUTES
+  // ====================
+  
+  // Rate limiting store for OTP requests
+  const otpRateLimit = new Map<string, { count: number; resetTime: number }>();
+  
+  const checkRateLimit = (phoneNumber: string): boolean => {
+    const now = Date.now();
+    const key = phoneNumber;
+    const limit = otpRateLimit.get(key);
+    
+    if (!limit || now > limit.resetTime) {
+      // Reset or create new limit
+      otpRateLimit.set(key, { count: 1, resetTime: now + 5 * 60 * 1000 }); // 5 minutes
+      return true;
+    }
+    
+    if (limit.count >= 3) {
+      return false; // Rate limited
+    }
+    
+    limit.count++;
+    return true;
+  };
+
+  app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Validate phone number format
+      const phoneRegex = /^\+[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+
+      // Check rate limiting
+      if (!checkRateLimit(phoneNumber)) {
+        return res.status(429).json({ 
+          message: 'Too many OTP requests. Please try again in 5 minutes.' 
+        });
+      }
+
+      // Check if user already exists with this phone number
+      let user = await storage.getUserByPhone(phoneNumber);
+      let isNewUser = false;
+
+      if (!user) {
+        // Create minimal user with just phone number
+        isNewUser = true;
+        user = await storage.createUser({
+          name: '', // Will be filled later
+          email: '', // Will be filled later
+          phone: phoneNumber,
+          password: '', // No password for phone auth
+          role: 'customer',
+          emailVerified: false,
+          phoneVerified: false,
+          isVerified: false,
+        });
+      }
+
+      // Generate and send OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      // Store OTP in user record
+      await storage.updateUser(user.id, {
+        phoneOTP: otp,
+        otpExpiry: expiry,
+      });
+
+      // TODO: Send actual SMS via Twilio or other service
+      console.log(`📱 OTP for ${phoneNumber}: ${otp}`);
+
+      res.json({ 
+        success: true, 
+        isNewUser,
+        message: 'OTP sent successfully',
+        // For testing only - remove in production
+        debug: { otp }
+      });
+
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      res.status(500).json({ message: 'Failed to send OTP', error });
+    }
+  });
+
+  app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+      
+      if (!phoneNumber || !otp) {
+        return res.status(400).json({ message: 'Phone number and OTP are required' });
+      }
+
+      // Find user by phone number
+      const user = await storage.getUserByPhone(phoneNumber);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify OTP
+      if (user.phoneOTP !== otp) {
+        return res.status(400).json({ message: 'Invalid OTP' });
+      }
+
+      // Check if OTP has expired
+      if (!user.otpExpiry || user.otpExpiry < new Date()) {
+        return res.status(400).json({ message: 'OTP has expired' });
+      }
+
+      // Mark phone as verified and clear OTP
+      await storage.updateUser(user.id, {
+        phoneVerified: true,
+        isVerified: true, // For phone-only auth, consider user verified
+        phoneOTP: null,
+        otpExpiry: null,
+      });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          userId: user.id, 
+          phone: user.phone, 
+          role: user.role || 'customer' 
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // Return user data without sensitive fields
+      const { password, phoneOTP, otpExpiry, ...userWithoutSensitiveData } = user;
+      
+      res.json({ 
+        user: {
+          ...userWithoutSensitiveData,
+          phoneVerified: true,
+          isVerified: true,
+        }, 
+        token,
+        message: 'Phone verified successfully'
+      });
+
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      res.status(500).json({ message: 'Failed to verify OTP', error });
+    }
+  });
+
+  // Profile completion endpoint for progressive user data collection
+  app.put('/api/user/complete', authenticateToken, async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({ message: 'Name is required and must be at least 2 characters' });
+      }
+
+      // Validate email if provided
+      if (email && email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ message: 'Invalid email format' });
+        }
+
+        // Check if email is already taken by another user
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== req.user!.userId) {
+          return res.status(400).json({ message: 'Email is already registered to another account' });
+        }
+      }
+
+      // Update user profile
+      const updates: Partial<any> = {
+        name: name.trim(),
+      };
+
+      if (email && email.trim()) {
+        updates.email = email.trim().toLowerCase();
+        updates.emailVerified = false; // Reset email verification if email changes
+      }
+
+      const updatedUser = await storage.updateUser(req.user!.userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Return updated user without sensitive data
+      const { password, phoneOTP, emailOTP, otpExpiry, ...userWithoutSensitiveData } = updatedUser;
+      
+      res.json({ 
+        user: userWithoutSensitiveData,
+        message: 'Profile updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Profile completion error:', error);
+      res.status(500).json({ message: 'Failed to update profile', error });
     }
   });
 

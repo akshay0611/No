@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
 import { PulseLoader } from 'react-spinners';
 
-interface LoadingScreenProps {
+interface SkeletonLoadingScreenProps {
   onComplete: () => void;
-  onPhaseChange?: () => void;
 }
 
-export default function LoadingScreen({ onComplete, onPhaseChange }: LoadingScreenProps) {
-  const [currentScreen, setCurrentScreen] = useState(0);
+export default function SkeletonLoadingScreen({ onComplete }: SkeletonLoadingScreenProps) {
   const [currentQuote, setCurrentQuote] = useState('');
 
   // Array of salon/beauty related quotes
@@ -30,59 +27,20 @@ export default function LoadingScreen({ onComplete, onPhaseChange }: LoadingScre
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     setCurrentQuote(randomQuote);
     
-    console.log('LoadingScreen mounted, starting timers');
+    console.log('SkeletonLoadingScreen mounted, starting timer');
     
-    // First screen: Brand splash (3 seconds)
-    const timer1 = setTimeout(() => {
-      console.log('Switching to screen 1 (quote screen)');
-      if (onPhaseChange) {
-        onPhaseChange();
-        return; // Don't set up timer2 if we're switching phases
-      } else {
-        setCurrentScreen(1);
-      }
+    // Show skeleton loading for 3 seconds
+    const timer = setTimeout(() => {
+      console.log('SkeletonLoadingScreen calling onComplete');
+      onComplete();
     }, 3000);
 
-    // Second screen: Loading with message (3 seconds) - only if no phase change
-    let timer2: NodeJS.Timeout;
-    if (!onPhaseChange) {
-      timer2 = setTimeout(() => {
-        console.log('Calling onComplete');
-        onComplete();
-      }, 6000);
-    }
-
     return () => {
-      clearTimeout(timer1);
-      if (timer2) clearTimeout(timer2);
+      clearTimeout(timer);
     };
-  }, [onComplete, onPhaseChange]);
+  }, [onComplete]);
 
-  console.log('LoadingScreen render, currentScreen:', currentScreen);
-
-  if (currentScreen === 0) {
-    // First Screen: Brand Splash (Salon-themed)
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center z-50">
-        <div className="text-center">
-          {/* Logo */}
-          <div className="mb-8">
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-2xl mb-6">
-              <Sparkles className="h-10 w-10 text-purple-600" />
-            </div>
-            <h1 className="text-4xl font-bold text-white tracking-wide">
-              Smart<span className="text-yellow-300">Q</span>
-            </h1>
-            <p className="text-purple-100 text-sm mt-2 font-medium">
-              Smart Queue Management
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Second Screen: Skeleton Loading with Components (Salon-themed)
+  // Skeleton Loading with Components (Salon-themed)
   return (
     <div className="fixed inset-0 bg-white z-50">
       {/* Skeleton Header */}

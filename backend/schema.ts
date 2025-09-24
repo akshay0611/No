@@ -6,13 +6,20 @@ import { z } from "zod";
 // ---------------- USERS ----------------
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  name: text("name"),
+  email: text("email").unique(),
   phone: text("phone").unique(),
-  password: text("password").notNull(),
+  password: text("password"),
   role: text("role").notNull().default("customer"),
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
   favoriteSalons: jsonb("favorite_salons").$type<string[]>().default([]),
+  // OTP and verification fields
+  phoneOTP: text("phone_otp"),
+  emailOTP: text("email_otp"),
+  otpExpiry: timestamp("otp_expiry"),
+  phoneVerified: boolean("phone_verified").default(false),
+  emailVerified: boolean("email_verified").default(false),
+  isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -90,9 +97,18 @@ export const reviews = pgTable("reviews", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   loyaltyPoints: true,
+  phoneOTP: true,
+  emailOTP: true,
+  otpExpiry: true,
+  phoneVerified: true,
+  emailVerified: true,
+  isVerified: true,
   createdAt: true,
 }).extend({
-  phone: z.union([z.string().min(10).max(15), z.literal('')]).optional().nullable(),
+  name: z.string().optional().nullable(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  password: z.string().optional().nullable(),
   role: z.enum(["customer", "salon_owner"]).default("customer"),
 });
 

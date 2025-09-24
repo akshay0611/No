@@ -34,6 +34,11 @@ export class MongoStorage implements IStorage {
     return user ? user as unknown as User : undefined;
   }
 
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const user = await UserModel.findOne({ phone }).lean();
+    return user ? user as unknown as User : undefined;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);

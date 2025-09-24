@@ -10,6 +10,11 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   updateUser: (user: User) => void;
+  // Progressive authentication support
+  authFlow: 'customer' | 'admin' | null;
+  setAuthFlow: (flow: 'customer' | 'admin' | null) => void;
+  isProfileComplete: boolean;
+  needsProfileCompletion: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +27,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [authFlow, setAuthFlow] = useState<'customer' | 'admin' | null>(null);
 
   // Check for stored token on mount
   useEffect(() => {
@@ -92,6 +98,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('smartq_user', JSON.stringify(updatedUserData));
   };
 
+  // Progressive authentication helpers
+  const needsProfileCompletion = (): boolean => {
+    if (!user) return false;
+    // User needs profile completion if they don't have a name (phone-only auth)
+    return !user.name || user.name.trim() === '';
+  };
+
+  const isProfileComplete = user ? !needsProfileCompletion() : false;
+
   // Note: Authorization headers are now handled in the apiRequest function
   // which reads the token from localStorage
 
@@ -102,6 +117,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     isLoading: !isInitialized || isVerifying,
     updateUser,
+    authFlow,
+    setAuthFlow,
+    isProfileComplete,
+    needsProfileCompletion,
   };
 
   return (
