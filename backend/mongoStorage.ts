@@ -217,6 +217,7 @@ export class MongoStorage implements IStorage {
       id,
       position,
       status: "waiting",
+      timestamp: new Date(), // Add timestamp field
       createdAt: new Date(),
       userId: queue.userId, // Add userId to the newQueue object
     };
