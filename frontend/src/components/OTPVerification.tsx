@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Mail, MessageCircle, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface OTPVerificationProps {
   userId: string;
@@ -23,10 +24,12 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
   const [displayedPhoneOTP, setDisplayedPhoneOTP] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState({ email: false, phone: false });
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const sendEmailOTP = async () => {
     setLoading(true);
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/send-email-otp`, {
@@ -43,18 +46,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         });
       } else {
         const error = await response.json();
-        toast({
-          title: "Failed to send email OTP",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to send email OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send email OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to send email OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -64,6 +59,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
     if (!phone) return;
     
     setLoading(true);
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/send-phone-otp`, {
@@ -82,18 +78,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         });
       } else {
         const error = await response.json();
-        toast({
-          title: "Failed to send SMS OTP",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to send SMS OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send SMS OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to send SMS OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -101,15 +89,12 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
   const verifyEmailOTP = async () => {
     if (!emailOTP || emailOTP.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter a 6-digit OTP.",
-        variant: "destructive",
-      });
+      setGeneralError("Please enter a 6-digit OTP.");
       return;
     }
 
     setLoading(true);
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/verify-email-otp`, {
@@ -131,18 +116,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         }
       } else {
         const error = await response.json();
-        toast({
-          title: "Verification Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to verify email OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify email OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to verify email OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -150,15 +127,12 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
   const verifyPhoneOTP = async () => {
     if (!phoneOTP || phoneOTP.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter a 6-digit OTP.",
-        variant: "destructive",
-      });
+      setGeneralError("Please enter a 6-digit OTP.");
       return;
     }
 
     setLoading(true);
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/verify-phone-otp`, {
@@ -180,18 +154,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         }
       } else {
         const error = await response.json();
-        toast({
-          title: "Verification Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to verify phone OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify phone OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to verify phone OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -199,6 +165,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
   const resendEmailOTP = async () => {
     setResendLoading({ ...resendLoading, email: true });
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/resend-email-otp`, {
@@ -214,18 +181,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         });
       } else {
         const error = await response.json();
-        toast({
-          title: "Failed to resend OTP",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to resend email OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend email OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to resend email OTP. Please try again.");
     } finally {
       setResendLoading({ ...resendLoading, email: false });
     }
@@ -233,6 +192,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
   const resendPhoneOTP = async () => {
     setResendLoading({ ...resendLoading, phone: true });
+    setGeneralError(null);
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
       const response = await fetch(`${baseURL}/api/auth/resend-phone-otp`, {
@@ -248,18 +208,10 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
         });
       } else {
         const error = await response.json();
-        toast({
-          title: "Failed to resend OTP",
-          description: error.message,
-          variant: "destructive",
-        });
+        setGeneralError(error.message || "Failed to resend SMS OTP. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend SMS OTP. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      setGeneralError(error.message || "Failed to resend SMS OTP. Please try again.");
     } finally {
       setResendLoading({ ...resendLoading, phone: false });
     }
@@ -273,6 +225,14 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
           We need to verify your email and phone number to complete your registration.
         </p>
       </div>
+
+      {generalError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{generalError}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Email Verification */}
       <Card>
