@@ -51,7 +51,7 @@ export default function QueueSummary() {
         userId: user.id,
         salonId: items[0].salonId,
         serviceIds: serviceIds,
-        totalPrice: finalTotal, // Keep as decimal
+        totalPrice: finalTotal, // Send as number, schema will convert to string
         appliedOffers: appliedOfferIds,
         status: "waiting"
       });
