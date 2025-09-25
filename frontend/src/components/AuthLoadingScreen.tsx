@@ -51,7 +51,7 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
         </div> */}
 
         {/* Loading Dots */}
-        <div className="flex justify-center space-x-2 mt-8">
+        {/* <div className="flex justify-center space-x-2 mt-8">
           {[0, 1, 2].map((index) => (
             <div
               key={index}
@@ -62,7 +62,7 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
               }`}
             />
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
