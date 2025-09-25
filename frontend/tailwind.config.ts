@@ -66,6 +66,8 @@ export default {
         sans: ["var(--font-sans)", "Inter", "sans-serif"],
         serif: ["var(--font-serif)", "Georgia", "serif"],
         mono: ["var(--font-mono)", "Menlo", "monospace"],
+        oswald: ["Oswald", "sans-serif"],
+        bricolage: ["Bricolage Grotesque", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
@@ -97,6 +99,7 @@ export default {
         "pulse-pink": "pulse-pink 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fade-in 0.5s ease-out",
       },
+      
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
