@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Mail, Lock, Eye, EyeOff, Shield, UserCheck, User, Phone, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield, UserCheck, User, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "../lib/api";
 import { loginSchema, insertUserSchema } from "../lib/schemas";
 import OTPVerification from "./OTPVerification";
-
+import type { User as UserType } from "../types";
 
 const registerFormSchema = insertUserSchema.extend({
   confirmPassword: z.string().min(6),
@@ -35,10 +34,8 @@ export default function AdminLoginFlow({
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [flow, setFlow] = useState<"login" | "register">("login");
   const [showOTPVerification, setShowOTPVerification] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState<any>(null);
-  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [registeredUser, setRegisteredUser] = useState<(UserType & { password?: string }) | null>(null);
   const { toast } = useToast();
 
   const loginForm = useForm<AdminLoginForm>({
@@ -49,10 +46,6 @@ export default function AdminLoginFlow({
     },
     mode: "onChange",
   });
-
-  const onLoginSubmit = (values: AdminLoginForm) => {
-    loginMutation.mutate(values);
-  };
 
   const registerForm = useForm<AdminRegisterForm>({
     resolver: zodResolver(registerFormSchema),
@@ -73,113 +66,159 @@ export default function AdminLoginFlow({
       // Check if user is salon owner (admin)
       if (data.user.role === 'salon_owner') {
         toast({
-          title: "Login Successful!",
-          description: "Welcome back to SmartQ Admin!",
+          title: "Welcome back!",
+          description: "You've been successfully logged in as salon owner.",
         });
-        setGeneralError(null);
         onAuthSuccess(data.user, data.token);
       } else {
-        setGeneralError("Access Denied: This account is not authorized for admin access.");
+        toast({
+          title: "Access Denied",
+          description: "This login is for salon owners only. Please use customer login instead.",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: any) => {
-      setGeneralError(error.message || "Invalid email or password. Please try again.");
+      // Check if user needs verification
+      if (error.message.includes('not verified') && error.requiresVerification) {
+        const userData = {
+          id: error.userId,
+          name: '', // Will be filled from server
+          email: loginForm.getValues('email'),
+          phone: '',
+          role: 'salon_owner',
+          loyaltyPoints: 0,
+          favoriteSalons: [],
+          createdAt: new Date(),
+          password: loginForm.getValues('password') // Store password for auto-login after verification
+        };
+        setRegisteredUser(userData);
+        setShowOTPVerification(true);
+        toast({
+          title: "Account Verification Required",
+          description: "Please complete your email and phone verification.",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const registerMutation = useMutation({
-    mutationFn: api.auth.register,
-    onSuccess: (data) => {
-      setRegisteredUser(data);
+    mutationFn: (userData: Omit<AdminRegisterForm, 'confirmPassword'>) => {
+      console.log("Sending admin registration with role:", userData.role);
+      return api.auth.register(userData);
+    },
+    onSuccess: (data: any) => {
+      // Store user data for OTP verification including password for auto-login
+      const registrationData = registerForm.getValues();
+      setRegisteredUser({
+        ...data.user,
+        password: registrationData.password // Store password for auto-login after verification
+      });
       setShowOTPVerification(true);
       toast({
-        title: "Registration Successful!",
-        description: "Please verify your email and phone number to continue.",
+        title: "Admin Account Created!",
+        description: "Please verify your email and phone number to complete registration.",
       });
-      setGeneralError(null);
     },
     onError: (error: any) => {
-      setGeneralError(error.message || "Registration failed. Please try again.");
-    },
-  });
-
-  const verifyOTPMutation = useMutation({
-    mutationFn: api.auth.verifyOTP,
-    onSuccess: async (data) => {
       toast({
-        title: "Verification Successful!",
-        description: "You can now log in.",
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
       });
-      setShowOTPVerification(false);
-      setFlow("login");
-      setGeneralError(null);
-  
-      // Attempt to auto-login if password was stored
-      if (registeredUser?.password) {
-        try {
-          await loginMutation.mutateAsync({
-            email: registeredUser.email,
-            password: registeredUser.password,
-          });
-        } catch (error) {
-          console.error('Auto-login after verification failed:', error);
-          setGeneralError("Verification complete, but auto-login failed. Please login manually.");
-        }
-      }
-    },
-    onError: (error: any) => {
-      setGeneralError(error.message || "OTP verification failed. Please try again.");
     },
   });
 
-  const resendOTPMutation = useMutation({
-    mutationFn: api.auth.resendOTP,
-    onSuccess: () => {
-      toast({
-        title: "OTP Resent",
-        description: "A new OTP has been sent to your email and phone.",
-      });
-      setGeneralError(null);
-    },
-    onError: (error: any) => {
-      setGeneralError(error.message || "Failed to resend OTP. Please try again.");
-    },
-  });
-
-  const handleLoginSubmit = loginForm.handleSubmit((data) => {
-    setGeneralError(null);
+  const onLoginSubmit = (data: AdminLoginForm) => {
+    console.log('Admin login form submitted with:', data);
     loginMutation.mutate(data);
-  });
-
-  const handleRegisterSubmit = registerForm.handleSubmit((data) => {
-    setGeneralError(null);
-    registerMutation.mutate(data);
-  });
-
-  const handleOTPVerificationSubmit = async (otp: string) => {
-    setGeneralError(null);
-    if (registeredUser?.id) {
-      verifyOTPMutation.mutate({ userId: registeredUser.id, otp });
-    }
   };
 
-  const handleResendOTP = () => {
-    setGeneralError(null);
-    if (registeredUser?.id) {
-      resendOTPMutation.mutate({ userId: registeredUser.id });
+  const onRegisterSubmit = (data: AdminRegisterForm) => {
+    console.log('Admin register form submitted with:', data);
+    const { confirmPassword, ...userData } = data;
+
+    console.log('Sending to API with role:', userData.role);
+    registerMutation.mutate(userData);
+  };
+
+  const handleVerificationComplete = async () => {
+    if (registeredUser && registeredUser.password) {
+      try {
+        // Automatically log in the user after successful verification
+        const loginData = {
+          email: registeredUser.email,
+          password: registeredUser.password
+        };
+
+        console.log('Auto-logging in admin user after verification...', {
+          email: loginData.email,
+          hasPassword: !!loginData.password,
+          userRole: registeredUser.role
+        });
+        const data = await api.auth.login(loginData);
+
+        // Check if user is salon owner
+        if (data.user.role === 'salon_owner') {
+          toast({
+            title: "Welcome to SmartQ Admin!",
+            description: "Your salon owner account has been verified successfully.",
+          });
+          onAuthSuccess(data.user, data.token);
+        } else {
+          toast({
+            title: "Access Denied",
+            description: "This account is not authorized for admin access.",
+            variant: "destructive",
+          });
+        }
+
+        // Clean up
+        setRegisteredUser(null);
+        setShowOTPVerification(false);
+
+      } catch (error) {
+        console.error('Auto-login after verification failed:', error);
+        toast({
+          title: "Verification Complete!",
+          description: "Please login with your credentials to continue.",
+        });
+
+        // Fallback: redirect to login form with email pre-filled
+        loginForm.setValue('email', registeredUser.email);
+        setShowOTPVerification(false);
+        setIsLogin(true);
+        setRegisteredUser(null);
+      }
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-      <div className="w-full max-w-md space-y-8">
-        {generalError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{generalError}</AlertDescription>
-          </Alert>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Back Button */}
+      <button
+        onClick={onSwitchToCustomer}
+        className="absolute top-6 left-6 z-20 flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+        aria-label="Back to customer login"
+      >
+        <ArrowLeft className="w-5 h-5 text-gray-700" />
+      </button>
+
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-slate-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-indigo-300/10 to-blue-300/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Show OTP Verification or Auth Form */}
         {showOTPVerification && registeredUser ? (
           <OTPVerification
             userId={registeredUser.id}
