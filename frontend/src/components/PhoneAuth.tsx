@@ -98,7 +98,7 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
       {/* Banner Section */}
       <div
         className="relative min-h-[46vh] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/altQ.png')" }}
+        style={{ backgroundImage: "url('/altQ2.png')" }}
       >
         {/* Decorative floating particles */}
         <div className="absolute top-1/4 left-1/3 w-3 h-3 bg-white/40 rounded-full animate-bounce"></div>
