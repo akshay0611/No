@@ -93,20 +93,11 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Back Button */}
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="absolute top-6 left-6 z-20 flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-700" />
-        </button>
-      )}
+     
 
       {/* Banner Section */}
       <div
-        className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat"
+        className="relative min-h-[46vh] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/altQ.png')" }}
       >
         {/* Decorative floating particles */}
@@ -116,29 +107,29 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
       </div>
 
       {/* Branding */}
-      <div className="text-center z-10 px-6">
-        <p className="text-blue-600 text-lg mt-4 font-medium tracking-wide">
-          India's #1 Salon Booking App
-        </p>
-      </div>
+      <div className="text-center z-10 px-4">
+        <h2 className="text-slate-900 text-3xl mt-4 font-extrabold tracking-wide font-bricolage">
+        India's Leading Salon Booking Platform
+        </h2>
+      </div> 
 
       {/* Form Section */}
-      <div className="flex-1 bg-white px-4 py-6">
+      <div className="flex-1 bg-white px-4 py-4">
         <div className="w-full max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-600 mb-2">
+          <div className="text-center mb-4">
+            <h2 className="text-l text-lg text-blue-300 ">
               ---- Log in or sign up ----
             </h2>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* Phone Input */}
             <div className="flex gap-3">
               <div className="relative">
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="w-28 h-14 text-base rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white appearance-none pl-3 pr-8 cursor-pointer font-medium outline-none"
+                  className="w-28 h-10 text-base rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white appearance-none pl-3 pr-8 cursor-pointer font-medium outline-none"
                 >
                   {countryCodes.map((country) => (
                     <option key={country.code} value={country.code}>
@@ -154,7 +145,7 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
                   placeholder="Enter Phone Number"
                   value={phoneNumber}
                   onChange={handlePhoneChange}
-                  className="w-full h-14 pl-4 pr-4 text-base rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white transition-all duration-300 outline-none placeholder-gray-400"
+                  className="w-full h-10 pl-4 pr-4 text-base rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white transition-all duration-300 outline-none placeholder-gray-400"
                   maxLength={countryCode === "+91" ? 11 : 15}
                   autoComplete="tel"
                   aria-describedby={error ? "phone-error" : undefined}
@@ -177,7 +168,7 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
             <button
               onClick={handleSendOTP}
               disabled={isLoading || !phoneNumber.trim()}
-              className="w-full h-14 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+              className="w-full h-10 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -216,7 +207,7 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
           </div>
 
           {/* Admin Access */}
-          <div className="text-center pt-6 border-t border-gray-200 mt-8">
+          <div className="text-center pt-4 border-t border-gray-200 ">
             <p className="text-sm text-gray-600">
               Salon owner?{" "}
               <button
@@ -231,7 +222,7 @@ export default function PhoneAuth({ onOTPSent, onBack }: PhoneAuthProps) {
           </div>
 
           {/* Terms */}
-          <div className="text-center mt-8">
+          <div className="text-center mt-4">
             <p className="text-sm text-gray-500 leading-relaxed px-4">
               By continuing, you agree to our{" "}
               <span className="text-gray-700 font-medium cursor-pointer hover:underline">Terms of Service</span>{" "}
