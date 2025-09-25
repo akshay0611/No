@@ -34,28 +34,21 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
   const CurrentIcon = messages[currentMessage].icon;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 flex items-center justify-center z-50">
-      <div className="text-center">
-        {/* Logo */}
-        <div className="mb-12">
-          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-2xl mb-6 animate-pulse">
-            <Sparkles className="h-10 w-10 text-purple-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-white tracking-wide mb-2">
-            Smart<span className="text-yellow-300">Q</span>
-          </h1>
-          <p className="text-purple-100 text-sm font-medium">
-            Skip the wait, book your spot
-          </p>
-        </div>
-
+    <div 
+    className="fixed inset-0 flex items-center justify-center z-50 bg-no-repeat"
+    style={{ backgroundImage: "url('/altQ.png')", backgroundSize: "100% 100%", backgroundPosition: "center" }}
+  >
+   
+      
+      {/* Content overlay */}
+      <div className="relative text-center">
         {/* Loading Message */}
-        <div className="flex items-center justify-center space-x-3">
+        {/* <div className="flex items-center justify-center space-x-3">
           <CurrentIcon className="h-5 w-5 text-white animate-spin" />
           <p className="text-white text-lg font-medium">
             {messages[currentMessage].text}
           </p>
-        </div>
+        </div> */}
 
         {/* Loading Dots */}
         <div className="flex justify-center space-x-2 mt-8">
