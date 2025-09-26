@@ -226,8 +226,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create minimal user with just phone number
         isNewUser = true;
         user = await storage.createUser({
-          name: null, // Will be filled later
-          email: null, // Will be filled later - use null instead of empty string
+
+         
+
+          name: '', // Will be filled later
+          email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
+
           phone: phoneNumber,
           password: null, // No password for phone auth - use null instead of empty string
           role: 'customer',
