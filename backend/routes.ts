@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isNewUser = true;
         user = await storage.createUser({
           name: '', // Will be filled later
-          email: '', // Will be filled later
+          email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
           phone: phoneNumber,
           password: '', // No password for phone auth
           role: 'customer',
