@@ -418,7 +418,7 @@ export default function Home() {
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
         /* Logged In User - Personalized Welcome */
-        <section className="relative overflow-hidden min-h-[60vh] flex items-center">
+        <section className="relative overflow-hidden min-h-[45vh] flex items-center">
           {/* Background Image */}
           <div className="absolute inset-0">
             <img 
@@ -448,11 +448,11 @@ export default function Home() {
                     </span>
                   )}
                 </div>
-                <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 tracking-tight">
-                  Welcome back, {user.name?.split(' ')[0] || 'User'}! 👋
+                <h1 className="text-3xl font-oswald md:text-5xl font-bold text-white mb-3 tracking-tight">
+                  Welcome back, {user.name?.split(' ')[0] || 'User'}! 
                 </h1>
-                <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto">
-                  Ready to skip the wait? Find your perfect salon below.
+                <p className="text-white/90 text-sm font-bricolage tracking-tighter md:text-xl max-w-2xl mx-auto">
+                Ready to skip the wait? Discover your ideal salon now!
                 </p>
               </div>
               
@@ -462,8 +462,8 @@ export default function Home() {
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <Input 
                     type="text" 
-                    placeholder="Search salons or services..." 
-                    className="pl-12 pr-4 py-4 text-lg border-0 focus-visible:ring-2 focus-visible:ring-white/50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl"
+                    placeholder="Search salons or services ..." 
+                    className="pl-12 font-bricolage pr-4 py-2 text-lg border-0 focus-visible:ring-2 focus-visible:ring-white/50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     data-testid="input-search"
@@ -545,12 +545,12 @@ export default function Home() {
       )}
 
 {/* Salon Type Selector */}
-<section className="py-4 px-4 bg-white border-b border-gray-200">
+<section className="py-4 px-4  border-b border-gray-200">
   <div className="max-w-md mx-auto">
     <div className="flex gap-2">
       <button
         onClick={() => setSelectedSalonType('men')}
-        className={`flex-1 px-4 py-3 text-sm font-medium rounded-lg border shadow-sm transition-colors ${
+        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
           selectedSalonType === 'men'
             ? 'bg-blue-600 text-white border-blue-600'
             : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
@@ -560,7 +560,7 @@ export default function Home() {
       </button>
       <button
         onClick={() => setSelectedSalonType('women')}
-        className={`flex-1 px-4 py-3 text-sm font-medium rounded-lg border shadow-sm transition-colors ${
+        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
           selectedSalonType === 'women'
             ? 'bg-pink-600 text-white border-pink-600'
             : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
@@ -570,7 +570,7 @@ export default function Home() {
       </button>
       <button
         onClick={() => setSelectedSalonType('unisex')}
-        className={`flex-1 px-4 py-3 text-sm font-medium rounded-lg border shadow-sm transition-colors ${
+        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
           selectedSalonType === 'unisex'
             ? 'bg-purple-600 text-white border-purple-600'
             : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
@@ -596,7 +596,7 @@ export default function Home() {
                 {currentBannerImages.map((src, index) => (
                   <CarouselItem key={index}>
                     <div className="p-1">
-                      <Card className="overflow-hidden rounded-2xl">
+                      <Card className="overflow-hidden rounded-xl">
                         <CardContent className="flex aspect-video items-center justify-center p-0">
                           <img 
                             src={src} 
@@ -615,7 +615,7 @@ export default function Home() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
             <Button
-              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-300 ${
+              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-500 ${
                 !showFavoritesSection 
                   ? `${selectedSalonType === 'men' 
                       ? 'bg-gradient-to-r from-blue-600 to-slate-600' 
@@ -630,7 +630,7 @@ export default function Home() {
               Recommended
             </Button>
             <Button
-              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-300 ${
+              className={`flex-1 h-14 font-semibold rounded-xl shadow-lg transition-all duration-500 ${
                 showFavoritesSection 
                   ? `${selectedSalonType === 'men' 
                       ? 'bg-gradient-to-r from-blue-600 to-slate-600' 
@@ -660,8 +660,8 @@ export default function Home() {
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              {showFavoritesSection ? "💖 Your Favorites" : "🔥 Trending Salons"}
+            <h2 className="text-3xl font-bold  bg-gray-700 font-bricolage bg-clip-text text-transparent">
+              {showFavoritesSection ? " Your Favorites" : " Trending Salons"}
             </h2>
             <div className="text-sm text-gray-500">
               {showFavoritesSection ? `${favoriteSalons.length} saved` : `${topSalonsWithOffers.length} available`}
@@ -747,7 +747,7 @@ export default function Home() {
       {/* Explore Section */}
       <section className="py-6 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Explore</h2>
+          <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-4">Explore</h2>
           <div className="flex gap-3 justify-center mb-6">
             <Button 
               onClick={() => setExploreFilter('highly-rated')}
@@ -795,7 +795,7 @@ export default function Home() {
       {/* What's on Your Mind Section - Circular Categories like Food Delivery */}
       <section className="py-6">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">What's on your mind?</h2>
+          <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-6 text-center">What's on your mind?</h2>
           
           {/* Circular Service Categories Grid */}
           <div className="grid grid-cols-4 md:grid-cols-8 gap-6 max-w-4xl mx-auto">
@@ -824,7 +824,7 @@ export default function Home() {
       {/* All Salons Section */}
       <section id="all-salons" ref={allSalonsRef} className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">All Salons</h2>
+          <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-6">All Salons</h2>
           
           {isLoading ? (
             <div className="space-y-4">
@@ -856,7 +856,7 @@ export default function Home() {
               </p>
               {!searchQuery && !location && (
                 <Link href="/auth">
-                  <Button size="lg" className="font-semibold">
+                  <Button size="lg" className="font-semibold bg-blue-700">
                     Become a Salon Owner
                   </Button>
                 </Link>
