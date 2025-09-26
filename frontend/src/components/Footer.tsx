@@ -3,90 +3,96 @@ import { Clock, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-background border-t border-border py-8 sm:py-12">
+    <footer className="bg-white border-t border-blue-100 py-6 sm:py-8 md:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-          {/* Company Info */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-1">
-            <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(342, 95%, 62%)' }}>
-                <Clock className="h-4 w-4 text-white" />
+        {/* Mobile-First Layout */}
+        <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-4 md:gap-8">
+          {/* Company Info - Mobile First */}
+          <div className="text-center md:text-left md:col-span-1">
+            <div className="flex items-center justify-center md:justify-start space-x-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
+                <Clock className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg sm:text-xl font-bold text-foreground">SmartQ</span>
+              <span className="text-2xl md:text-xl font-bold text-blue-900">AltQ</span>
             </div>
-            <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
-              Revolutionizing salon experiences with smart queue management and real-time updates.
+            <p className="text-gray-600 mb-6 text-center md:text-left leading-relaxed px-4 md:px-0">
+              Revolutionizing salon experiences with AltQ management and real-time updates.
             </p>
-            <div className="flex space-x-3 sm:space-x-4">
+            
+            {/* Social Links - Mobile Centered */}
+            <div className="flex justify-center md:justify-start space-x-4 mb-8 md:mb-0">
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200"
+                className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
                 data-testid="link-facebook"
               >
-                <Facebook className="h-4 w-4 sm:h-4 sm:w-4" />
+                <Facebook className="h-4 w-4" />
               </a>
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200"
+                className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
                 data-testid="link-twitter"
               >
-                <Twitter className="h-4 w-4 sm:h-4 sm:w-4" />
+                <Twitter className="h-4 w-4" />
               </a>
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200"
+                className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
                 data-testid="link-instagram"
               >
-                <Instagram className="h-4 w-4 sm:h-4 sm:w-4" />
+                <Instagram className="h-4 w-4" />
               </a>
               <a
                 href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200"
+                className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
                 data-testid="link-linkedin"
               >
-                <Linkedin className="h-4 w-4 sm:h-4 sm:w-4" />
+                <Linkedin className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          {/* Quick Links Container - spans remaining columns */}
-          <div className="col-span-1 sm:col-span-2 md:col-span-3">
-            <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-8">
+          {/* Quick Links - Grid Layout for Mobile and Desktop */}
+          <div className="md:col-span-3">
+            <div className="grid grid-cols-3 gap-3 md:gap-8">
+              
               {/* For Customers */}
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">For Customers</h4>
-                <ul className="space-y-1.5 sm:space-y-2">
-                  <li>
+              <div className="bg-blue-50 rounded-xl p-3 md:bg-transparent md:p-0">
+                <h4 className="font-semibold text-blue-900 mb-3 text-center md:text-left text-sm md:text-base">
+                   Customers
+                </h4>
+                <ul className="space-y-2 md:space-y-2">
+                  <li className="text-center md:text-left">
                     <Link
                       href="/"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-find-salons"
                     >
                       Find Salons
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <Link
                       href="/queue"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-track-queue"
                     >
                       Track Queue
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <a
                       href="#"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-loyalty"
                     >
                       Loyalty Program
                     </a>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <a
                       href="#"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-reviews"
                     >
                       Reviews
@@ -96,40 +102,42 @@ export default function Footer() {
               </div>
 
               {/* For Salons */}
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">For Salons</h4>
-                <ul className="space-y-1.5 sm:space-y-2">
-                  <li>
+              <div className="bg-blue-50 rounded-xl p-3 md:bg-transparent md:p-0">
+                <h4 className="font-semibold text-blue-900 mb-3 text-center md:text-left text-sm md:text-base">
+                  For Salons
+                </h4>
+                <ul className="space-y-2 md:space-y-2">
+                  <li className="text-center md:text-left">
                     <Link
                       href="/auth"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-join"
                     >
-                      Join SmartQ
+                      Join AltQ
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <Link
                       href="/dashboard"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-dashboard-footer"
                     >
                       Dashboard
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <a
                       href="#"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-analytics"
                     >
                       Analytics
                     </a>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <a
                       href="#"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-pricing"
                     >
                       Pricing
@@ -139,40 +147,42 @@ export default function Footer() {
               </div>
 
               {/* Support */}
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">Support</h4>
-                <ul className="space-y-1.5 sm:space-y-2">
-                  <li>
+              <div className="bg-blue-50 rounded-xl p-3 md:bg-transparent md:p-0">
+                <h4 className="font-semibold text-blue-900 mb-3 text-center md:text-left text-sm md:text-base">
+                  Support
+                </h4>
+                <ul className="space-y-2 md:space-y-2">
+                  <li className="text-center md:text-left">
                     <Link
                       href="/help"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-help"
                     >
                       Help Center
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <Link
                       href="/contact"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-contact"
                     >
                       Contact Us
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <Link
                       href="/privacy"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-privacy"
                     >
                       Privacy Policy
                     </Link>
                   </li>
-                  <li>
+                  <li className="text-center md:text-left">
                     <Link
                       href="/terms"
-                      className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors duration-200"
+                      className="text-gray-700 hover:text-blue-600 transition-colors duration-200 text-xs md:text-base block"
                       data-testid="link-terms"
                     >
                       Terms of Service
@@ -184,9 +194,10 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="hidden md:block border-t border-border mt-8 pt-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2025 SmartQ. All rights reserved.
+        {/* Copyright */}
+        <div className="mt-8 pt-6 border-t border-blue-100 text-center">
+          <p className="text-gray-500 text-sm">
+            © 2025 AltQ. All rights reserved.
           </p>
         </div>
       </div>
