@@ -5,12 +5,12 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Mail, X, Sparkles } from "lucide-react";
+import { User, Mail, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const profileCompletionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name is too long"),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
 });
 
 type ProfileCompletionForm = z.infer<typeof profileCompletionSchema>;
@@ -20,15 +20,13 @@ interface BookingDetailsModalProps {
   onComplete: (details: { name: string; email?: string }) => void;
   onCancel: () => void;
   salonName?: string;
-  serviceName?: string;
 }
 
 export default function BookingDetailsModal({
   isOpen,
   onComplete,
   onCancel,
-  salonName = "the salon",
-  serviceName = "your service"
+  salonName = "the salon"
 }: BookingDetailsModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -47,7 +45,7 @@ export default function BookingDetailsModal({
 
     try {
       const { api } = await import("../lib/api");
-      await api.auth.completeProfile(data.name, data.email || undefined);
+      await api.auth.completeProfile(data.name, data.email);
 
       toast({
         title: "Profile Updated!",
@@ -56,7 +54,7 @@ export default function BookingDetailsModal({
 
       onComplete({
         name: data.name,
-        email: data.email || undefined,
+        email: data.email,
       });
     } catch (error: any) {
       toast({
@@ -107,11 +105,11 @@ export default function BookingDetailsModal({
           <div className="space-y-2">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <Mail className="w-4 h-4" />
-              Email Address <span className="text-gray-400 text-xs">(optional)</span>
+              Email Address <span className="text-red-500">*</span>
             </label>
             <Input
               type="email"
-              placeholder="Enter your email (optional)"
+              placeholder="Enter your email address"
               className="h-12 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
               {...form.register("email")}
             />
@@ -137,7 +135,7 @@ export default function BookingDetailsModal({
                 </h4>
                 <p className="text-purple-700 text-xs leading-relaxed">
                   Your name helps the salon staff identify you when it's your turn. 
-                  Email is optional but recommended for booking confirmations.
+                  Email is required for booking confirmations and updates.
                 </p>
               </div>
             </div>

@@ -41,7 +41,10 @@ export class MongoStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    // Only hash password if it exists and is not empty
+    const hashedPassword = insertUser.password && insertUser.password.trim() !== '' 
+      ? await bcrypt.hash(insertUser.password, 10) 
+      : undefined;
 
     const userObject = {
       id,
@@ -214,6 +217,7 @@ export class MongoStorage implements IStorage {
       id,
       position,
       status: "waiting",
+      timestamp: new Date(), // Add timestamp field
       createdAt: new Date(),
       userId: queue.userId, // Add userId to the newQueue object
     };

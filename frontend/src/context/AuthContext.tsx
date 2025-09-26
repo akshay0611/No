@@ -101,8 +101,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Progressive authentication helpers
   const needsProfileCompletion = (): boolean => {
     if (!user) return false;
-    // User needs profile completion if they don't have a name (phone-only auth)
-    return !user.name || user.name.trim() === '';
+    // User needs profile completion if they don't have a name or email (phone-only auth)
+    return !user.name || user.name.trim() === '' || !user.email || user.email.trim() === '';
   };
 
   const isProfileComplete = user ? !needsProfileCompletion() : false;

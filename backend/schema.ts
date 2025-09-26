@@ -62,7 +62,7 @@ export const queues = pgTable("queues", {
   salonId: varchar("salon_id").notNull().references(() => salons.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   serviceIds: jsonb("service_ids").$type<string[]>().notNull(), // Multiple services
-  totalPrice: integer("total_price").notNull(), // Total price for all services
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(), // Total price for all services
   appliedOffers: jsonb("applied_offers").$type<string[]>().default([]), // Applied offer IDs
   status: text("status", { enum: ["waiting", "in-progress", "completed", "no-show"] }).notNull().default("waiting"),
   position: integer("position").notNull(),
@@ -127,6 +127,12 @@ export const insertQueueSchema = createInsertSchema(queues).omit({
   id: true,
   position: true,
   timestamp: true,
+}).extend({
+  // Allow totalPrice to be either number or string, but keep as number
+  totalPrice: z.union([
+    z.number(),
+    z.string().transform(s => parseFloat(s))
+  ])
 });
 
 // Pure Zod schema for offers (MongoDB compatible)

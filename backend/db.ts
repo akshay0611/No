@@ -73,8 +73,9 @@ const queueSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true }, 
   appliedOffers: { type: [String], default: [] }, 
   position: { type: Number, required: true },
-  status: { type: String, enum: ['waiting', 'in_progress', 'completed', 'cancelled'], default: 'waiting' },
-  estimatedTime: { type: Date },
+  status: { type: String, enum: ['waiting', 'in-progress', 'completed', 'no-show'], default: 'waiting' },
+  estimatedWaitTime: { type: Number }, // in minutes, matches schema.ts
+  timestamp: { type: Date, default: Date.now }, // matches schema.ts field name
   createdAt: { type: Date, default: Date.now }
 });
 

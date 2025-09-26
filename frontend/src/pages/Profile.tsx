@@ -40,7 +40,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -79,15 +79,36 @@ export default function Profile() {
     };
 
     const handleSave = async () => {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            // Import API dynamically to avoid circular dependencies
+            const { api } = await import("../lib/api");
+            
+            // Update profile via API
+            await api.auth.completeProfile(formData.name, formData.email || undefined);
+            
+            // Update user context with new data
+            if (user) {
+                const updatedUser = {
+                    ...user,
+                    name: formData.name,
+                    email: formData.email || user.email,
+                };
+                updateUser(updatedUser);
+            }
 
-        toast({
-            title: "Profile updated successfully!",
-            description: "Your changes have been saved.",
-        });
+            toast({
+                title: "Profile updated successfully!",
+                description: "Your changes have been saved.",
+            });
 
-        setIsEditing(false);
+            setIsEditing(false);
+        } catch (error: any) {
+            toast({
+                title: "Error updating profile",
+                description: error.message || "Failed to update profile. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
 
     const handleCancel = () => {
