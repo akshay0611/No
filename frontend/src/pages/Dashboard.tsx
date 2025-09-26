@@ -24,7 +24,17 @@ import {
   TrendingUp,
   UserCheck,
   UserX,
-  PlayCircle
+  PlayCircle,
+  Phone,
+  MessageCircle,
+  Camera,
+  ChevronDown,
+  Menu,
+  Bell,
+  Search,
+  Home,
+  Calendar,
+  TrendingDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -52,6 +62,8 @@ export default function Dashboard() {
     longitude: number;
     address: string;
   } | null>(null);
+  const [activeTab, setActiveTab] = useState("queue");
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Get user's salons
   const { data: salons = [], isLoading: salonsLoading } = useQuery({
@@ -450,58 +462,121 @@ export default function Dashboard() {
 
   if (!user || user.role !== 'salon_owner') {
     return (
-      <div className="min-h-screen gradient-pink flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6 text-center">
-            <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground mb-4">Access Denied</h1>
-            <p className="text-muted-foreground mb-4">This dashboard is only available for salon owners.</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-3xl p-8 text-center shadow-lg">
+          <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
+            <Settings className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-black mb-3">Access Denied</h1>
+          <p className="text-gray-600 text-sm">This dashboard is only available for salon owners.</p>
+        </div>
       </div>
     );
   }
 
   if (salonsLoading) {
     return (
-      <div className="min-h-screen gradient-pink py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-white">
+        {/* Mobile Loading Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 p-4">
           <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-muted rounded-2xl"></div>
-              ))}
-            </div>
-            <div className="h-96 bg-muted rounded-2xl"></div>
+            <div className="h-6 bg-gray-200 rounded-full w-32 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded-full w-24"></div>
           </div>
+        </div>
+        
+        {/* Loading Cards */}
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-gray-100 rounded-3xl animate-pulse"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-pink py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salon Dashboard</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Manage your salons and track performance</p>
+    <div className="min-h-screen bg-white">
+      {/* Mobile Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-100 z-50">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 rounded-full hover:bg-gray-100"
+            >
+              <Menu className="h-5 w-5 text-black" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-black">SmartQ</h1>
+              <p className="text-xs text-gray-500">Salon Dashboard</p>
+            </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-gray-100">
+              <Bell className="h-5 w-5 text-black" />
+            </Button>
+            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-gray-100">
+              <Search className="h-5 w-5 text-black" />
+            </Button>
+          </div>
+        </div>
 
-          {salons.length === 0 && (
+        {/* Salon Selector - Mobile Scrollable */}
+        {salons.length > 1 && (
+          <div className="px-4 pb-3">
+            <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
+              {salons.map((salon: any) => (
+                <Button
+                  key={salon.id}
+                  variant={selectedSalonId === salon.id ? "default" : "outline"}
+                  onClick={() => setSelectedSalonId(salon.id)}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
+                    selectedSalonId === salon.id 
+                      ? "bg-black text-white" 
+                      : "bg-white text-black border-gray-300 hover:bg-gray-50"
+                  }`}
+                  data-testid={`button-salon-${salon.id}`}
+                >
+                  {salon.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {salons.length === 0 ? (
+        <div className="p-4">
+          <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center mt-8">
+            <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
+              <Settings className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-black mb-3">No salons found</h2>
+            <p className="text-gray-600 text-sm mb-6">
+              Create your first salon to start managing queues and tracking analytics.
+            </p>
+            
+            {/* Create Salon Dialog */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button data-testid="button-create-salon">
+                <Button 
+                  className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
+                  data-testid="button-create-salon"
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Salon
+                  Create Your First Salon
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md max-w-[95vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Salon</DialogTitle>
-                  <DialogDescription>
+              <DialogContent className="mx-4 max-w-sm rounded-3xl">
+                <DialogHeader className="text-center pb-2">
+                  <DialogTitle className="text-lg font-bold">Create New Salon</DialogTitle>
+                  <DialogDescription className="text-sm text-gray-600">
                     Add your salon to SmartQ and start managing queues.
                   </DialogDescription>
                 </DialogHeader>
@@ -531,16 +606,21 @@ export default function Dashboard() {
                         }
                       )(e);
                     }}
-                    className="space-y-3"
+                    className="space-y-4"
                   >
                     <FormField
                       control={salonForm.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Salon Name</FormLabel>
+                          <FormLabel className="text-sm font-medium text-black">Salon Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter salon name" {...field} data-testid="input-salon-name" />
+                            <Input 
+                              placeholder="Enter salon name" 
+                              {...field} 
+                              data-testid="input-salon-name"
+                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -551,14 +631,17 @@ export default function Dashboard() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Salon Type</FormLabel>
+                          <FormLabel className="text-sm font-medium text-black">Salon Type</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-salon-type">
+                              <SelectTrigger 
+                                data-testid="select-salon-type"
+                                className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                              >
                                 <SelectValue placeholder="Select salon type" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="men">Men's Salon</SelectItem>
                               <SelectItem value="women">Women's Salon</SelectItem>
                               <SelectItem value="unisex">Unisex Salon</SelectItem>
@@ -573,22 +656,25 @@ export default function Dashboard() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description</FormLabel>
+                          <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="Describe your salon..."
                               {...field}
                               value={field.value || ""}
                               data-testid="textarea-salon-description"
+                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
+                              rows={3}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    
                     {/* Location Picker */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
+                      <label className="text-sm font-medium text-black">
                         Salon Location <span className="text-red-500">*</span>
                       </label>
                       <LocationPicker
@@ -613,12 +699,20 @@ export default function Dashboard() {
                         )}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
+                    
+                    {/* Image Upload */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-black">
                         Salon Photos <span className="text-red-500">*</span>
                       </label>
-                      <div className={`border-2 border-dashed rounded-lg p-3 ${selectedImages.length === 0 ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'
-                        }`}>
+                      <div className={`border-2 border-dashed rounded-2xl p-4 text-center ${
+                        selectedImages.length === 0 
+                          ? 'border-red-200 bg-red-50' 
+                          : 'border-green-200 bg-green-50'
+                      }`}>
+                        <Camera className={`h-8 w-8 mx-auto mb-2 ${
+                          selectedImages.length === 0 ? 'text-red-400' : 'text-green-400'
+                        }`} />
                         <input
                           type="file"
                           accept="image/*"
@@ -627,731 +721,795 @@ export default function Dashboard() {
                             const files = Array.from(e.target.files || []);
                             setSelectedImages(files);
                           }}
-                          className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                          className="hidden"
+                          id="salon-images"
                           data-testid="input-salon-images"
                         />
-                        <p className={`text-xs mt-1 ${selectedImages.length === 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {selectedImages.length === 0
-                            ? "⚠️ Please select at least one photo to continue"
-                            : `✅ ${selectedImages.length} photo${selectedImages.length !== 1 ? 's' : ''} selected`}
-                        </p>
+                        <label
+                          htmlFor="salon-images"
+                          className="cursor-pointer"
+                        >
+                          <div className="text-sm font-medium text-black mb-1">
+                            {selectedImages.length === 0 ? "Add Photos" : `${selectedImages.length} Selected`}
+                          </div>
+                          <div className={`text-xs ${
+                            selectedImages.length === 0 ? 'text-red-500' : 'text-green-500'
+                          }`}>
+                            {selectedImages.length === 0
+                              ? "Tap to select salon photos"
+                              : `${selectedImages.length} photo${selectedImages.length !== 1 ? 's' : ''} ready to upload`}
+                          </div>
+                        </label>
+                        
                         {selectedImages.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium text-foreground">
-                              Selected: {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''}
-                            </p>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {selectedImages.map((file, index) => (
-                                <div key={index} className="relative">
-                                  <img
-                                    src={URL.createObjectURL(file)}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-12 h-12 object-cover rounded border"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                                    }}
-                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="grid grid-cols-3 gap-2 mt-3">
+                            {selectedImages.slice(0, 3).map((file, index) => (
+                              <div key={index} className="relative">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-16 object-cover rounded-lg border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                                  }}
+                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                            {selectedImages.length > 3 && (
+                              <div className="flex items-center justify-center bg-gray-100 rounded-lg text-xs text-gray-600 font-medium">
+                                +{selectedImages.length - 3} more
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
-                    {/* Debug button - remove in production */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        console.log('🔍 DEBUG - Form State:');
-                        console.log('Values:', salonForm.getValues());
-                        console.log('Errors:', salonForm.formState.errors);
-                        console.log('Is Valid:', salonForm.formState.isValid);
-                        console.log('Selected Location:', selectedLocation);
-                        console.log('Selected Images:', selectedImages.length);
-                      }}
-                    >
-                      Debug Form State
-                    </Button>
 
                     <Button
                       type="submit"
-                      className="w-full"
+                      className={`w-full rounded-2xl py-3 font-medium ${
+                        selectedImages.length === 0 
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                          : "bg-black text-white hover:bg-gray-800"
+                      }`}
                       disabled={createSalonMutation.isPending || selectedImages.length === 0}
                       data-testid="button-submit-salon"
                     >
                       {createSalonMutation.isPending ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          Creating Salon...
+                          <span>Creating...</span>
                         </div>
                       ) : selectedImages.length === 0 ? (
-                        "Select at least 1 image to continue"
+                        "Add Photos to Continue"
                       ) : (
                         "Create Salon"
                       )}
                     </Button>
-                    {selectedImages.length === 0 && (
-                      <p className="text-xs text-red-500 text-center mt-1">
-                        ⚠️ Please select at least one salon photo to create your salon
-                      </p>
-                    )}
                   </form>
                 </Form>
               </DialogContent>
             </Dialog>
-          )}
+          </div>
         </div>
+      ) : (
+        <>
+          {selectedSalonId && (
+            <>
+              {/* Analytics Cards - Mobile Grid */}
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Users className="h-5 w-5 text-black" />
+                      <span className="text-xs text-gray-500">TODAY</span>
+                    </div>
+                    <div className="text-2xl font-bold text-black" data-testid="text-customers-today">
+                      {analyticsLoading ? "..." : analytics?.customersToday || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">Customers</div>
+                  </div>
 
-        {salons.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Settings className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-foreground mb-2">No salons found</h2>
-              <p className="text-muted-foreground mb-6">
-                Create your first salon to start managing queues and tracking analytics.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {/* Salon Selector */}
-            {salons.length > 1 && (
-              <div className="mb-8">
-                <div className="flex space-x-2 overflow-x-auto">
-                  {salons.map((salon: any) => (
-                    <Button
-                      key={salon.id}
-                      variant={selectedSalonId === salon.id ? "default" : "outline"}
-                      onClick={() => setSelectedSalonId(salon.id)}
-                      className="whitespace-nowrap"
-                      data-testid={`button-salon-${salon.id}`}
-                    >
-                      {salon.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Clock className="h-5 w-5 text-black" />
+                      <span className="text-xs text-gray-500">AVG</span>
+                    </div>
+                    <div className="text-2xl font-bold text-black" data-testid="text-avg-wait">
+                      {analyticsLoading ? "..." : `${Math.round(analytics?.avgWaitTime || 0)}m`}
+                    </div>
+                    <div className="text-xs text-gray-600">Wait Time</div>
+                  </div>
 
-            {selectedSalonId && (
-              <>
-                {/* Analytics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Customers Today</p>
-                          <p className="text-2xl font-bold text-foreground" data-testid="text-customers-today">
-                            {analyticsLoading ? "..." : analytics?.customersToday || 0}
-                          </p>
-                        </div>
-                        <Users className="h-8 w-8 text-primary" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Star className="h-5 w-5 text-black" />
+                      <span className="text-xs text-gray-500">RATING</span>
+                    </div>
+                    <div className="text-2xl font-bold text-black" data-testid="text-rating">
+                      {analyticsLoading ? "..." : analytics?.rating?.toFixed(1) || "0.0"}
+                    </div>
+                    <div className="text-xs text-gray-600">Stars</div>
+                  </div>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Avg Wait Time</p>
-                          <p className="text-2xl font-bold text-foreground" data-testid="text-avg-wait">
-                            {analyticsLoading ? "..." : `${Math.round(analytics?.avgWaitTime || 0)}min`}
-                          </p>
-                        </div>
-                        <Clock className="h-8 w-8 text-primary" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Rating</p>
-                          <p className="text-2xl font-bold text-foreground" data-testid="text-rating">
-                            {analyticsLoading ? "..." : analytics?.rating?.toFixed(1) || "0.0"}
-                          </p>
-                        </div>
-                        <Star className="h-8 w-8 text-primary" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Revenue</p>
-                          <p className="text-2xl font-bold text-foreground" data-testid="text-revenue">
-                            {analyticsLoading ? "..." : `$${analytics?.revenue?.toFixed(2) || "0.00"}`}
-                          </p>
-                        </div>
-                        <DollarSign className="h-8 w-8 text-primary" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <DollarSign className="h-5 w-5 text-black" />
+                      <span className="text-xs text-gray-500">REVENUE</span>
+                    </div>
+                    <div className="text-2xl font-bold text-black" data-testid="text-revenue">
+                      {analyticsLoading ? "..." : `${analytics?.revenue?.toFixed(0) || "0"}`}
+                    </div>
+                    <div className="text-xs text-gray-600">Total</div>
+                  </div>
                 </div>
 
-                {/* Main Content */}
-                <Tabs defaultValue="queue" className="space-y-6">
-                  <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="queue" data-testid="tab-queue">Current Queue</TabsTrigger>
-                    <TabsTrigger value="services" data-testid="tab-services">Services</TabsTrigger>
-                    <TabsTrigger value="offers" data-testid="tab-offers">Offers</TabsTrigger>
-                    <TabsTrigger value="gallery" data-testid="tab-gallery">Gallery</TabsTrigger>
-                    <TabsTrigger value="analytics" data-testid="tab-analytics">Analytics</TabsTrigger>
-                  </TabsList>
+                {/* Mobile Tab Navigation */}
+                <div className="mb-6">
+                  <div className="flex space-x-1 p-1 bg-gray-100 rounded-2xl">
+                    {[
+                      { id: 'queue', label: 'Queue', icon: Users },
+                      { id: 'services', label: 'Services', icon: Settings },
+                      { id: 'offers', label: 'Offers', icon: Percent },
+                      { id: 'gallery', label: 'Gallery', icon: Camera },
+                      { id: 'analytics', label: 'Stats', icon: BarChart3 }
+                    ].map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        onClick={() => setActiveTab(id)}
+                        className={`flex-1 flex flex-col items-center py-2 px-1 rounded-xl text-xs font-medium transition-colors ${
+                          activeTab === id 
+                            ? 'bg-white text-black shadow-sm' 
+                            : 'text-gray-600'
+                        }`}
+                        data-testid={`tab-${id}`}
+                      >
+                        <Icon className="h-4 w-4 mb-1" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                  {/* Queue Management */}
-                  <TabsContent value="queue" className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Current Queue</CardTitle>
-                        <CardDescription>
-                          Manage customer queue and service status
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {queuesLoading ? (
-                          <div className="space-y-4">
-                            {[...Array(3)].map((_, i) => (
-                              <div key={i} className="h-20 bg-muted rounded-lg animate-pulse"></div>
-                            ))}
-                          </div>
-                        ) : queues.length === 0 ? (
-                          <div className="text-center py-8">
-                            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">No customers in queue</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {queues
-                              .filter(q => q.status === 'waiting' || q.status === 'in-progress')
-                              .map((queue) => (
-                                <div key={queue.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg" data-testid={`queue-item-${queue.id}`}>
-                                  <div className="flex items-center space-x-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${queue.status === 'in-progress' ? 'bg-primary' : 'bg-muted border-2 border-dashed border-border text-muted-foreground'
-                                      }`}>
-                                      {queue.position}
-                                    </div>
-                                    <div>
-                                      <p className="font-medium text-foreground" data-testid={`text-customer-name-${queue.id}`}>
-                                        {queue.user?.name || 'Customer'}
-                                      </p>
-                                      <div className="text-sm text-muted-foreground" data-testid={`text-services-${queue.id}`}>
-                                        {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
-                                          <div>
-                                            <p className="font-medium">Services:</p>
-                                            <div className="mt-1">
-                                              {queue.services.map((service) => (
-                                                <p key={service.id} className="text-xs">
-                                                  - {service.name} • {service.duration}min • ${service.price}
-                                                </p>
-                                              ))}
-                                            </div>
-                                            <p className="text-xs font-medium mt-1">Total: ${queue.totalPrice}</p>
-                                          </div>
-                                        ) : (
-                                          <p>{queue.service?.name} • {queue.service?.duration}min • ${queue.service?.price}</p>
-                                        )}
-                                      </div>
-                                    </div>
+                {/* Tab Content */}
+                {activeTab === 'queue' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-bold text-black">Current Queue</h2>
+                      <Badge variant="outline" className="border-gray-300 text-gray-600">
+                        {queues.filter(q => q.status === 'waiting' || q.status === 'in-progress').length} active
+                      </Badge>
+                    </div>
+                    
+                    {queuesLoading ? (
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse"></div>
+                        ))}
+                      </div>
+                    ) : queues.filter(q => q.status === 'waiting' || q.status === 'in-progress').length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Users className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No customers in queue</p>
+                        <p className="text-gray-400 text-xs mt-1">New customers will appear here</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {queues
+                          .filter(q => q.status === 'waiting' || q.status === 'in-progress')
+                          .map((queue) => (
+                            <div key={queue.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`queue-item-${queue.id}`}>
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    queue.status === 'in-progress' 
+                                      ? 'bg-black text-white' 
+                                      : 'border-2 border-dashed border-gray-300 text-gray-500'
+                                  }`}>
+                                    {queue.position}
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Badge
+                                  <div>
+                                    <div className="font-medium text-black text-sm" data-testid={`text-customer-name-${queue.id}`}>
+                                      {queue.user?.name || 'Customer'}
+                                    </div>
+                                    <Badge 
                                       variant={queue.status === 'in-progress' ? 'default' : 'secondary'}
+                                      className={`mt-1 text-xs ${
+                                        queue.status === 'in-progress' 
+                                          ? 'bg-black text-white' 
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}
                                       data-testid={`badge-status-${queue.id}`}
                                     >
                                       {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
                                     </Badge>
-                                    <div className="flex space-x-2">
-                                      {queue.user && queue.user.phone && (
-                                        <>
-                                          <a
-                                            href={`tel:${queue.user.phone}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                          >
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              data-testid={`button-call-${queue.id}`}
-                                            >
-                                              <span role="img" aria-label="phone">📞</span> Call
-                                            </Button>
-                                          </a>
-                                          <a
-                                            href={`https://wa.me/${queue.user.phone.replace(/\D/g, '')}?text=Hello%20Your%20turn%20has%20come%20at%20SmartQ%20Salon`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                          >
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              data-testid={`button-whatsapp-${queue.id}`}
-                                            >
-                                              <span role="img" aria-label="whatsapp">💬</span> WhatsApp
-                                            </Button>
-                                          </a>
-                                        </>
-                                      )}
-                                      {queue.status === 'waiting' ? (
-                                        <Button
-                                          size="sm"
-                                          onClick={() => startService(queue.id)}
-                                          disabled={updateQueueMutation.isPending}
-                                          data-testid={`button-start-${queue.id}`}
-                                        >
-                                          <PlayCircle className="h-4 w-4 mr-1" />
-                                          Start
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          size="sm"
-                                          onClick={() => completeService(queue.id)}
-                                          disabled={updateQueueMutation.isPending}
-                                          data-testid={`button-complete-${queue.id}`}
-                                        >
-                                          <UserCheck className="h-4 w-4 mr-1" />
-                                          Complete
-                                        </Button>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => markNoShow(queue.id)}
-                                        disabled={updateQueueMutation.isPending}
-                                        data-testid={`button-no-show-${queue.id}`}
-                                      >
-                                        <UserX className="h-4 w-4 mr-1" />
-                                        No Show
-                                      </Button>
-                                    </div>
                                   </div>
                                 </div>
-                              ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
+                              </div>
 
-                  {/* Services Management */}
-                  <TabsContent value="services" className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle>Services</CardTitle>
-                            <CardDescription>Manage your salon services</CardDescription>
-                          </div>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button data-testid="button-add-service">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Service
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New Service</DialogTitle>
-                                <DialogDescription>
-                                  Create a new service for your salon.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Form {...serviceForm}>
-                                <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
-                                  <FormField
-                                    control={serviceForm.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Service Name</FormLabel>
-                                        <FormControl>
-                                          <Input placeholder="e.g., Haircut" {...field} data-testid="input-service-name" />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                      control={serviceForm.control}
-                                      name="duration"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Duration (minutes)</FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              type="number"
-                                              {...field}
-                                              onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                              data-testid="input-service-duration"
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    <FormField
-                                      control={serviceForm.control}
-                                      name="price"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Price ($)</FormLabel>
-                                          <FormControl>
-                                            <Input placeholder="0.00" {...field} data-testid="input-service-price" />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
+                              {/* Services */}
+                              <div className="mb-4" data-testid={`text-services-${queue.id}`}>
+                                {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {queue.services.map((service) => (
+                                      <div key={service.id} className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-700">{service.name}</span>
+                                        <span className="text-black font-medium">${service.price}</span>
+                                      </div>
+                                    ))}
+                                    <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                                      <span className="text-sm font-medium text-black">Total</span>
+                                      <span className="font-bold text-black">${queue.totalPrice}</span>
+                                    </div>
                                   </div>
-                                  <FormField
-                                    control={serviceForm.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                          <Textarea
-                                            placeholder="Service description..."
-                                            {...field}
-                                            value={field.value || ""}
-                                            data-testid="textarea-service-description"
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={createServiceMutation.isPending}
-                                    data-testid="button-submit-service"
-                                  >
-                                    {createServiceMutation.isPending ? "Adding..." : "Add Service"}
-                                  </Button>
-                                </form>
-                              </Form>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {salons.find((s: any) => s.id === selectedSalonId)?.services?.map((service: any) => (
-                            <div key={service.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg" data-testid={`service-item-${service.id}`}>
-                              <div>
-                                <h4 className="font-semibold text-foreground" data-testid={`text-service-name-${service.id}`}>
-                                  {service.name}
-                                </h4>
-                                <p className="text-sm text-muted-foreground" data-testid={`text-service-details-${service.id}`}>
-                                  {service.duration} minutes • ${service.price}
-                                </p>
-                                {service.description && (
-                                  <p className="text-sm text-muted-foreground mt-1" data-testid={`text-service-description-${service.id}`}>
-                                    {service.description}
-                                  </p>
+                                ) : (
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-700">{queue.service?.name}</span>
+                                    <span className="text-black font-medium">${queue.service?.price}</span>
+                                  </div>
                                 )}
                               </div>
-                              <Badge variant="secondary" data-testid={`badge-bookings-${service.id}`}>
-                                {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
+
+                              {/* Action Buttons */}
+                              <div className="space-y-2">
+                                {queue.user && queue.user.phone && (
+                                  <div className="flex space-x-2">
+                                    <a
+                                      href={`tel:${queue.user.phone}`}
+                                      className="flex-1"
+                                    >
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full border-gray-300 text-black hover:bg-gray-50 rounded-xl"
+                                        data-testid={`button-call-${queue.id}`}
+                                      >
+                                        <Phone className="h-4 w-4 mr-2" />
+                                        Call
+                                      </Button>
+                                    </a>
+                                    <a
+                                      href={`https://wa.me/${queue.user.phone.replace(/\D/g, '')}?text=Hello%20Your%20turn%20has%20come%20at%20SmartQ%20Salon`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex-1"
+                                    >
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full border-gray-300 text-black hover:bg-gray-50 rounded-xl"
+                                        data-testid={`button-whatsapp-${queue.id}`}
+                                      >
+                                        <MessageCircle className="h-4 w-4 mr-2" />
+                                        WhatsApp
+                                      </Button>
+                                    </a>
+                                  </div>
+                                )}
+                                
+                                <div className="flex space-x-2">
+                                  {queue.status === 'waiting' ? (
+                                    <Button
+                                      onClick={() => startService(queue.id)}
+                                      disabled={updateQueueMutation.isPending}
+                                      className="flex-1 bg-black text-white hover:bg-gray-800 rounded-xl"
+                                      data-testid={`button-start-${queue.id}`}
+                                    >
+                                      <PlayCircle className="h-4 w-4 mr-2" />
+                                      Start Service
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      onClick={() => completeService(queue.id)}
+                                      disabled={updateQueueMutation.isPending}
+                                      className="flex-1 bg-black text-white hover:bg-gray-800 rounded-xl"
+                                      data-testid={`button-complete-${queue.id}`}
+                                    >
+                                      <UserCheck className="h-4 w-4 mr-2" />
+                                      Complete
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => markNoShow(queue.id)}
+                                    disabled={updateQueueMutation.isPending}
+                                    className="px-3 border-red-300 text-red-600 hover:bg-red-50 rounded-xl"
+                                    data-testid={`button-no-show-${queue.id}`}
+                                  >
+                                    <UserX className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'services' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-bold text-black">Services</h2>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            className="bg-black text-white hover:bg-gray-800 rounded-xl px-4 py-2"
+                            data-testid="button-add-service"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="mx-4 max-w-sm rounded-3xl">
+                          <DialogHeader className="text-center pb-2">
+                            <DialogTitle className="text-lg font-bold">Add New Service</DialogTitle>
+                            <DialogDescription className="text-sm text-gray-600">
+                              Create a new service for your salon.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Form {...serviceForm}>
+                            <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
+                              <FormField
+                                control={serviceForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm font-medium text-black">Service Name</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="e.g., Haircut" 
+                                        {...field} 
+                                        data-testid="input-service-name"
+                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <div className="grid grid-cols-2 gap-3">
+                                <FormField
+                                  control={serviceForm.control}
+                                  name="duration"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-sm font-medium text-black">Duration (min)</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          {...field}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                          data-testid="input-service-duration"
+                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={serviceForm.control}
+                                  name="price"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-sm font-medium text-black">Price ($)</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          placeholder="0.00" 
+                                          {...field} 
+                                          data-testid="input-service-price"
+                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <FormField
+                                control={serviceForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Service description..."
+                                        {...field}
+                                        value={field.value || ""}
+                                        data-testid="textarea-service-description"
+                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
+                                        rows={3}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <Button
+                                type="submit"
+                                className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
+                                disabled={createServiceMutation.isPending}
+                                data-testid="button-submit-service"
+                              >
+                                {createServiceMutation.isPending ? "Adding..." : "Add Service"}
+                              </Button>
+                            </form>
+                          </Form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {salons.find((s: any) => s.id === selectedSalonId)?.services?.map((service: any) => (
+                        <div key={service.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`service-item-${service.id}`}>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-black" data-testid={`text-service-name-${service.id}`}>
+                                {service.name}
+                              </h4>
+                              <div className="flex items-center space-x-3 mt-1">
+                                <span className="text-sm text-gray-600" data-testid={`text-service-details-${service.id}`}>
+                                  {service.duration} min
+                                </span>
+                                <span className="text-sm font-medium text-black">
+                                  ${service.price}
+                                </span>
+                              </div>
+                              {service.description && (
+                                <p className="text-sm text-gray-500 mt-2" data-testid={`text-service-description-${service.id}`}>
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className="border-gray-300 text-gray-600"
+                              data-testid={`badge-bookings-${service.id}`}
+                            >
+                              {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
+                            </Badge>
+                          </div>
+                        </div>
+                      )) || (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Settings className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <p className="text-gray-500 text-sm">No services added yet</p>
+                          <p className="text-gray-400 text-xs mt-1">Add services to start taking bookings</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'offers' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-bold text-black">Offers & Promotions</h2>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            className="bg-black text-white hover:bg-gray-800 rounded-xl px-4 py-2"
+                            data-testid="button-add-offer"
+                          >
+                            <Percent className="h-4 w-4 mr-2" />
+                            Create
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="mx-4 max-w-sm rounded-3xl">
+                          <DialogHeader className="text-center pb-2">
+                            <DialogTitle className="text-lg font-bold">Create New Offer</DialogTitle>
+                            <DialogDescription className="text-sm text-gray-600">
+                              Create a promotional offer for your customers.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Form {...offerForm}>
+                            <form onSubmit={offerForm.handleSubmit(onOfferSubmit)} className="space-y-4">
+                              <FormField
+                                control={offerForm.control}
+                                name="title"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm font-medium text-black">Offer Title</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="e.g., Summer Special" 
+                                        {...field} 
+                                        data-testid="input-offer-title"
+                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={offerForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Describe your offer..."
+                                        {...field}
+                                        data-testid="textarea-offer-description"
+                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
+                                        rows={3}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <div className="grid grid-cols-2 gap-3">
+                                <FormField
+                                  control={offerForm.control}
+                                  name="discount"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-sm font-medium text-black">Discount (%)</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          min="1"
+                                          max="99"
+                                          step="0.01"
+                                          placeholder="10"
+                                          {...field}
+                                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                          data-testid="input-offer-discount"
+                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={offerForm.control}
+                                  name="validityPeriod"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-sm font-medium text-black">Valid Until</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="date"
+                                          {...field}
+                                          min={new Date().toISOString().split('T')[0]}
+                                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                                          onChange={(e) => {
+                                            const selectedDate = new Date(e.target.value);
+                                            const today = new Date();
+                                            today.setHours(0, 0, 0, 0);
+
+                                            if (selectedDate < today) {
+                                              toast({
+                                                title: "Invalid date",
+                                                description: "Please select a future date",
+                                                variant: "destructive"
+                                              });
+                                              return;
+                                            }
+
+                                            field.onChange(selectedDate);
+                                          }}
+                                          data-testid="input-offer-validity"
+                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <Button
+                                type="submit"
+                                className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
+                                disabled={createOfferMutation.isPending}
+                                data-testid="button-submit-offer"
+                              >
+                                {createOfferMutation.isPending ? "Creating..." : "Create Offer"}
+                              </Button>
+                            </form>
+                          </Form>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    {offersLoading ? (
+                      <div className="space-y-3">
+                        {[...Array(2)].map((_, i) => (
+                          <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"></div>
+                        ))}
+                      </div>
+                    ) : offers.length > 0 ? (
+                      <div className="space-y-3">
+                        {offers.map((offer: any) => (
+                          <div key={offer.id} className="bg-white border border-gray-200 rounded-2xl p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-medium text-black">{offer.title}</h3>
+                                <p className="text-sm text-gray-600 mt-1">{offer.description}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge 
+                                  className={`${
+                                    offer.isActive 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}
+                                >
+                                  {offer.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between mb-3">
+                              <Badge variant="outline" className="border-black text-black font-medium">
+                                {offer.discount}% OFF
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                Valid until {new Date(offer.validityPeriod).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateOfferMutation.mutate({
+                                  id: offer.id,
+                                  updates: { isActive: !offer.isActive }
+                                })}
+                                disabled={updateOfferMutation.isPending}
+                                className="flex-1 border-gray-300 text-black hover:bg-gray-50 rounded-xl"
+                              >
+                                {offer.isActive ? "Deactivate" : "Activate"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to delete this offer?")) {
+                                    deleteOfferMutation.mutate(offer.id);
+                                  }
+                                }}
+                                disabled={deleteOfferMutation.isPending}
+                                className="px-3 border-red-300 text-red-600 hover:bg-red-50 rounded-xl"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Percent className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No active offers</p>
+                        <p className="text-gray-400 text-xs mt-1">Create offers to attract more customers</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'gallery' && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-bold text-black">Gallery</h2>
+                    <GalleryManager salonId={selectedSalonId} />
+                  </div>
+                )}
+
+                {activeTab === 'analytics' && (
+                  <div className="space-y-6">
+                    <h2 className="text-lg font-bold text-black">Analytics</h2>
+                    
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium text-black">Performance Metrics</h3>
+                        <TrendingUp className="h-5 w-5 text-black" />
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                          <span className="text-sm text-gray-600">Show-up Rate</span>
+                          <span className="font-medium text-black" data-testid="text-show-rate">
+                            {analyticsLoading ? "..." : `${Math.round(analytics?.showRate || 0)}%`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                          <span className="text-sm text-gray-600">Total Customers</span>
+                          <span className="font-medium text-black" data-testid="text-total-customers">
+                            {analyticsLoading ? "..." : analytics?.totalCustomers || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-sm text-gray-600">Average Rating</span>
+                          <span className="font-medium text-black" data-testid="text-average-rating">
+                            {analyticsLoading ? "..." : analytics?.rating?.toFixed(1) || "0.0"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium text-black">Popular Services</h3>
+                        <BarChart3 className="h-5 w-5 text-black" />
+                      </div>
+                      <div className="space-y-3">
+                        {analyticsLoading ? (
+                          [...Array(3)].map((_, i) => (
+                            <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
+                          ))
+                        ) : analytics?.popularServices?.length ? (
+                          analytics.popularServices.slice(0, 5).map((service) => (
+                            <div key={service.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl" data-testid={`popular-service-${service.id}`}>
+                              <span className="font-medium text-black text-sm" data-testid={`text-popular-service-name-${service.id}`}>
+                                {service.name}
+                              </span>
+                              <Badge variant="outline" className="border-gray-300 text-gray-600 text-xs" data-testid={`badge-popular-service-bookings-${service.id}`}>
+                                {service.bookings} bookings
                               </Badge>
                             </div>
-                          )) || (
-                              <div className="text-center py-8">
-                                <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                                <p className="text-muted-foreground">No services added yet</p>
-                              </div>
-                            )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  {/* Offers Management */}
-                  <TabsContent value="offers" className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle>Offers & Promotions</CardTitle>
-                            <CardDescription>Create and manage special offers</CardDescription>
-                          </div>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button data-testid="button-add-offer">
-                                <Percent className="h-4 w-4 mr-2" />
-                                Create Offer
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Create New Offer</DialogTitle>
-                                <DialogDescription>
-                                  Create a promotional offer for your customers.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Form {...offerForm}>
-                                <form onSubmit={offerForm.handleSubmit(onOfferSubmit)} className="space-y-4">
-                                  <FormField
-                                    control={offerForm.control}
-                                    name="title"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Offer Title</FormLabel>
-                                        <FormControl>
-                                          <Input placeholder="e.g., Summer Special" {...field} data-testid="input-offer-title" />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={offerForm.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl>
-                                          <Textarea
-                                            placeholder="Describe your offer..."
-                                            {...field}
-                                            data-testid="textarea-offer-description"
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                      control={offerForm.control}
-                                      name="discount"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Discount (%)</FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              type="number"
-                                              min="1"
-                                              max="99"
-                                              step="0.01"
-                                              placeholder="10.00"
-                                              {...field}
-                                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                              data-testid="input-offer-discount"
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    <FormField
-                                      control={offerForm.control}
-                                      name="validityPeriod"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Valid Until</FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              type="date"
-                                              {...field}
-                                              min={new Date().toISOString().split('T')[0]}
-                                              value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
-                                              onChange={(e) => {
-                                                const selectedDate = new Date(e.target.value);
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
-
-                                                if (selectedDate < today) {
-                                                  toast({
-                                                    title: "Invalid date",
-                                                    description: "Please select a future date",
-                                                    variant: "destructive"
-                                                  });
-                                                  return;
-                                                }
-
-                                                field.onChange(selectedDate);
-                                              }}
-                                              data-testid="input-offer-validity"
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                  <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={createOfferMutation.isPending}
-                                    data-testid="button-submit-offer"
-                                  >
-                                    {createOfferMutation.isPending ? "Creating..." : "Create Offer"}
-                                  </Button>
-                                </form>
-                              </Form>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {offersLoading ? (
-                          <div className="space-y-4">
-                            {[...Array(2)].map((_, i) => (
-                              <div key={i} className="h-24 bg-muted rounded animate-pulse"></div>
-                            ))}
-                          </div>
-                        ) : offers.length > 0 ? (
-                          <div className="space-y-4">
-                            {offers.map((offer: any) => (
-                              <div key={offer.id} className="bg-card border rounded-lg p-4 shadow-sm">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h3 className="font-semibold text-lg">{offer.title}</h3>
-                                    <p className="text-muted-foreground text-sm mt-1">{offer.description}</p>
-                                    <div className="flex items-center mt-2 space-x-4">
-                                      <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                        {offer.discount}% OFF
-                                      </Badge>
-                                      <span className="text-xs text-muted-foreground">
-                                        Valid until {new Date(offer.validityPeriod).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant={offer.isActive ? "success" : "secondary"}>
-                                      {offer.isActive ? "Active" : "Inactive"}
-                                    </Badge>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => updateOfferMutation.mutate({
-                                        id: offer.id,
-                                        updates: { isActive: !offer.isActive }
-                                      })}
-                                      disabled={updateOfferMutation.isPending}
-                                    >
-                                      {offer.isActive ? "Deactivate" : "Activate"}
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => {
-                                        if (confirm("Are you sure you want to delete this offer?")) {
-                                          deleteOfferMutation.mutate(offer.id);
-                                        }
-                                      }}
-                                      disabled={deleteOfferMutation.isPending}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          ))
                         ) : (
-                          <div className="text-center py-8">
-                            <Percent className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">No active offers</p>
+                          <div className="text-center py-6">
+                            <TrendingDown className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-500 text-sm">No service data available</p>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  {/* Gallery Management */}
-                  <TabsContent value="gallery" className="space-y-6">
-                    <GalleryManager salonId={selectedSalonId} />
-                  </TabsContent>
-
-                  {/* Analytics */}
-                  <TabsContent value="analytics" className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <TrendingUp className="h-5 w-5" />
-                            <span>Performance Metrics</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Show-up Rate</span>
-                              <span className="font-semibold text-foreground" data-testid="text-show-rate">
-                                {analyticsLoading ? "..." : `${Math.round(analytics?.showRate || 0)}%`}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Total Customers</span>
-                              <span className="font-semibold text-foreground" data-testid="text-total-customers">
-                                {analyticsLoading ? "..." : analytics?.totalCustomers || 0}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Average Rating</span>
-                              <span className="font-semibold text-foreground" data-testid="text-average-rating">
-                                {analyticsLoading ? "..." : analytics?.rating?.toFixed(1) || "0.0"}
-                              </span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <BarChart3 className="h-5 w-5" />
-                            <span>Popular Services</span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {analyticsLoading ? (
-                              [...Array(3)].map((_, i) => (
-                                <div key={i} className="h-12 bg-muted rounded animate-pulse"></div>
-                              ))
-                            ) : analytics?.popularServices?.length ? (
-                              analytics.popularServices.slice(0, 5).map((service) => (
-                                <div key={service.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg" data-testid={`popular-service-${service.id}`}>
-                                  <span className="font-medium text-foreground" data-testid={`text-popular-service-name-${service.id}`}>
-                                    {service.name}
-                                  </span>
-                                  <Badge variant="secondary" data-testid={`badge-popular-service-bookings-${service.id}`}>
-                                    {service.bookings} bookings
-                                  </Badge>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted-foreground text-center py-4">No service data available</p>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
+                      </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </>
-            )}
-          </>
-        )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb">
+        <div className="grid grid-cols-5 py-2">
+          {[
+            { id: 'queue', label: 'Queue', icon: Users, active: activeTab === 'queue' },
+            { id: 'services', label: 'Services', icon: Settings, active: activeTab === 'services' },
+            { id: 'offers', label: 'Offers', icon: Percent, active: activeTab === 'offers' },
+            { id: 'gallery', label: 'Gallery', icon: Camera, active: activeTab === 'gallery' },
+            { id: 'analytics', label: 'Analytics', icon: BarChart3, active: activeTab === 'analytics' }
+          ].map(({ id, label, icon: Icon, active }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center py-2 px-1 transition-colors ${
+                active 
+                  ? 'text-black' 
+                  : 'text-gray-400'
+              }`}
+            >
+              <Icon className={`h-5 w-5 mb-1 ${active ? 'text-black' : 'text-gray-400'}`} />
+              <span className="text-xs font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Add bottom padding to prevent content from being hidden behind bottom nav */}
+      <div className="h-20"></div>
     </div>
   );
 }

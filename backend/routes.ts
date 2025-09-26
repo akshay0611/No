@@ -87,11 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Use the centralized WebSocket manager for queue updates
   const broadcastQueueUpdate = (salonId: string, queueData: any) => {
-    wsManager.broadcastToAll(JSON.stringify({ 
-      type: 'queue_update', 
-      salonId, 
-      data: queueData 
-    }));
+    wsManager.broadcastQueueUpdate(salonId, queueData);
   };
 
   // ====================
@@ -230,10 +226,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create minimal user with just phone number
         isNewUser = true;
         user = await storage.createUser({
+
+         
+
           name: '', // Will be filled later
           email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
+
           phone: phoneNumber,
-          password: '', // No password for phone auth
+          password: null, // No password for phone auth - use null instead of empty string
           role: 'customer',
           emailVerified: false,
           phoneVerified: false,
@@ -723,10 +723,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/queues', authenticateToken, async (req, res) => {
     try {
+      console.log('Queue creation request body:', req.body);
+      console.log('User ID from token:', req.user!.userId);
+      
       const queueData = insertQueueSchema.parse({
         ...req.body,
         userId: req.user!.userId,
       });
+      
+      console.log('Parsed queue data:', queueData);
 
       // Check if user is already in active queue for this salon
       const existingQueue = await storage.getUserQueuePosition(req.user!.userId, queueData.salonId);
@@ -742,7 +747,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(queue);
     } catch (error) {
-      res.status(400).json({ message: 'Invalid queue data', error });
+      console.error('Queue creation error:', error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: 'Invalid queue data', error: error.message });
+      } else {
+        res.status(400).json({ message: 'Invalid queue data', error: 'Unknown error occurred' });
+      }
     }
   });
 
