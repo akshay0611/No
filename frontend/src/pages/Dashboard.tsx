@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  User,
   Users,
   Clock,
   Star,
@@ -504,25 +505,27 @@ export default function Dashboard() {
       <div className="sticky top-0 bg-white border-b border-gray-100 z-50">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            <Button
+            {/* <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="p-2 rounded-full hover:bg-gray-100"
             >
-              <Menu className="h-5 w-5 text-black" />
-            </Button>
+              <Menu className="h-5 w-5 text-black " />
+            </Button> */}
             <div>
-              <h1 className="text-lg font-bold text-black">SmartQ</h1>
+              <h1 className="text-lg font-bold text-black">AltQ</h1>
               <p className="text-xs text-gray-500">Salon Dashboard</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-gray-100">
-              <Bell className="h-5 w-5 text-black" />
+          {/* <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="lg" className="p-2 rounded-full hover:bg-gray-100">
+              <User className="h-20 text-black" />
             </Button>
-            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-gray-100">
-              <Search className="h-5 w-5 text-black" />
+          </div> */}
+           <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="lg" className="p-2 rounded-full hover:bg-gray-100">
+              <User className="h-20 text-black" />
             </Button>
           </div>
         </div>
@@ -851,7 +854,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Mobile Tab Navigation */}
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <div className="flex space-x-1 p-1 bg-gray-100 rounded-2xl">
                     {[
                       { id: 'queue', label: 'Queue', icon: Users },
@@ -875,7 +878,7 @@ export default function Dashboard() {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Tab Content */}
                 {activeTab === 'queue' && (
