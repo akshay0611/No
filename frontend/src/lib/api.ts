@@ -79,6 +79,16 @@ export const api = {
       const response = await apiRequest('POST', '/api/services', serviceData);
       return response.json();
     },
+
+    update: async (id: string, updates: Partial<InsertService>) => {
+      const response = await apiRequest('PUT', `/api/services/${id}`, updates);
+      return response.json();
+    },
+
+    delete: async (id: string) => {
+      const response = await apiRequest('DELETE', `/api/services/${id}`);
+      return response.json();
+    },
   },
 
   queue: {

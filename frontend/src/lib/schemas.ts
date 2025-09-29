@@ -36,6 +36,7 @@ export const insertServiceSchema = z.object({
   duration: z.number().min(1, "Duration must be at least 1 minute"),
   price: z.string().min(1, "Price is required"),
   description: z.string().optional(),
+  isActive: z.boolean().default(true),
 });
 
 export const insertOfferSchema = z.object({

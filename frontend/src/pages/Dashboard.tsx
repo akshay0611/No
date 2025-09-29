@@ -119,6 +119,35 @@ export default function Dashboard() {
     },
   });
 
+  // Get services for selected salon
+  const { data: services = [], isLoading: servicesLoading, error: servicesError } = useQuery({
+    queryKey: ['salon-services', selectedSalonId],
+    enabled: !!selectedSalonId,
+    queryFn: async () => {
+      console.log('Fetching services for salon:', selectedSalonId);
+      const token = localStorage.getItem('smartq_token');
+      console.log('Using token:', token ? 'Token exists' : 'No token');
+
+      const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+      const response = await fetch(`${baseURL}/api/salons/${selectedSalonId}/services`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch services:', errorText);
+        throw new Error(`Failed to fetch services: ${response.status} ${errorText}`);
+      }
+      const data = await response.json();
+      console.log('Received services data:', data);
+      return data;
+    },
+  });
+
   // Debug offers
   console.log('Offers state:', { offers, offersLoading, offersError, selectedSalonId });
 
@@ -338,6 +367,47 @@ export default function Dashboard() {
     onError: (error) => {
       toast({
         title: "Failed to delete offer",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: any }) =>
+      api.services.update(id, updates),
+    onSuccess: () => {
+      toast({
+        title: "Service updated successfully!",
+        description: "The service status has been updated.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['salon-services', selectedSalonId]
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update service",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: (id: string) => api.services.delete(id),
+    onSuccess: () => {
+      toast({
+        title: "Service deleted successfully!",
+        description: "The service has been removed.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['salon-services', selectedSalonId]
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to delete service",
         description: error.message,
         variant: "destructive",
       });
@@ -1153,37 +1223,78 @@ export default function Dashboard() {
                     </div>
                     
                     <div className="space-y-3">
-                      {salons.find((s: any) => s.id === selectedSalonId)?.services?.map((service: any) => (
-                        <div key={service.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`service-item-${service.id}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-black" data-testid={`text-service-name-${service.id}`}>
-                                {service.name}
-                              </h4>
-                              <div className="flex items-center space-x-3 mt-1">
-                                <span className="text-sm text-gray-600" data-testid={`text-service-details-${service.id}`}>
-                                  {service.duration} min
-                                </span>
-                                <span className="text-sm font-medium text-black">
-                                  ${service.price}
-                                </span>
+                      {servicesLoading ? (
+                        [...Array(3)].map((_, i) => (
+                          <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse"></div>
+                        ))
+                      ) : services.length > 0 ? (
+                        services.map((service: any) => (
+                          <div key={service.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`service-item-${service.id}`}>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-black" data-testid={`text-service-name-${service.id}`}>
+                                  {service.name}
+                                </h4>
+                                <div className="flex items-center space-x-3 mt-1">
+                                  <span className="text-sm text-gray-600" data-testid={`text-service-details-${service.id}`}>
+                                    {service.duration} min
+                                  </span>
+                                  <span className="text-sm font-medium text-black">
+                                    ${service.price}
+                                  </span>
+                                </div>
+                                {service.description && (
+                                  <p className="text-sm text-gray-500 mt-2" data-testid={`text-service-description-${service.id}`}>
+                                    {service.description}
+                                  </p>
+                                )}
                               </div>
-                              {service.description && (
-                                <p className="text-sm text-gray-500 mt-2" data-testid={`text-service-description-${service.id}`}>
-                                  {service.description}
-                                </p>
-                              )}
+                              <div className="flex flex-col items-end space-y-2">
+                                <Badge 
+                                  variant="outline" 
+                                  className="border-gray-300 text-gray-600"
+                                  data-testid={`badge-bookings-${service.id}`}
+                                >
+                                  {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
+                                </Badge>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateServiceMutation.mutate({ 
+                                      id: service.id, 
+                                      updates: { isActive: !service.isActive } 
+                                    })}
+                                    disabled={updateServiceMutation.isPending}
+                                    className={`rounded-xl text-xs ${
+                                      service.isActive 
+                                        ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
+                                        : 'border-green-300 text-green-600 hover:bg-green-50'
+                                    }`}
+                                    data-testid={`button-toggle-service-${service.id}`}
+                                  >
+                                    {service.isActive ? 'Deactivate' : 'Activate'}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm('Are you sure you want to delete this service?')) {
+                                        deleteServiceMutation.mutate(service.id);
+                                      }
+                                    }}
+                                    disabled={deleteServiceMutation.isPending}
+                                    className="border-red-300 text-red-600 hover:bg-red-50 rounded-xl text-xs"
+                                    data-testid={`button-delete-service-${service.id}`}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            <Badge 
-                              variant="outline" 
-                              className="border-gray-300 text-gray-600"
-                              data-testid={`badge-bookings-${service.id}`}
-                            >
-                              {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
-                            </Badge>
                           </div>
-                        </div>
-                      )) || (
+                        ))
+                      ) : (
                         <div className="text-center py-12">
                           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Settings className="h-8 w-8 text-gray-400" />
