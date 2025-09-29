@@ -587,6 +587,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/services/:id', authenticateToken, async (req, res) => {
+    try {
+      const service = await storage.getService(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+
+      // Verify salon ownership
+      const salon = await storage.getSalon(service.salonId);
+      if (!salon || salon.ownerId !== req.user!.userId) {
+        return res.status(403).json({ message: 'Not authorized to update services for this salon' });
+      }
+
+      const updates = insertServiceSchema.partial().parse(req.body);
+      const updatedService = await storage.updateService(req.params.id, updates);
+      res.json(updatedService);
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid service data', error });
+    }
+  });
+
+  app.delete('/api/services/:id', authenticateToken, async (req, res) => {
+    try {
+      const service = await storage.getService(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+
+      // Verify salon ownership
+      const salon = await storage.getSalon(service.salonId);
+      if (!salon || salon.ownerId !== req.user!.userId) {
+        return res.status(403).json({ message: 'Not authorized to delete services for this salon' });
+      }
+
+      await storage.deleteService(req.params.id);
+      res.json({ message: 'Service deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error });
+    }
+  });
+
   // Queue routes
   app.get('/api/queues/my', authenticateToken, async (req, res) => {
     try {
