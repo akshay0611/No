@@ -169,7 +169,9 @@ export class MongoStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    await ServiceModel.create(newService);
+    console.log('MongoDB: Creating service with data:', newService);
+    const result = await ServiceModel.create(newService);
+    console.log('MongoDB: Service creation result:', result);
     return newService;
   }
 
