@@ -572,18 +572,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/services', authenticateToken, async (req, res) => {
     try {
+      console.log('Service creation request received:', req.body);
+      console.log('User:', req.user);
+      
       const serviceData = insertServiceSchema.parse(req.body);
+      console.log('Parsed service data:', serviceData);
       
       // Verify salon ownership
       const salon = await storage.getSalon(serviceData.salonId);
+      console.log('Salon found:', salon);
+      console.log('Salon ownerId:', salon?.ownerId);
+      console.log('Current userId:', req.user!.userId);
+      
       if (!salon || salon.ownerId !== req.user!.userId) {
+        console.log('Authorization failed - salon not found or wrong owner');
         return res.status(403).json({ message: 'Not authorized to add services to this salon' });
       }
 
+      console.log('Creating service with data:', serviceData);
       const service = await storage.createService(serviceData);
+      console.log('Service created successfully:', service);
       res.status(201).json(service);
     } catch (error) {
-      res.status(400).json({ message: 'Invalid service data', error });
+      console.error('Service creation error:', error);
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
+        return res.status(400).json({ message: 'Invalid service data', errors: error.errors });
+      }
+      res.status(400).json({ message: 'Invalid service data', error: error instanceof Error ? error.message : error });
     }
   });
 
