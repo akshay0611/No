@@ -12,6 +12,10 @@ export default function Navbar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
 
+  if (user?.role === 'salon_owner') {
+    return null;
+  }
+
   return (
     <>
       {/* Mobile-First Header */}
