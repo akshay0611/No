@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { useState, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,6 +21,8 @@ import HelpCenter from "./pages/HelpCenter";
 import Profile from "./pages/Profile";
 import NotFound from "@/pages/not-found";
 import SkeletonLoadingScreen from "./components/SkeletonLoadingScreen";
+import IntroScreen from "./components/IntroScreen";
+import PhoneAuthFlow from "./components/PhoneAuthFlow";
 
 
 function Router() {
@@ -43,16 +45,57 @@ function Router() {
 }
 
 function App() {
-  const [currentPhase, setCurrentPhase] = useState<'auth' | 'skeleton' | 'app'>('auth');
+  const [currentPhase, setCurrentPhase] = useState<'auth' | 'intro' | 'phone-auth' | 'skeleton' | 'app'>('auth');
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
+  const [, setLocation] = useLocation();
 
-  const handleAuthComplete = () => {
-    console.log('App: Auth complete, switching to skeleton loading');
+  const handleAuthComplete = (user?: any) => {
+    console.log('App: Auth complete, user:', user);
+    setAuthenticatedUser(user);
+    // If user is an admin (salon_owner), skip intro and go directly to app
+    if (user && user.role === 'salon_owner') {
+      console.log('Admin user detected, skipping intro screen');
+      setCurrentPhase('skeleton');
+    } else {
+      console.log('Regular user, showing intro screen');
+      setCurrentPhase('intro');
+    }
+  };
+
+  const handleIntroComplete = () => {
+    console.log('App: Intro complete, switching to skeleton loading');
     setCurrentPhase('skeleton');
   };
 
   const handleSkeletonComplete = () => {
     console.log('App: Skeleton loading complete, switching to app');
     setCurrentPhase('app');
+  };
+
+  // Navigate to appropriate page when entering app phase
+  useEffect(() => {
+    if (currentPhase === 'app' && authenticatedUser) {
+      console.log('App phase reached with user:', authenticatedUser);
+      if (authenticatedUser.role === 'salon_owner') {
+        console.log('Navigating admin to dashboard');
+        setLocation('/dashboard');
+      } else {
+        console.log('Navigating customer to home');
+        setLocation('/');
+      }
+    }
+  }, [currentPhase, authenticatedUser, setLocation]);
+
+  const handleSignIn = () => {
+    console.log('App: Sign in requested, going to phone auth');
+    setCurrentPhase('phone-auth');
+  };
+
+  const handlePhoneAuthComplete = (user?: any) => {
+    console.log('App: Phone auth complete, user:', user);
+    setAuthenticatedUser(user);
+    // All phone auth goes to skeleton loading (admins will be routed by the auth context)
+    setCurrentPhase('skeleton');
   };
 
   console.log('App render, currentPhase:', currentPhase);
@@ -66,6 +109,20 @@ function App() {
               <WebSocketProvider>
                 <CartProvider>
                   <NewAuthPage onComplete={handleAuthComplete} />
+                </CartProvider>
+              </WebSocketProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      ) : currentPhase === 'intro' ? (
+        <IntroScreen onNext={handleIntroComplete} onSignIn={handleSignIn} />
+      ) : currentPhase === 'phone-auth' ? (
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <AuthProvider>
+              <WebSocketProvider>
+                <CartProvider>
+                  <PhoneAuthFlow onComplete={handlePhoneAuthComplete} />
                 </CartProvider>
               </WebSocketProvider>
             </AuthProvider>

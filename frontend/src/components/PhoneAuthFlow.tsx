@@ -1,74 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../context/AuthContext";
-import AuthLoadingScreen from "../components/AuthLoadingScreen";
-import PhoneAuth from "../components/PhoneAuth";
-import PhoneOTPVerification from "../components/PhoneOTPVerification";
-import WelcomeLoading from "../components/WelcomeLoading";
-import AdminLoginFlow from "../components/AdminLoginFlow";
-import { useState } from "react";
+import PhoneAuth from "./PhoneAuth";
+import PhoneOTPVerification from "./PhoneOTPVerification";
+import WelcomeLoading from "./WelcomeLoading";
+import AdminLoginFlow from "./AdminLoginFlow";
 
-type AuthStep =
-  | 'loading'
-  | 'phone-input'
-  | 'otp-verification'
-  | 'welcome-loading'
-  | 'admin-login';
+type AuthStep = 'phone-input' | 'otp-verification' | 'welcome-loading' | 'admin-login';
 
-interface NewAuthPageProps {
+interface PhoneAuthFlowProps {
   onComplete?: (user?: any) => void;
 }
 
-export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
-  const [currentStep, setCurrentStep] = useState<AuthStep>('loading');
+export default function PhoneAuthFlow({ onComplete }: PhoneAuthFlowProps) {
+  const [currentStep, setCurrentStep] = useState<AuthStep>('phone-input');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [debugOTP, setDebugOTP] = useState<string>('');
   const [, setLocation] = useLocation();
-
-  const {
-    user,
-    login,
-    authFlow,
-    setAuthFlow
-  } = useAuth();
-
-  // Check URL params for admin flow
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const flow = urlParams.get('flow');
-    if (flow === 'admin') {
-      setAuthFlow('admin');
-    } else {
-      setAuthFlow('customer');
-    }
-  }, [setAuthFlow]);
+  
+  const { user, login } = useAuth();
 
   // Redirect authenticated users
   useEffect(() => {
     if (user) {
       if (onComplete) {
         onComplete(user);
-      } else if (user.role === 'salon_owner') {
-        setLocation('/dashboard');
       } else {
         setLocation('/');
       }
     }
   }, [user, setLocation, onComplete]);
-
-  const handleLoadingComplete = () => {
-    // After loading screen, call onComplete to show IntroScreen
-    if (onComplete) {
-      onComplete();
-    } else {
-      // Fallback to original behavior if no onComplete callback
-      if (authFlow === 'admin') {
-        setCurrentStep('admin-login');
-      } else {
-        setCurrentStep('phone-input');
-      }
-    }
-  };
 
   const handleOTPSent = (phone: string) => {
     setPhoneNumber(phone);
@@ -88,6 +48,10 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
     }
   };
 
+  const handleSwitchToAdmin = () => {
+    setCurrentStep('admin-login');
+  };
+
   const handleAdminAuthSuccess = (userData: any, token: string) => {
     login(userData, token);
     if (onComplete) {
@@ -98,13 +62,7 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
   };
 
   const handleSwitchToCustomer = () => {
-    setAuthFlow('customer');
     setCurrentStep('phone-input');
-  };
-
-  const handleSwitchToAdmin = () => {
-    setAuthFlow('admin');
-    setCurrentStep('admin-login');
   };
 
   // Don't render if user is already authenticated
@@ -114,18 +72,15 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
 
   // Render current step
   switch (currentStep) {
-    case 'loading':
-      return <AuthLoadingScreen onComplete={handleLoadingComplete} />;
-
     case 'phone-input':
       return (
-        <PhoneAuth
+        <PhoneAuth 
           onOTPSent={handleOTPSent}
-          onBack={() => setCurrentStep('loading')}
+          onBack={() => {}} // No back button for this flow
           onSwitchToAdmin={handleSwitchToAdmin}
         />
       );
-
+    
     case 'otp-verification':
       return (
         <PhoneOTPVerification
@@ -134,7 +89,7 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
           onBack={() => setCurrentStep('phone-input')}
         />
       );
-
+    
     case 'welcome-loading':
       return (
         <WelcomeLoading
@@ -142,7 +97,7 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
           userName={user?.name}
         />
       );
-
+    
     case 'admin-login':
       return (
         <AdminLoginFlow
@@ -150,8 +105,14 @@ export default function NewAuthPage({ onComplete }: NewAuthPageProps) {
           onSwitchToCustomer={handleSwitchToCustomer}
         />
       );
-
+    
     default:
-      return <AuthLoadingScreen onComplete={handleLoadingComplete} />;
+      return (
+        <PhoneAuth 
+          onOTPSent={handleOTPSent}
+          onBack={() => {}}
+          onSwitchToAdmin={handleSwitchToAdmin}
+        />
+      );
   }
 }
