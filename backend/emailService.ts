@@ -21,14 +21,14 @@ class EmailService {
       console.log(`Attempting to send email OTP to: ${email}`);
       
       const { data, error } = await this.resend.emails.send({
-        from: 'SmartQ <onboarding@resend.dev>', // Use your verified domain or resend.dev for testing
+        from: 'AltQ <team@altq.in>', // Use your verified domain or resend.dev for testing
         to: [email],
-        subject: 'SmartQ - Email Verification Code',
+        subject: 'AltQ - Email Verification Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
             <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
               <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #e91e63; margin: 0; font-size: 28px;">SmartQ</h1>
+                <h1 style="color: #e91e63; margin: 0; font-size: 28px;">AltQ</h1>
                 <p style="color: #666; margin: 5px 0 0 0;">Smart Queue Management</p>
               </div>
               
@@ -36,7 +36,7 @@ class EmailService {
               
               <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 25px;">
                 Hi ${name},<br><br>
-                Thank you for registering with SmartQ! To complete your account setup, please verify your email address using the code below:
+                Thank you for registering with AltQ! To complete your account setup, please verify your email address using the code below:
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -51,7 +51,7 @@ class EmailService {
               
               <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
                 <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-                  This is an automated message from SmartQ. Please do not reply to this email.
+                  This is an automated message from AltQ. Please do not reply to this email.
                 </p>
               </div>
             </div>
