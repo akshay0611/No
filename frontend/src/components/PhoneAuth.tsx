@@ -84,11 +84,11 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
       <div className="bg-gradient-to-br from-teal-600 to-teal-700 px-6 py-12 relative overflow-hidden">
         <div className="max-w-md mx-auto relative z-10">
           {/* Logo */}
-          <div className="mb-8">
+          <div className="mb-6">
             <img
               src="/loadlogo.png"
               alt="YEF Samrat Logo"
-              className="h-16 w-auto brightness-0 invert"
+              className="h-20 w-auto brightness-0 invert"
             />
           </div>
 
