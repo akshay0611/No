@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MapPin, Clock, Users, Tag, Heart, Plus, ShoppingCart, ChevronLeft, ChevronRight, ImageIcon, Percent } from "lucide-react";
+import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -110,6 +111,11 @@ export default function SalonProfile() {
   const { toast } = useToast();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
+    libraries: ["places"],
+  });
 
   const { data: salon, isLoading } = useQuery<SalonDetails>({
     queryKey: ['/api/salons', id],
@@ -304,7 +310,7 @@ export default function SalonProfile() {
           <div className="flex items-center justify-center space-x-6 text-muted-foreground mb-4">
             <div className="flex items-center space-x-1">
               <MapPin className="h-4 w-4" />
-              <span data-testid="text-salon-location">{salon.location}</span>
+              <span data-testid="text-salon-location">{salon.address}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
@@ -324,6 +330,20 @@ export default function SalonProfile() {
             </span>
           </div>
         </div>
+
+        {isLoaded && salon.latitude && salon.longitude && (
+          <Card className="mb-8">
+            <div className="h-64 md:h-80">
+              <GoogleMap
+                mapContainerStyle={{ width: "100%", height: "100%" }}
+                center={{ lat: salon.latitude, lng: salon.longitude }}
+                zoom={15}
+              >
+                <MarkerF position={{ lat: salon.latitude, lng: salon.longitude }} />
+              </GoogleMap>
+            </div>
+          </Card>
+        )}
 
         {/* Services Section - Clean Layout as per Sketch */}
         <div className="mb-8">

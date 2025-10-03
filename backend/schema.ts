@@ -29,7 +29,9 @@ export const salons = pgTable("salons", {
   ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  location: text("location").notNull(),
+  address: text("address").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 6 }),
+  longitude: decimal("longitude", { precision: 10, scale: 6 }),
   type: text("type", { enum: ["men", "women", "unisex"] }).notNull().default("unisex"),
   operatingHours: jsonb("operating_hours").$type<{
     monday?: { open: string; close: string };
@@ -113,7 +115,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   role: z.enum(["customer", "salon_owner"]).default("customer"),
 });
 
-export const insertSalonSchema = createInsertSchema(salons).omit({
+export const insertSalonSchema = createInsertSchema(salons, {
+  latitude: z.union([z.number(), z.string()]).transform(val => typeof val === 'string' ? parseFloat(val) : val),
+  longitude: z.union([z.number(), z.string()]).transform(val => typeof val === 'string' ? parseFloat(val) : val),
+}).omit({
   id: true,
   rating: true,
   createdAt: true,

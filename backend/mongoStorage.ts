@@ -107,7 +107,7 @@ export class MongoStorage implements IStorage {
 
   async getSalonsByLocation(location: string): Promise<Salon[]> {
     const salons = await SalonModel.find({ 
-      location: { $regex: location, $options: 'i' } 
+      address: { $regex: location, $options: 'i' } 
     }).lean();
     return salons as unknown as Salon[];
   }

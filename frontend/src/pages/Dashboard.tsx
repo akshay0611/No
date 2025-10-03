@@ -166,7 +166,6 @@ export default function Dashboard() {
     defaultValues: {
       name: "",
       description: "",
-      location: "", // Will be set by LocationPicker
       type: "unisex",
       operatingHours: {},
       images: [],
@@ -461,9 +460,7 @@ export default function Dashboard() {
       return;
     }
 
-    // Check if location is provided
-    const locationAddress = selectedLocation?.address || data.location;
-    if (!locationAddress?.trim()) {
+    if (!selectedLocation) {
       console.log('❌ Validation failed: No location provided');
       toast({
         title: "Location Required",
@@ -476,11 +473,10 @@ export default function Dashboard() {
     // Prepare salon data
     const salonData = {
       ...data,
-      location: locationAddress.trim(),
+      address: selectedLocation.address,
+      latitude: selectedLocation.latitude,
+      longitude: selectedLocation.longitude,
       ownerId: user.id,
-      latitude: selectedLocation?.latitude,
-      longitude: selectedLocation?.longitude,
-      fullAddress: selectedLocation?.address,
     };
 
     console.log('✅ Validation passed, submitting salon data:', salonData);
@@ -787,19 +783,7 @@ export default function Dashboard() {
                         }}
                         initialLocation={selectedLocation}
                       />
-                      {/* Hidden field to satisfy form validation */}
-                      <FormField
-                        control={salonForm.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem className="hidden">
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      
                     </div>
                     
                     {/* Image Upload */}
