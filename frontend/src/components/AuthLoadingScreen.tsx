@@ -1,24 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, Search, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface AuthLoadingScreenProps {
   onComplete: () => void;
 }
 
 export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps) {
-  const [currentMessage, setCurrentMessage] = useState(0);
-
-  const messages = [
-    { icon: Search, text: "Finding best salons..." },
-    { icon: MapPin, text: "Locating nearby services..." },
-    { icon: Sparkles, text: "Preparing your experience..." }
-  ];
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Cycle through messages every 1 second
-    const messageInterval = setInterval(() => {
-      setCurrentMessage((prev) => (prev + 1) % messages.length);
-    }, 1000);
+    // Animate progress bar
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 60);
 
     // Complete loading after 3 seconds
     const completeTimer = setTimeout(() => {
@@ -26,44 +25,51 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
     }, 3000);
 
     return () => {
-      clearInterval(messageInterval);
+      clearInterval(progressInterval);
       clearTimeout(completeTimer);
     };
   }, [onComplete]);
 
-  const CurrentIcon = messages[currentMessage].icon;
-
   return (
-    <div 
-    className="fixed inset-0 flex items-center justify-center z-50 bg-no-repeat"
-    style={{ backgroundImage: "url('/altQ.png')", backgroundSize: "100% 100%", backgroundPosition: "center" }}
-  >
-   
-      
-      {/* Content overlay */}
-      <div className="relative text-center">
-        {/* Loading Message */}
-        {/* <div className="flex items-center justify-center space-x-3">
-          <CurrentIcon className="h-5 w-5 text-white animate-spin" />
-          <p className="text-white text-lg font-medium">
-            {messages[currentMessage].text}
-          </p>
-        </div> */}
-
-        {/* Loading Dots */}
-        {/* <div className="flex justify-center space-x-2 mt-8">
-          {[0, 1, 2].map((index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentMessage 
-                  ? 'bg-white scale-125' 
-                  : 'bg-white/50'
-              }`}
-            />
-          ))}
-        </div> */}
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2E5E66] via-[#3a7078] to-[#2E5E66] overflow-hidden">
+      {/* Animated background circles */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
       </div>
+
+      {/* Main Content */}
+      <div className="relative flex flex-col items-center justify-center h-full">
+        {/* Logo with subtle animation */}
+        <div className="relative mb-8 animate-float">
+          <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl scale-75"></div>
+          <img
+            src="/loadlogo.png"
+            alt="AltQ Logo"
+            className="relative w-56 h-56 object-contain drop-shadow-2xl"
+          />
+        </div>
+
+        
+
+        {/* Animated dots */}
+        
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
