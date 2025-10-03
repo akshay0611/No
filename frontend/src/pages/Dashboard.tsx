@@ -35,8 +35,17 @@ import {
   Search,
   Home,
   Calendar,
-  TrendingDown
+  TrendingDown,
+  LogOut,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -55,7 +64,7 @@ type OfferForm = z.infer<typeof offerFormSchema>;
 type SalonForm = z.infer<typeof salonFormSchema>;
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [selectedSalonId, setSelectedSalonId] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -593,11 +602,31 @@ export default function Dashboard() {
               <User className="h-20 text-black" />
             </Button>
           </div> */}
-           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="lg" className="p-2 rounded-full hover:bg-gray-100">
-              <User className="h-20 text-black" />
-            </Button>
-          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="lg" className="p-2 rounded-full hover:bg-gray-100">
+                <User className="h-20 text-black" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>My Account</SheetTitle>
+                <SheetDescription>
+                  Manage your account settings and preferences.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => logout()}
+                  className="w-full justify-start p-2 text-left font-normal"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Salon Selector - Mobile Scrollable */}
