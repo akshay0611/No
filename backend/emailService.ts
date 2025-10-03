@@ -1,56 +1,28 @@
-import nodemailer from 'nodemailer';
-
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
-}
+import { Resend } from 'resend';
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor() {
-    const config: EmailConfig = {
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER || '',
-        pass: process.env.EMAIL_PASS || '', // App password for Gmail
-      },
-    };
-
-    console.log('Email config:', {
-      host: config.host,
-      port: config.port,
-      user: config.auth.user,
-      passLength: config.auth.pass.length
-    });
-
-    this.transporter = nodemailer.createTransport(config);
+    const apiKey = process.env.RESEND_API_KEY;
     
-    // Verify connection configuration
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('Email service configuration error:', error);
-      } else {
-        console.log('Email service ready to send messages');
-      }
-    });
+    if (!apiKey) {
+      console.error('RESEND_API_KEY is not set in environment variables');
+      console.log('Available env vars:', Object.keys(process.env).filter(key => key.includes('RESEND')));
+      throw new Error('RESEND_API_KEY is required');
+    }
+
+    this.resend = new Resend(apiKey);
+    console.log('Resend email service initialized successfully');
   }
 
   async sendOTP(email: string, otp: string, name: string = 'User'): Promise<boolean> {
     try {
       console.log(`Attempting to send email OTP to: ${email}`);
-      console.log(`Using email config - User: ${process.env.EMAIL_USER}, Host: ${process.env.EMAIL_HOST}`);
       
-      const mailOptions = {
-        from: `"SmartQ" <${process.env.EMAIL_USER}>`,
-        to: email,
+      const { data, error } = await this.resend.emails.send({
+        from: 'SmartQ <onboarding@resend.dev>', // Use your verified domain or resend.dev for testing
+        to: [email],
         subject: 'SmartQ - Email Verification Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
@@ -85,10 +57,14 @@ class EmailService {
             </div>
           </div>
         `,
-      };
+      });
 
-      const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
+      if (error) {
+        console.error('Resend email error:', error);
+        return false;
+      }
+
+      console.log('Email sent successfully:', data?.id);
       return true;
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -98,11 +74,18 @@ class EmailService {
 
   async verifyConnection(): Promise<boolean> {
     try {
-      await this.transporter.verify();
-      console.log('Email service is ready');
+      // Test the connection by attempting to get API key info
+      const { data, error } = await this.resend.apiKeys.list();
+      
+      if (error) {
+        console.error('Resend connection failed:', error);
+        return false;
+      }
+      
+      console.log('Resend service is ready');
       return true;
     } catch (error) {
-      console.error('Email service connection failed:', error);
+      console.error('Resend service connection failed:', error);
       return false;
     }
   }
