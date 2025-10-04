@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,6 +67,7 @@ type SalonForm = z.infer<typeof salonFormSchema>;
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedSalonId, setSelectedSalonId] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number;
@@ -76,6 +78,13 @@ export default function Dashboard() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+
+  // Redirect to auth if no user (e.g., after logout)
+  useEffect(() => {
+    if (!user) {
+      setLocation('/auth');
+    }
+  }, [user, setLocation]);
 
   // Get user's salons
   const { data: salons = [], isLoading: salonsLoading } = useQuery({
@@ -543,7 +552,8 @@ export default function Dashboard() {
     });
   };
 
-  if (!user || user.role !== 'salon_owner') {
+  // Show access denied only for authenticated users who are not salon owners
+  if (user && user.role !== 'salon_owner') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white border border-teal-200 rounded-3xl p-8 text-center shadow-lg">
@@ -553,6 +563,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-teal-900 mb-3">Access Denied</h1>
           <p className="text-teal-700 text-sm">This dashboard is only available for salon owners.</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show loading while redirecting if no user
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
       </div>
     );
   }
