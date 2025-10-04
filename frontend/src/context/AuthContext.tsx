@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "../types";
 import { api } from "../lib/api";
+import { clearUserCategory } from "../utils/categoryUtils";
 
 interface AuthContextType {
   user: User | null;
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error('Failed to parse stored user data:', error);
         localStorage.removeItem('smartq_token');
         localStorage.removeItem('smartq_user');
+        clearUserCategory();
       }
     }
     setIsInitialized(true);
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Re-login to ensure role is in token
         console.log('Role missing in token, refreshing authentication');
         localStorage.removeItem('smartq_token');
+        clearUserCategory();
         window.location.href = '/auth';
       }
     } catch (e) {
@@ -91,6 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setToken(null);
     localStorage.removeItem('smartq_token');
     localStorage.removeItem('smartq_user');
+    clearUserCategory(); // Reset category selection on logout
   };
 
   const updateUser = (updatedUserData: User) => {
