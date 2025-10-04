@@ -44,7 +44,10 @@ export async function apiRequest(
   }
 
   // Use full backend URL
-  const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+  const baseURL = import.meta.env.VITE_API_URL;
+  if (!baseURL) {
+    throw new Error('VITE_API_URL environment variable is not set. Please configure your backend URL.');
+  }
   const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
   console.log('Making API request to:', fullUrl);
 
@@ -96,7 +99,10 @@ export const getQueryFn: <T>(options: {
     }
 
     // Use full backend URL for query functions
-    const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
+    const baseURL = import.meta.env.VITE_API_URL;
+    if (!baseURL) {
+      throw new Error('VITE_API_URL environment variable is not set. Please configure your backend URL.');
+    }
     const url = queryKey.join("/") as string;
     const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`;
     
