@@ -17,6 +17,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { getUserCategory } from "../utils/categoryUtils";
 import type { SalonWithDetails, SalonPhoto } from "../types";
 
 export default function Home() {
@@ -28,7 +29,10 @@ export default function Home() {
   const [showFavoritesSection, setShowFavoritesSection] = useState(false);
   const [exploreFilter, setExploreFilter] = useState<'highly-rated' | 'nearest'>('highly-rated');
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [selectedSalonType, setSelectedSalonType] = useState<'men' | 'women' | 'unisex'>('unisex');
+  const [selectedSalonType, setSelectedSalonType] = useState<'men' | 'women' | 'unisex'>(() => {
+    // Initialize with user's selected category from localStorage, fallback to 'unisex'
+    return getUserCategory() || 'unisex';
+  });
 
   const plugin = useRef(
     Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })

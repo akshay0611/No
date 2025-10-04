@@ -26,28 +26,28 @@ export default function CategorySelection({ onCategorySelect }: CategorySelectio
     title: string;
     description: string;
     color: string;
-    imagePlaceholder: string;
+    image: string;
   }> = [
       {
         id: 'men',
         title: getCategoryDisplayName('men'),
         description: getCategoryDescription('men'),
         color: 'from-blue-400 to-blue-600',
-        imagePlaceholder: '👨'
+        image: '/men.jpeg'
       },
       {
         id: 'women',
         title: getCategoryDisplayName('women'),
         description: getCategoryDescription('women'),
         color: 'from-pink-400 to-pink-600',
-        imagePlaceholder: '👩'
+        image: '/women.jpeg'
       },
       {
         id: 'unisex',
         title: getCategoryDisplayName('unisex'),
         description: getCategoryDescription('unisex'),
         color: 'from-purple-400 to-purple-600',
-        imagePlaceholder: '✨'
+        image: '/unisex.jpeg'
       }
     ];
 
@@ -95,14 +95,15 @@ export default function CategorySelection({ onCategorySelect }: CategorySelectio
                 {/* Circle with Image/Icon */}
                 <div className="relative mb-4">
                   <div
-                    className={`w-40 h-40 rounded-full bg-gradient-to-br ${category.color}
-                    flex items-center justify-center shadow-2xl transition-all duration-300
+                    className={`w-40 h-40 rounded-full overflow-hidden shadow-2xl transition-all duration-300
                     ${selectedCategory === category.id ? 'ring-4 ring-white ring-opacity-50' : ''}`}
                   >
-                    {/* Emoji */}
-                    <span className="text-7xl filter drop-shadow-lg">
-                      {category.imagePlaceholder}
-                    </span>
+                    {/* Category Image */}
+                    <img
+                      src={category.image}
+                      alt={category.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
                   {/* Selection Indicator */}
@@ -137,14 +138,15 @@ export default function CategorySelection({ onCategorySelect }: CategorySelectio
             {/* Circle with Image/Icon */}
             <div className="relative mb-4">
               <div
-                className={`w-40 h-40 rounded-full bg-gradient-to-br ${categories[2].color}
-                flex items-center justify-center shadow-2xl transition-all duration-300
+                className={`w-40 h-40 rounded-full overflow-hidden shadow-2xl transition-all duration-300
                 ${selectedCategory === categories[2].id ? 'ring-4 ring-white ring-opacity-50' : ''}`}
               >
-                {/* Emoji */}
-                <span className="text-7xl filter drop-shadow-lg">
-                  {categories[2].imagePlaceholder}
-                </span>
+                {/* Category Image */}
+                <img
+                  src={categories[2].image}
+                  alt={categories[2].title}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Selection Indicator */}
