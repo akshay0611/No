@@ -23,6 +23,8 @@ import NotFound from "@/pages/not-found";
 import SkeletonLoadingScreen from "./components/SkeletonLoadingScreen";
 import IntroScreen from "./components/IntroScreen";
 import PhoneAuthFlow from "./components/PhoneAuthFlow";
+import CategorySelection from "./components/CategorySelection";
+import { UserCategory, getUserCategory, setUserCategory, clearUserCategory } from "./utils/categoryUtils";
 
 
 function Router() {
@@ -45,7 +47,7 @@ function Router() {
 }
 
 function App() {
-  const [currentPhase, setCurrentPhase] = useState<'auth' | 'intro' | 'phone-auth' | 'skeleton' | 'app'>('auth');
+  const [currentPhase, setCurrentPhase] = useState<'auth' | 'intro' | 'phone-auth' | 'skeleton' | 'category' | 'app'>('auth');
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [, setLocation] = useLocation();
 
@@ -53,18 +55,29 @@ function App() {
   useEffect(() => {
     const storedToken = localStorage.getItem('smartq_token');
     const storedUser = localStorage.getItem('smartq_user');
+    const storedCategory = getUserCategory();
     
     if (storedToken && storedUser) {
       try {
         const user = JSON.parse(storedUser);
         console.log('Found existing auth, user:', user);
         setAuthenticatedUser(user);
-        // Skip auth/intro phases and go directly to app
-        setCurrentPhase('app');
+        
+        // If user is admin (salon_owner), skip category selection
+        if (user.role === 'salon_owner') {
+          setCurrentPhase('app');
+        } else if (storedCategory) {
+          // Regular user with category already selected
+          setCurrentPhase('app');
+        } else {
+          // Regular user without category - show category selection
+          setCurrentPhase('category');
+        }
       } catch (error) {
         console.error('Failed to parse stored user data:', error);
         localStorage.removeItem('smartq_token');
         localStorage.removeItem('smartq_user');
+        clearUserCategory();
         // Stay in auth phase if stored data is invalid
       }
     }
@@ -89,7 +102,25 @@ function App() {
   };
 
   const handleSkeletonComplete = () => {
-    console.log('App: Skeleton loading complete, switching to app');
+    console.log('App: Skeleton loading complete');
+    
+    // Check if user needs category selection
+    if (authenticatedUser && authenticatedUser.role !== 'salon_owner') {
+      const storedCategory = getUserCategory();
+      if (!storedCategory) {
+        console.log('No category selected, showing category selection');
+        setCurrentPhase('category');
+        return;
+      }
+    }
+    
+    console.log('Switching to app');
+    setCurrentPhase('app');
+  };
+
+  const handleCategorySelect = (category: UserCategory) => {
+    console.log('Category selected:', category);
+    setUserCategory(category);
     setCurrentPhase('app');
   };
 
@@ -151,6 +182,8 @@ function App() {
         </QueryClientProvider>
       ) : currentPhase === 'skeleton' ? (
         <SkeletonLoadingScreen onComplete={handleSkeletonComplete} />
+      ) : currentPhase === 'category' ? (
+        <CategorySelection onCategorySelect={handleCategorySelect} />
       ) : (
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
