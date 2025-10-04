@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import {
   User,
   Users,
@@ -74,6 +74,8 @@ export default function Dashboard() {
   } | null>(null);
   const [activeTab, setActiveTab] = useState("queue");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
 
   // Get user's salons
   const { data: salons = [], isLoading: salonsLoading } = useQuery({
@@ -159,6 +161,9 @@ export default function Dashboard() {
 
   // Debug offers
   console.log('Offers state:', { offers, offersLoading, offersError, selectedSalonId });
+
+  // Debug services
+  console.log('Services state:', { services, servicesLoading, servicesError, selectedSalonId });
 
   // Forms
   const salonForm = useForm<SalonForm>({
@@ -287,8 +292,9 @@ export default function Dashboard() {
         title: "Service added successfully!",
         description: "The new service is now available for booking.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
+      queryClient.invalidateQueries({ queryKey: ['salon-services', selectedSalonId] });
       serviceForm.reset();
+      setIsServiceDialogOpen(false);
     },
     onError: (error) => {
       toast({
@@ -307,6 +313,7 @@ export default function Dashboard() {
         description: "Your promotion is now active.",
       });
       offerForm.reset();
+      setIsOfferDialogOpen(false);
       // Invalidate offers query to refresh the list
       queryClient.invalidateQueries({
         queryKey: ['salon-offers', selectedSalonId]
@@ -538,13 +545,13 @@ export default function Dashboard() {
 
   if (!user || user.role !== 'salon_owner') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-3xl p-8 text-center shadow-lg">
-          <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-white border border-teal-200 rounded-3xl p-8 text-center shadow-lg">
+          <div className="w-20 h-20 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <Settings className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-black mb-3">Access Denied</h1>
-          <p className="text-gray-600 text-sm">This dashboard is only available for salon owners.</p>
+          <h1 className="text-2xl font-bold text-teal-900 mb-3">Access Denied</h1>
+          <p className="text-teal-700 text-sm">This dashboard is only available for salon owners.</p>
         </div>
       </div>
     );
@@ -552,45 +559,55 @@ export default function Dashboard() {
 
   if (salonsLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         {/* Mobile Loading Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 p-4">
           <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded-full w-32 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded-full w-24"></div>
+            <div className="h-6 bg-teal-200 rounded-full w-32 mb-2"></div>
+            <div className="h-4 bg-teal-100 rounded-full w-24"></div>
           </div>
         </div>
-        
+
         {/* Loading Cards */}
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"></div>
+              <div key={i} className="h-24 bg-teal-100 rounded-2xl animate-pulse"></div>
             ))}
           </div>
-          <div className="h-96 bg-gray-100 rounded-3xl animate-pulse"></div>
+          <div className="h-96 bg-teal-50 rounded-3xl animate-pulse"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Background Logo */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <img
+          src="/loadlogo.png"
+          alt="Background Logo"
+          className="w-96 h-96 opacity-5 filter grayscale"
+        />
+      </div>
+
       {/* Mobile Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 z-50">
+      <div className="sticky top-0 bg-white border-b border-gray-100 z-50 relative">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            {/* <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="p-2 rounded-full hover:bg-gray-100"
-            >
-              <Menu className="h-5 w-5 text-black " />
-            </Button> */}
-            <div>
-              <h1 className="text-lg font-bold text-black">AltQ</h1>
-              <p className="text-xs text-gray-500">Salon Dashboard</p>
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center p-1">
+                <img
+                  src="/loadlogo.png"
+                  alt="YEF Samrat Logo"
+                  className="h-8 w-8 filter brightness-0 invert"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-teal-700">Salon Dashboard</p>
+              </div>
             </div>
           </div>
           {/* <div className="flex items-center space-x-2">
@@ -634,11 +651,10 @@ export default function Dashboard() {
                   key={salon.id}
                   variant={selectedSalonId === salon.id ? "default" : "outline"}
                   onClick={() => setSelectedSalonId(salon.id)}
-                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
-                    selectedSalonId === salon.id 
-                      ? "bg-black text-white" 
-                      : "bg-white text-black border-gray-300 hover:bg-gray-50"
-                  }`}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${selectedSalonId === salon.id
+                    ? "bg-teal-600 text-white"
+                    : "bg-white text-teal-700 border-teal-300 hover:bg-teal-50"
+                    }`}
                   data-testid={`button-salon-${salon.id}`}
                 >
                   {salon.name}
@@ -650,236 +666,235 @@ export default function Dashboard() {
       </div>
 
       {salons.length === 0 ? (
-        <div className="p-4">
-          <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center mt-8">
-            <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="p-4 pb-24 relative z-10">
+          <div className="bg-white border border-teal-200 rounded-3xl p-8 text-center mt-8 shadow-sm">
+            <div className="w-20 h-20 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <Settings className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-black mb-3">No salons found</h2>
-            <p className="text-gray-600 text-sm mb-6">
+            <h2 className="text-xl font-bold text-teal-900 mb-3">No salons found</h2>
+            <p className="text-teal-700 text-sm mb-6">
               Create your first salon to start managing queues and tracking analytics.
             </p>
-            
+
             {/* Create Salon Dialog */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button 
-                  className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
+                <Button
+                  className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-2xl py-3 font-medium"
                   data-testid="button-create-salon"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Salon
                 </Button>
               </DialogTrigger>
-              <DialogContent className="mx-4 max-w-sm rounded-3xl">
-                <DialogHeader className="text-center pb-2">
-                  <DialogTitle className="text-lg font-bold">Create New Salon</DialogTitle>
-                  <DialogDescription className="text-sm text-gray-600">
-                    Add your salon to SmartQ and start managing queues.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...salonForm}>
-                  <form
-                    onSubmit={(e) => {
-                      console.log('🔥 Form submit event triggered');
-                      console.log('Form errors:', salonForm.formState.errors);
-                      console.log('Form values:', salonForm.getValues());
-                      console.log('Form is valid:', salonForm.formState.isValid);
-                      salonForm.handleSubmit(
-                        (data) => {
-                          console.log('✅ Form validation passed, calling onSalonSubmit');
-                          onSalonSubmit(data);
-                        },
-                        (errors) => {
-                          console.log('❌ Form validation failed:', errors);
-                          // Show validation errors to user
-                          const errorMessages = Object.entries(errors)
-                            .map(([field, error]) => `${field}: ${error?.message}`)
-                            .join(', ');
-                          toast({
-                            title: "Form Validation Error",
-                            description: `Please fix the following: ${errorMessages}`,
-                            variant: "destructive",
-                          });
-                        }
-                      )(e);
-                    }}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={salonForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-black">Salon Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter salon name" 
-                              {...field} 
-                              data-testid="input-salon-name"
-                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={salonForm.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-black">Salon Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger 
-                                data-testid="select-salon-type"
-                                className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                              >
-                                <SelectValue placeholder="Select salon type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="rounded-xl">
-                              <SelectItem value="men">Men's Salon</SelectItem>
-                              <SelectItem value="women">Women's Salon</SelectItem>
-                              <SelectItem value="unisex">Unisex Salon</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={salonForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe your salon..."
-                              {...field}
-                              value={field.value || ""}
-                              data-testid="textarea-salon-description"
-                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
-                              rows={3}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {/* Location Picker */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-black">
-                        Salon Location <span className="text-red-500">*</span>
-                      </label>
-                      <LocationPicker
-                        onLocationSelect={(location) => {
-                          setSelectedLocation(location);
-                          // Update the form's location field
-                          salonForm.setValue('location', location.address);
+              <DialogContent className="mx-2 max-w-[95vw] sm:max-w-md w-full max-h-[90vh] overflow-hidden rounded-3xl p-0">
+                <div className="max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="text-center p-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-100">
+                    <DialogTitle className="text-lg font-bold">Create New Salon</DialogTitle>
+                    <DialogDescription className="text-sm text-gray-600">
+                      Add your salon to SmartQ and start managing queues.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="p-6 pt-4">
+                    <Form {...salonForm}>
+                      <form
+                        onSubmit={(e) => {
+                          console.log('🔥 Form submit event triggered');
+                          console.log('Form errors:', salonForm.formState.errors);
+                          console.log('Form values:', salonForm.getValues());
+                          console.log('Form is valid:', salonForm.formState.isValid);
+                          salonForm.handleSubmit(
+                            (data) => {
+                              console.log('✅ Form validation passed, calling onSalonSubmit');
+                              onSalonSubmit(data);
+                            },
+                            (errors) => {
+                              console.log('❌ Form validation failed:', errors);
+                              // Show validation errors to user
+                              const errorMessages = Object.entries(errors)
+                                .map(([field, error]) => `${field}: ${error?.message}`)
+                                .join(', ');
+                              toast({
+                                title: "Form Validation Error",
+                                description: `Please fix the following: ${errorMessages}`,
+                                variant: "destructive",
+                              });
+                            }
+                          )(e);
                         }}
-                        initialLocation={selectedLocation}
-                      />
-                      
-                    </div>
-                    
-                    {/* Image Upload */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-black">
-                        Salon Photos <span className="text-red-500">*</span>
-                      </label>
-                      <div className={`border-2 border-dashed rounded-2xl p-4 text-center ${
-                        selectedImages.length === 0 
-                          ? 'border-red-200 bg-red-50' 
-                          : 'border-green-200 bg-green-50'
-                      }`}>
-                        <Camera className={`h-8 w-8 mx-auto mb-2 ${
-                          selectedImages.length === 0 ? 'text-red-400' : 'text-green-400'
-                        }`} />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files || []);
-                            setSelectedImages(files);
-                          }}
-                          className="hidden"
-                          id="salon-images"
-                          data-testid="input-salon-images"
-                        />
-                        <label
-                          htmlFor="salon-images"
-                          className="cursor-pointer"
-                        >
-                          <div className="text-sm font-medium text-black mb-1">
-                            {selectedImages.length === 0 ? "Add Photos" : `${selectedImages.length} Selected`}
-                          </div>
-                          <div className={`text-xs ${
-                            selectedImages.length === 0 ? 'text-red-500' : 'text-green-500'
-                          }`}>
-                            {selectedImages.length === 0
-                              ? "Tap to select salon photos"
-                              : `${selectedImages.length} photo${selectedImages.length !== 1 ? 's' : ''} ready to upload`}
-                          </div>
-                        </label>
-                        
-                        {selectedImages.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2 mt-3">
-                            {selectedImages.slice(0, 3).map((file, index) => (
-                              <div key={index} className="relative">
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-16 object-cover rounded-lg border"
+                        className="space-y-4"
+                      >
+                        <FormField
+                          control={salonForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-teal-900">Salon Name</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter salon name"
+                                  {...field}
+                                  data-testid="input-salon-name"
+                                  className="h-12 rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500 text-base"
                                 />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-                                  }}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
-                                >
-                                  ×
-                                </button>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={salonForm.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-teal-900">Salon Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger
+                                    data-testid="select-salon-type"
+                                    className="h-12 rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500 text-base"
+                                  >
+                                    <SelectValue placeholder="Select salon type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="men">Men's Salon</SelectItem>
+                                  <SelectItem value="women">Women's Salon</SelectItem>
+                                  <SelectItem value="unisex">Unisex Salon</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={salonForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-teal-900">Description</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Describe your salon..."
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="textarea-salon-description"
+                                  className="rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500 resize-none text-base min-h-[80px]"
+                                  rows={3}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Location Picker */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-teal-900">
+                            Salon Location <span className="text-red-500">*</span>
+                          </label>
+                          <LocationPicker
+                            onLocationSelect={(location) => {
+                              setSelectedLocation(location);
+                              // Update the form's location field
+                              salonForm.setValue('location', location.address);
+                            }}
+                            initialLocation={selectedLocation}
+                          />
+                        </div>
+
+                        {/* Image Upload */}
+                        <div className="space-y-3">
+                          <label className="text-sm font-medium text-teal-900">
+                            Salon Photos <span className="text-red-500">*</span>
+                          </label>
+                          <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${selectedImages.length === 0
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-teal-200 bg-teal-50'
+                            }`}>
+                            <Camera className={`h-10 w-10 mx-auto mb-3 ${selectedImages.length === 0 ? 'text-red-400' : 'text-teal-400'
+                              }`} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setSelectedImages(files);
+                              }}
+                              className="hidden"
+                              id="salon-images"
+                              data-testid="input-salon-images"
+                            />
+                            <label
+                              htmlFor="salon-images"
+                              className="cursor-pointer block"
+                            >
+                              <div className="text-base font-medium text-teal-900 mb-2">
+                                {selectedImages.length === 0 ? "Add Photos" : `${selectedImages.length} Selected`}
                               </div>
-                            ))}
-                            {selectedImages.length > 3 && (
-                              <div className="flex items-center justify-center bg-gray-100 rounded-lg text-xs text-gray-600 font-medium">
-                                +{selectedImages.length - 3} more
+                              <div className={`text-sm ${selectedImages.length === 0 ? 'text-red-500' : 'text-teal-600'
+                                }`}>
+                                {selectedImages.length === 0
+                                  ? "Tap to select salon photos"
+                                  : `${selectedImages.length} photo${selectedImages.length !== 1 ? 's' : ''} ready to upload`}
+                              </div>
+                            </label>
+
+                            {selectedImages.length > 0 && (
+                              <div className="grid grid-cols-3 gap-2 mt-4">
+                                {selectedImages.slice(0, 3).map((file, index) => (
+                                  <div key={index} className="relative">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-full h-20 object-cover rounded-lg border-2 border-teal-200"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                                      }}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-lg"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                                {selectedImages.length > 3 && (
+                                  <div className="flex items-center justify-center bg-teal-100 rounded-lg text-sm text-teal-700 font-medium h-20">
+                                    +{selectedImages.length - 3} more
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className={`w-full rounded-2xl py-3 font-medium ${
-                        selectedImages.length === 0 
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                          : "bg-black text-white hover:bg-gray-800"
-                      }`}
-                      disabled={createSalonMutation.isPending || selectedImages.length === 0}
-                      data-testid="button-submit-salon"
-                    >
-                      {createSalonMutation.isPending ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>Creating...</span>
                         </div>
-                      ) : selectedImages.length === 0 ? (
-                        "Add Photos to Continue"
-                      ) : (
-                        "Create Salon"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
+
+                        <Button
+                          type="submit"
+                          className={`w-full rounded-2xl py-3 font-medium mt-6 ${selectedImages.length === 0
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-teal-600 text-white hover:bg-teal-700"
+                            }`}
+                          disabled={createSalonMutation.isPending || selectedImages.length === 0}
+                          data-testid="button-submit-salon"
+                        >
+                          {createSalonMutation.isPending ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              <span>Creating...</span>
+                            </div>
+                          ) : selectedImages.length === 0 ? (
+                            "Add Photos to Continue"
+                          ) : (
+                            "Create Salon"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -889,50 +904,50 @@ export default function Dashboard() {
           {selectedSalonId && (
             <>
               {/* Analytics Cards - Mobile Grid */}
-              <div className="p-4">
+              <div className="p-4 pb-24 relative z-10">
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <Users className="h-5 w-5 text-black" />
-                      <span className="text-xs text-gray-500">TODAY</span>
+                      <Users className="h-5 w-5 text-teal-600" />
+                      <span className="text-xs text-teal-500">TODAY</span>
                     </div>
-                    <div className="text-2xl font-bold text-black" data-testid="text-customers-today">
+                    <div className="text-2xl font-bold text-teal-900" data-testid="text-customers-today">
                       {analyticsLoading ? "..." : analytics?.customersToday || 0}
                     </div>
-                    <div className="text-xs text-gray-600">Customers</div>
+                    <div className="text-xs text-teal-700">Customers</div>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <Clock className="h-5 w-5 text-black" />
-                      <span className="text-xs text-gray-500">AVG</span>
+                      <Clock className="h-5 w-5 text-teal-600" />
+                      <span className="text-xs text-teal-500">AVG</span>
                     </div>
-                    <div className="text-2xl font-bold text-black" data-testid="text-avg-wait">
+                    <div className="text-2xl font-bold text-teal-900" data-testid="text-avg-wait">
                       {analyticsLoading ? "..." : `${Math.round(analytics?.avgWaitTime || 0)}m`}
                     </div>
-                    <div className="text-xs text-gray-600">Wait Time</div>
+                    <div className="text-xs text-teal-700">Wait Time</div>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <Star className="h-5 w-5 text-black" />
-                      <span className="text-xs text-gray-500">RATING</span>
+                      <Star className="h-5 w-5 text-teal-600" />
+                      <span className="text-xs text-teal-500">RATING</span>
                     </div>
-                    <div className="text-2xl font-bold text-black" data-testid="text-rating">
+                    <div className="text-2xl font-bold text-teal-900" data-testid="text-rating">
                       {analyticsLoading ? "..." : analytics?.rating?.toFixed(1) || "0.0"}
                     </div>
-                    <div className="text-xs text-gray-600">Stars</div>
+                    <div className="text-xs text-teal-700">Stars</div>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <DollarSign className="h-5 w-5 text-black" />
-                      <span className="text-xs text-gray-500">REVENUE</span>
+                      <DollarSign className="h-5 w-5 text-teal-600" />
+                      <span className="text-xs text-teal-500">REVENUE</span>
                     </div>
-                    <div className="text-2xl font-bold text-black" data-testid="text-revenue">
+                    <div className="text-2xl font-bold text-teal-900" data-testid="text-revenue">
                       {analyticsLoading ? "..." : `${analytics?.revenue?.toFixed(0) || "0"}`}
                     </div>
-                    <div className="text-xs text-gray-600">Total</div>
+                    <div className="text-xs text-teal-700">Total</div>
                   </div>
                 </div>
 
@@ -972,7 +987,7 @@ export default function Dashboard() {
                         {queues.filter(q => q.status === 'waiting' || q.status === 'in-progress').length} active
                       </Badge>
                     </div>
-                    
+
                     {queuesLoading ? (
                       <div className="space-y-3">
                         {[...Array(3)].map((_, i) => (
@@ -992,27 +1007,25 @@ export default function Dashboard() {
                         {queues
                           .filter(q => q.status === 'waiting' || q.status === 'in-progress')
                           .map((queue) => (
-                            <div key={queue.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`queue-item-${queue.id}`}>
+                            <div key={queue.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`queue-item-${queue.id}`}>
                               <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center space-x-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                    queue.status === 'in-progress' 
-                                      ? 'bg-black text-white' 
-                                      : 'border-2 border-dashed border-gray-300 text-gray-500'
-                                  }`}>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${queue.status === 'in-progress'
+                                    ? 'bg-black text-white'
+                                    : 'border-2 border-dashed border-gray-300 text-gray-500'
+                                    }`}>
                                     {queue.position}
                                   </div>
                                   <div>
                                     <div className="font-medium text-black text-sm" data-testid={`text-customer-name-${queue.id}`}>
                                       {queue.user?.name || 'Customer'}
                                     </div>
-                                    <Badge 
+                                    <Badge
                                       variant={queue.status === 'in-progress' ? 'default' : 'secondary'}
-                                      className={`mt-1 text-xs ${
-                                        queue.status === 'in-progress' 
-                                          ? 'bg-black text-white' 
-                                          : 'bg-gray-100 text-gray-600'
-                                      }`}
+                                      className={`mt-1 text-xs ${queue.status === 'in-progress'
+                                        ? 'bg-black text-white'
+                                        : 'bg-gray-100 text-gray-600'
+                                        }`}
                                       data-testid={`badge-status-${queue.id}`}
                                     >
                                       {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
@@ -1080,7 +1093,7 @@ export default function Dashboard() {
                                     </a>
                                   </div>
                                 )}
-                                
+
                                 <div className="flex space-x-2">
                                   {queue.status === 'waiting' ? (
                                     <Button
@@ -1125,116 +1138,120 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-bold text-black">Services</h2>
-                      <Dialog>
+                      <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button 
-                            className="bg-black text-white hover:bg-gray-800 rounded-xl px-4 py-2"
+                          <Button
+                            className="bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-4 py-2"
                             data-testid="button-add-service"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="mx-4 max-w-sm rounded-3xl">
-                          <DialogHeader className="text-center pb-2">
-                            <DialogTitle className="text-lg font-bold">Add New Service</DialogTitle>
-                            <DialogDescription className="text-sm text-gray-600">
-                              Create a new service for your salon.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <Form {...serviceForm}>
-                            <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
-                              <FormField
-                                control={serviceForm.control}
-                                name="name"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-sm font-medium text-black">Service Name</FormLabel>
-                                    <FormControl>
-                                      <Input 
-                                        placeholder="e.g., Haircut" 
-                                        {...field} 
-                                        data-testid="input-service-name"
-                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <div className="grid grid-cols-2 gap-3">
-                                <FormField
-                                  control={serviceForm.control}
-                                  name="duration"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-sm font-medium text-black">Duration (min)</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          {...field}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                          data-testid="input-service-duration"
-                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={serviceForm.control}
-                                  name="price"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-sm font-medium text-black">Price ($)</FormLabel>
-                                      <FormControl>
-                                        <Input 
-                                          placeholder="0.00" 
-                                          {...field} 
-                                          data-testid="input-service-price"
-                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                              <FormField
-                                control={serviceForm.control}
-                                name="description"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
-                                    <FormControl>
-                                      <Textarea
-                                        placeholder="Service description..."
-                                        {...field}
-                                        value={field.value || ""}
-                                        data-testid="textarea-service-description"
-                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
-                                        rows={3}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <Button
-                                type="submit"
-                                className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
-                                disabled={createServiceMutation.isPending}
-                                data-testid="button-submit-service"
-                              >
-                                {createServiceMutation.isPending ? "Adding..." : "Add Service"}
-                              </Button>
-                            </form>
-                          </Form>
+                        <DialogContent className="mx-2 max-w-[95vw] sm:max-w-md w-full max-h-[90vh] overflow-hidden rounded-3xl p-0">
+                          <div className="max-h-[90vh] overflow-y-auto">
+                            <DialogHeader className="text-center p-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-100">
+                              <DialogTitle className="text-lg font-bold">Add New Service</DialogTitle>
+                              <DialogDescription className="text-sm text-gray-600">
+                                Create a new service for your salon.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="p-6 pt-4">
+                              <Form {...serviceForm}>
+                                <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
+                                  <FormField
+                                    control={serviceForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-sm font-medium text-teal-900">Service Name</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="e.g., Haircut"
+                                            {...field}
+                                            data-testid="input-service-name"
+                                            className="rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <FormField
+                                      control={serviceForm.control}
+                                      name="duration"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-sm font-medium text-teal-900">Duration (min)</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              type="number"
+                                              {...field}
+                                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                              data-testid="input-service-duration"
+                                              className="rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={serviceForm.control}
+                                      name="price"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-sm font-medium text-teal-900">Price ($)</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="0.00"
+                                              {...field}
+                                              data-testid="input-service-price"
+                                              className="rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormField
+                                    control={serviceForm.control}
+                                    name="description"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-sm font-medium text-teal-900">Description</FormLabel>
+                                        <FormControl>
+                                          <Textarea
+                                            placeholder="Service description..."
+                                            {...field}
+                                            value={field.value || ""}
+                                            data-testid="textarea-service-description"
+                                            className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
+                                            rows={3}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <Button
+                                    type="submit"
+                                    className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-2xl py-3 font-medium"
+                                    disabled={createServiceMutation.isPending}
+                                    data-testid="button-submit-service"
+                                  >
+                                    {createServiceMutation.isPending ? "Adding..." : "Add Service"}
+                                  </Button>
+                                </form>
+                              </Form>
+                            </div>
+                          </div>
                         </DialogContent>
                       </Dialog>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {servicesLoading ? (
                         [...Array(3)].map((_, i) => (
@@ -1242,7 +1259,7 @@ export default function Dashboard() {
                         ))
                       ) : services.length > 0 ? (
                         services.map((service: any) => (
-                          <div key={service.id} className="bg-white border border-gray-200 rounded-2xl p-4" data-testid={`service-item-${service.id}`}>
+                          <div key={service.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`service-item-${service.id}`}>
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <h4 className="font-medium text-black" data-testid={`text-service-name-${service.id}`}>
@@ -1263,8 +1280,8 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <div className="flex flex-col items-end space-y-2">
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className="border-gray-300 text-gray-600"
                                   data-testid={`badge-bookings-${service.id}`}
                                 >
@@ -1274,16 +1291,15 @@ export default function Dashboard() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => updateServiceMutation.mutate({ 
-                                      id: service.id, 
-                                      updates: { isActive: !service.isActive } 
+                                    onClick={() => updateServiceMutation.mutate({
+                                      id: service.id,
+                                      updates: { isActive: !service.isActive }
                                     })}
                                     disabled={updateServiceMutation.isPending}
-                                    className={`rounded-xl text-xs ${
-                                      service.isActive 
-                                        ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
-                                        : 'border-green-300 text-green-600 hover:bg-green-50'
-                                    }`}
+                                    className={`rounded-xl text-xs ${service.isActive
+                                      ? 'border-orange-300 text-orange-600 hover:bg-orange-50'
+                                      : 'border-green-300 text-green-600 hover:bg-green-50'
+                                      }`}
                                     data-testid={`button-toggle-service-${service.id}`}
                                   >
                                     {service.isActive ? 'Deactivate' : 'Activate'}
@@ -1324,137 +1340,141 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-bold text-black">Offers & Promotions</h2>
-                      <Dialog>
+                      <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
                         <DialogTrigger asChild>
-                          <Button 
-                            className="bg-black text-white hover:bg-gray-800 rounded-xl px-4 py-2"
+                          <Button
+                            className="bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-4 py-2"
                             data-testid="button-add-offer"
                           >
                             <Percent className="h-4 w-4 mr-2" />
                             Create
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="mx-4 max-w-sm rounded-3xl">
-                          <DialogHeader className="text-center pb-2">
-                            <DialogTitle className="text-lg font-bold">Create New Offer</DialogTitle>
-                            <DialogDescription className="text-sm text-gray-600">
-                              Create a promotional offer for your customers.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <Form {...offerForm}>
-                            <form onSubmit={offerForm.handleSubmit(onOfferSubmit)} className="space-y-4">
-                              <FormField
-                                control={offerForm.control}
-                                name="title"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-sm font-medium text-black">Offer Title</FormLabel>
-                                    <FormControl>
-                                      <Input 
-                                        placeholder="e.g., Summer Special" 
-                                        {...field} 
-                                        data-testid="input-offer-title"
-                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={offerForm.control}
-                                name="description"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
-                                    <FormControl>
-                                      <Textarea
-                                        placeholder="Describe your offer..."
-                                        {...field}
-                                        data-testid="textarea-offer-description"
-                                        className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
-                                        rows={3}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <div className="grid grid-cols-2 gap-3">
-                                <FormField
-                                  control={offerForm.control}
-                                  name="discount"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-sm font-medium text-black">Discount (%)</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          min="1"
-                                          max="99"
-                                          step="0.01"
-                                          placeholder="10"
-                                          {...field}
-                                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                          data-testid="input-offer-discount"
-                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={offerForm.control}
-                                  name="validityPeriod"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel className="text-sm font-medium text-black">Valid Until</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="date"
-                                          {...field}
-                                          min={new Date().toISOString().split('T')[0]}
-                                          value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
-                                          onChange={(e) => {
-                                            const selectedDate = new Date(e.target.value);
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
+                        <DialogContent className="mx-2 max-w-[95vw] sm:max-w-md w-full max-h-[90vh] overflow-hidden rounded-3xl p-0">
+                          <div className="max-h-[90vh] overflow-y-auto">
+                            <DialogHeader className="text-center p-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-100">
+                              <DialogTitle className="text-lg font-bold">Create New Offer</DialogTitle>
+                              <DialogDescription className="text-sm text-gray-600">
+                                Create a promotional offer for your customers.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="p-6 pt-4">
+                              <Form {...offerForm}>
+                                <form onSubmit={offerForm.handleSubmit(onOfferSubmit)} className="space-y-4">
+                                  <FormField
+                                    control={offerForm.control}
+                                    name="title"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-sm font-medium text-black">Offer Title</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="e.g., Summer Special"
+                                            {...field}
+                                            data-testid="input-offer-title"
+                                            className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={offerForm.control}
+                                    name="description"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel className="text-sm font-medium text-black">Description</FormLabel>
+                                        <FormControl>
+                                          <Textarea
+                                            placeholder="Describe your offer..."
+                                            {...field}
+                                            data-testid="textarea-offer-description"
+                                            className="rounded-xl border-gray-300 focus:border-black focus:ring-black resize-none"
+                                            rows={3}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <FormField
+                                      control={offerForm.control}
+                                      name="discount"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-sm font-medium text-black">Discount (%)</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              max="99"
+                                              step="0.01"
+                                              placeholder="10"
+                                              {...field}
+                                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                              data-testid="input-offer-discount"
+                                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={offerForm.control}
+                                      name="validityPeriod"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-sm font-medium text-black">Valid Until</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              type="date"
+                                              {...field}
+                                              min={new Date().toISOString().split('T')[0]}
+                                              value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                                              onChange={(e) => {
+                                                const selectedDate = new Date(e.target.value);
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
 
-                                            if (selectedDate < today) {
-                                              toast({
-                                                title: "Invalid date",
-                                                description: "Please select a future date",
-                                                variant: "destructive"
-                                              });
-                                              return;
-                                            }
+                                                if (selectedDate < today) {
+                                                  toast({
+                                                    title: "Invalid date",
+                                                    description: "Please select a future date",
+                                                    variant: "destructive"
+                                                  });
+                                                  return;
+                                                }
 
-                                            field.onChange(selectedDate);
-                                          }}
-                                          data-testid="input-offer-validity"
-                                          className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                              <Button
-                                type="submit"
-                                className="w-full bg-black text-white hover:bg-gray-800 rounded-2xl py-3 font-medium"
-                                disabled={createOfferMutation.isPending}
-                                data-testid="button-submit-offer"
-                              >
-                                {createOfferMutation.isPending ? "Creating..." : "Create Offer"}
-                              </Button>
-                            </form>
-                          </Form>
+                                                field.onChange(selectedDate);
+                                              }}
+                                              data-testid="input-offer-validity"
+                                              className="rounded-xl border-gray-300 focus:border-black focus:ring-black"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <Button
+                                    type="submit"
+                                    className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-2xl py-3 font-medium"
+                                    disabled={createOfferMutation.isPending}
+                                    data-testid="button-submit-offer"
+                                  >
+                                    {createOfferMutation.isPending ? "Creating..." : "Create Offer"}
+                                  </Button>
+                                </form>
+                              </Form>
+                            </div>
+                          </div>
                         </DialogContent>
                       </Dialog>
                     </div>
-                    
+
                     {offersLoading ? (
                       <div className="space-y-3">
                         {[...Array(2)].map((_, i) => (
@@ -1464,25 +1484,24 @@ export default function Dashboard() {
                     ) : offers.length > 0 ? (
                       <div className="space-y-3">
                         {offers.map((offer: any) => (
-                          <div key={offer.id} className="bg-white border border-gray-200 rounded-2xl p-4">
+                          <div key={offer.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
                                 <h3 className="font-medium text-black">{offer.title}</h3>
                                 <p className="text-sm text-gray-600 mt-1">{offer.description}</p>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Badge 
-                                  className={`${
-                                    offer.isActive 
-                                      ? 'bg-green-100 text-green-700' 
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}
+                                <Badge
+                                  className={`${offer.isActive
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                    }`}
                                 >
                                   {offer.isActive ? "Active" : "Inactive"}
                                 </Badge>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center justify-between mb-3">
                               <Badge variant="outline" className="border-black text-black font-medium">
                                 {offer.discount}% OFF
@@ -1544,11 +1563,11 @@ export default function Dashboard() {
                 {activeTab === 'analytics' && (
                   <div className="space-y-6">
                     <h2 className="text-lg font-bold text-black">Analytics</h2>
-                    
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+
+                    <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-medium text-black">Performance Metrics</h3>
-                        <TrendingUp className="h-5 w-5 text-black" />
+                        <h3 className="font-medium text-teal-900">Performance Metrics</h3>
+                        <TrendingUp className="h-5 w-5 text-teal-600" />
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
@@ -1572,10 +1591,10 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-medium text-black">Popular Services</h3>
-                        <BarChart3 className="h-5 w-5 text-black" />
+                        <h3 className="font-medium text-teal-900">Popular Services</h3>
+                        <BarChart3 className="h-5 w-5 text-teal-600" />
                       </div>
                       <div className="space-y-3">
                         {analyticsLoading ? (
@@ -1584,8 +1603,8 @@ export default function Dashboard() {
                           ))
                         ) : analytics?.popularServices?.length ? (
                           analytics.popularServices.slice(0, 5).map((service) => (
-                            <div key={service.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl" data-testid={`popular-service-${service.id}`}>
-                              <span className="font-medium text-black text-sm" data-testid={`text-popular-service-name-${service.id}`}>
+                            <div key={service.id} className="flex items-center justify-between p-3 bg-teal-50 rounded-xl" data-testid={`popular-service-${service.id}`}>
+                              <span className="font-medium text-teal-900 text-sm" data-testid={`text-popular-service-name-${service.id}`}>
                                 {service.name}
                               </span>
                               <Badge variant="outline" className="border-gray-300 text-gray-600 text-xs" data-testid={`badge-popular-service-bookings-${service.id}`}>
@@ -1610,8 +1629,8 @@ export default function Dashboard() {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb">
-        <div className="grid grid-cols-5 py-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-pb shadow-lg">
+        <div className="grid grid-cols-5 py-3">
           {[
             { id: 'queue', label: 'Queue', icon: Users, active: activeTab === 'queue' },
             { id: 'services', label: 'Services', icon: Settings, active: activeTab === 'services' },
@@ -1622,21 +1641,17 @@ export default function Dashboard() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center py-2 px-1 transition-colors ${
-                active 
-                  ? 'text-black' 
-                  : 'text-gray-400'
-              }`}
+              className={`flex flex-col items-center py-2 px-1 transition-colors duration-200 ${active
+                ? 'text-teal-600'
+                : 'text-gray-400 hover:text-gray-600'
+                }`}
             >
-              <Icon className={`h-5 w-5 mb-1 ${active ? 'text-black' : 'text-gray-400'}`} />
+              <Icon className={`h-5 w-5 mb-1 ${active ? 'text-teal-600' : 'text-gray-400'}`} />
               <span className="text-xs font-medium">{label}</span>
             </button>
           ))}
         </div>
       </div>
-
-      {/* Add bottom padding to prevent content from being hidden behind bottom nav */}
-      <div className="h-20"></div>
     </div>
   );
 }

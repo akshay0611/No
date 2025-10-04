@@ -317,164 +317,168 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
             {isLoading ? "Detecting location..." : address ? "Change Location" : "Select Salon Location"}
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Select Location
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Search and Current Location */}
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <div className="flex-1 flex gap-2">
-                  <Input
-                    placeholder="Search address..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && searchLocation()}
-                  />
-                  <Button
-                    onClick={searchLocation}
-                    disabled={isLoading}
-                    size="sm"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
+        <DialogContent className="mx-2 max-w-[95vw] sm:max-w-lg w-full max-h-[90vh] overflow-hidden rounded-3xl p-0">
+          <div className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="p-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-100">
+              <DialogTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Select Location
+              </DialogTitle>
+            </DialogHeader>
+            <div className="p-6 pt-4 space-y-4">
+              {/* Search and Current Location */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="flex-1 flex gap-2">
+                    <Input
+                      placeholder="Search address..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && searchLocation()}
+                      className="h-12"
+                    />
+                    <Button
+                      onClick={searchLocation}
+                      disabled={isLoading}
+                      size="sm"
+                      className="bg-teal-600 hover:bg-teal-700"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Manual address input as fallback */}
+                <div className="text-xs text-gray-500 text-center">or</div>
+                <Input
+                  placeholder="Enter address manually if search doesn't work"
+                  value={address}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAddress(value);
+                    if (value.trim()) {
+                      onLocationSelect({
+                        latitude: coordinates.latitude,
+                        longitude: coordinates.longitude,
+                        address: value
+                      });
+                    }
+                  }}
+                  className="text-sm h-12"
+                />
               </div>
 
-              {/* Manual address input as fallback */}
-              <div className="text-xs text-gray-500 text-center">or</div>
-              <Input
-                placeholder="Enter address manually if search doesn't work"
-                value={address}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAddress(value);
-                  if (value.trim()) {
-                    onLocationSelect({
-                      latitude: coordinates.latitude,
-                      longitude: coordinates.longitude,
-                      address: value
-                    });
-                  }
-                }}
-                className="text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => getCurrentLocation(false)}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full"
-              >
-                <Navigation className="h-4 w-4 mr-2" />
-                {hasAutoLocated ? "Update Location" : "Get Location"}
-              </Button>
-              {accuracy && accuracy > 30 && (
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={() => {
-                    setHasAutoLocated(false);
-                    getCurrentLocation(false);
-                  }}
+                  onClick={() => getCurrentLocation(false)}
                   disabled={isLoading}
                   variant="outline"
-                  className="w-full text-xs"
+                  className="w-full h-12 border-teal-300 text-teal-700 hover:bg-teal-50"
                 >
-                  <Navigation className="h-3 w-3 mr-1" />
-                  Precise Location
+                  <Navigation className="h-4 w-4 mr-2" />
+                  {hasAutoLocated ? "Update Location" : "Get Location"}
                 </Button>
-              )}
-            </div>
-
-            {accuracy && accuracy > 50 && (
-              <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
-                💡 For better accuracy: Move to an open area, enable location services, and ensure GPS is on.
+                {accuracy && accuracy > 30 && (
+                  <Button
+                    onClick={() => {
+                      setHasAutoLocated(false);
+                      getCurrentLocation(false);
+                    }}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="w-full h-12 text-xs border-teal-300 text-teal-700 hover:bg-teal-50"
+                  >
+                    <Navigation className="h-3 w-3 mr-1" />
+                    Precise Location
+                  </Button>
+                )}
               </div>
-            )}
 
-            <div className="h-64 w-full rounded-md overflow-hidden">
-              <GoogleMap
-                mapContainerStyle={{ width: "100%", height: "100%" }}
-                center={{ lat: coordinates.latitude, lng: coordinates.longitude }}
-                zoom={15}
-                onLoad={onMapLoad}
-                onUnmount={onMapUnmount}
-                onClick={(e) => {
-                  if (e.latLng) {
-                    const lat = e.latLng.lat();
-                    const lng = e.latLng.lng();
-                    setCoordinates({ latitude: lat, longitude: lng });
-                    reverseGeocode(lat, lng);
+              {accuracy && accuracy > 50 && (
+                <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                  💡 For better accuracy: Move to an open area, enable location services, and ensure GPS is on.
+                </div>
+              )}
 
-                  }
-                }}
-              >
-                <MarkerF
-                  position={{ lat: coordinates.latitude, lng: coordinates.longitude }}
-                  draggable={true}
-                  onDragEnd={(e) => {
+              <div className="h-48 sm:h-64 w-full rounded-md overflow-hidden">
+                <GoogleMap
+                  mapContainerStyle={{ width: "100%", height: "100%" }}
+                  center={{ lat: coordinates.latitude, lng: coordinates.longitude }}
+                  zoom={15}
+                  onLoad={onMapLoad}
+                  onUnmount={onMapUnmount}
+                  onClick={(e) => {
                     if (e.latLng) {
                       const lat = e.latLng.lat();
                       const lng = e.latLng.lng();
                       setCoordinates({ latitude: lat, longitude: lng });
                       reverseGeocode(lat, lng);
+
                     }
                   }}
-                />
-              </GoogleMap>
-            </div>
-
-            {/* Selected Location Display */}
-            {address && (
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-600">Selected:</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={openInGoogleMaps}
-                    className="h-8 px-2"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    View
-                  </Button>
-                </div>
-                <p className="text-sm font-medium">{address}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {coordinates.latitude.toFixed(4)}, {coordinates.longitude.toFixed(4)}
-                </p>
-                {accuracy !== null && (
-                  <div className="mt-1">
-                    <p className="text-xs text-gray-500">
-                      Accuracy: ±{accuracy} m
-                      {accuracy > 50 && (
-                        <span className="text-amber-600 ml-1">
-                          (Move to open area for better accuracy)
-                        </span>
-                      )}
-                      {accuracy <= 20 && (
-                        <span className="text-green-600 ml-1">
-                          (High accuracy)
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
+                >
+                  <MarkerF
+                    position={{ lat: coordinates.latitude, lng: coordinates.longitude }}
+                    draggable={true}
+                    onDragEnd={(e) => {
+                      if (e.latLng) {
+                        const lat = e.latLng.lat();
+                        const lng = e.latLng.lng();
+                        setCoordinates({ latitude: lat, longitude: lng });
+                        reverseGeocode(lat, lng);
+                      }
+                    }}
+                  />
+                </GoogleMap>
               </div>
-            )}
 
-            <Button
-              onClick={() => setIsOpen(false)}
-              className="w-full"
-              disabled={!address}
-            >
-              Confirm Location
-            </Button>
+              {/* Selected Location Display */}
+              {address && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-600">Selected:</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={openInGoogleMaps}
+                      className="h-8 px-2"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                  <p className="text-sm font-medium">{address}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {coordinates.latitude.toFixed(4)}, {coordinates.longitude.toFixed(4)}
+                  </p>
+                  {accuracy !== null && (
+                    <div className="mt-1">
+                      <p className="text-xs text-gray-500">
+                        Accuracy: ±{accuracy} m
+                        {accuracy > 50 && (
+                          <span className="text-amber-600 ml-1">
+                            (Move to open area for better accuracy)
+                          </span>
+                        )}
+                        {accuracy <= 20 && (
+                          <span className="text-green-600 ml-1">
+                            (High accuracy)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button
+                onClick={() => setIsOpen(false)}
+                className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl py-3 font-medium"
+                disabled={!address}
+              >
+                Confirm Location
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

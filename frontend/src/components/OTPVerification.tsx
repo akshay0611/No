@@ -272,25 +272,25 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
   const progress = (completedSteps / totalSteps) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 flex flex-col">
+    <div className="min-h-screen bg-gray-50 p-4 flex flex-col">
       {/* Mobile-First Header */}
       <div className="text-center mb-6 pt-8 px-2">
-        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-600 to-blue-600 bg-clip-text text-transparent mb-3">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
           Verify Your Account
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
           Complete verification to secure your account
         </p>
         
         {/* Mobile Progress Bar */}
         <div className="mt-6 mb-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
             <span>Progress</span>
             <span>{completedSteps}/{totalSteps} completed</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-slate-600 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+              className="bg-teal-600 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -314,8 +314,8 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${emailVerified ? 'bg-green-500 text-white' : 'bg-slate-100'}`}>
-                  {emailVerified ? <CheckCircle className="h-5 w-5" /> : <Mail className="h-5 w-5 text-slate-600" />}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${emailVerified ? 'bg-green-500 text-white' : 'bg-gray-100'}`}>
+                  {emailVerified ? <CheckCircle className="h-5 w-5" /> : <Mail className="h-5 w-5 text-gray-600" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <CardTitle className="text-lg">Email Verification</CardTitle>
@@ -331,7 +331,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
               <Button 
                 onClick={sendEmailOTP} 
                 disabled={loading || emailVerified} 
-                className="w-full bg-gradient-to-r from-slate-600 to-blue-600 hover:from-slate-700 hover:to-blue-700 text-white h-12 rounded-xl font-medium"
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white h-12 rounded-xl font-medium"
               >
                 {loading ? (
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -352,7 +352,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
                     value={emailOTP}
                     onChange={(e) => handleEmailOTPChange(e.target.value)}
                     maxLength={6}
-                    className="text-center text-xl tracking-[0.5em] h-14 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white transition-all duration-300"
+                    className="text-center text-xl tracking-[0.5em] h-14 rounded-xl border-2 border-gray-200 focus:border-teal-500 focus:ring-0 bg-white transition-all duration-300"
                     inputMode="numeric"
                   />
                 </div>
@@ -360,7 +360,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
                   <Button 
                     onClick={() => verifyEmailOTP()} 
                     disabled={loading || emailOTP.length !== 6} 
-                    className="w-full bg-gradient-to-r from-slate-600 to-blue-600 hover:from-slate-700 hover:to-blue-700 text-white h-12 rounded-xl font-medium"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white h-12 rounded-xl font-medium"
                   >
                     {loading ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -373,7 +373,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
                     variant="ghost" 
                     onClick={resendEmailOTP} 
                     disabled={resendLoading.email}
-                    className="w-full h-10 text-slate-600"
+                    className="w-full h-10 text-gray-600"
                   >
                     {resendLoading.email ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -393,12 +393,12 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
 
         {/* Phone Verification Card */}
         {phone && (
-          <Card className={`transition-all duration-300 ${phoneVerified ? 'border-green-500 bg-green-50/50' : emailVerified ? 'border-blue-500' : 'border-border opacity-75'}`}>
+          <Card className={`transition-all duration-300 ${phoneVerified ? 'border-green-500 bg-green-50/50' : emailVerified ? 'border-teal-500' : 'border-border opacity-75'}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${phoneVerified ? 'bg-green-500 text-white' : emailVerified ? 'bg-blue-500 text-white' : 'bg-slate-100'}`}>
-                    {phoneVerified ? <CheckCircle className="h-5 w-5" /> : <MessageCircle className="h-5 w-5 text-slate-600" />}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${phoneVerified ? 'bg-green-500 text-white' : emailVerified ? 'bg-teal-500 text-white' : 'bg-gray-100'}`}>
+                    {phoneVerified ? <CheckCircle className="h-5 w-5" /> : <MessageCircle className="h-5 w-5 text-gray-600" />}
                   </div>
                   <div>
                     <CardTitle className="text-lg">SMS Verification</CardTitle>
@@ -419,7 +419,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
                 <Button 
                   onClick={sendPhoneOTP} 
                   disabled={loading || phoneVerified} 
-                  className="w-full bg-gradient-to-r from-slate-600 to-blue-600 hover:from-slate-700 hover:to-blue-700 text-white h-12 rounded-xl font-medium"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white h-12 rounded-xl font-medium"
                 >
                   {loading ? (
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -440,7 +440,7 @@ export default function OTPVerification({ userId, email, phone, onVerificationCo
                       value={phoneOTP}
                       onChange={(e) => handlePhoneOTPChange(e.target.value)}
                       maxLength={6}
-                      className="text-center text-xl tracking-[0.5em] h-14 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white transition-all duration-300"
+                      className="text-center text-xl tracking-[0.5em] h-14 rounded-xl border-2 border-gray-200 focus:border-teal-500 focus:ring-0 bg-white transition-all duration-300"
                       inputMode="numeric"
                     />
                     {displayedPhoneOTP && (
