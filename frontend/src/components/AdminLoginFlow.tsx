@@ -1,26 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield, UserCheck, User, Phone } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield, User, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "../lib/api";
 import { loginSchema, insertUserSchema } from "../lib/schemas";
 import OTPVerification from "./OTPVerification";
 import type { User as UserType } from "../types";
 
-const registerFormSchema = insertUserSchema.extend({
-  confirmPassword: z.string().min(6),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
 type AdminLoginForm = z.infer<typeof loginSchema>;
-type AdminRegisterForm = z.infer<typeof registerFormSchema>;
+type AdminRegisterForm = z.infer<typeof insertUserSchema>;
 
 interface AdminLoginFlowProps {
   onAuthSuccess: (user: any, token: string) => void;
@@ -33,7 +25,7 @@ export default function AdminLoginFlow({
 }: AdminLoginFlowProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<(UserType & { password?: string }) | null>(null);
   const { toast } = useToast();
@@ -48,13 +40,12 @@ export default function AdminLoginFlow({
   });
 
   const registerForm = useForm<AdminRegisterForm>({
-    resolver: zodResolver(registerFormSchema),
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
       password: "",
-      confirmPassword: "",
       role: "salon_owner", // Default to salon_owner for admin flow
     },
     mode: "onChange",
@@ -109,7 +100,7 @@ export default function AdminLoginFlow({
   });
 
   const registerMutation = useMutation({
-    mutationFn: (userData: Omit<AdminRegisterForm, 'confirmPassword'>) => {
+    mutationFn: (userData: AdminRegisterForm) => {
       console.log("Sending admin registration with role:", userData.role);
       return api.auth.register(userData);
     },
@@ -142,10 +133,8 @@ export default function AdminLoginFlow({
 
   const onRegisterSubmit = (data: AdminRegisterForm) => {
     console.log('Admin register form submitted with:', data);
-    const { confirmPassword, ...userData } = data;
-
-    console.log('Sending to API with role:', userData.role);
-    registerMutation.mutate(userData);
+    console.log('Sending to API with role:', data.role);
+    registerMutation.mutate(data);
   };
 
   const handleVerificationComplete = async () => {
@@ -200,327 +189,285 @@ export default function AdminLoginFlow({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Back Button */}
-      <button
-        onClick={onSwitchToCustomer}
-        className="absolute top-6 left-6 z-20 flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-        aria-label="Back to customer login"
-      >
-        <ArrowLeft className="w-5 h-5 text-gray-700" />
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Banner Section */}
+      <div className="bg-gradient-to-br from-teal-600 to-teal-700 px-6 py-6 relative overflow-hidden">
+        {/* Back Button */}
+       
 
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-slate-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-indigo-300/10 to-blue-300/10 rounded-full blur-3xl"></div>
+        <div className="max-w-md mx-auto relative z-10">
+          {/* Logo */}
+          <div className="mb-6">
+            <img
+              src="/loadlogo.png"
+              alt="YEF Samrat Logo"
+              className="h-20 w-auto filter brightness-0 invert"
+            />
+          </div>
+
+          {/* Banner Content */}
+          <div className="text-white">
+            <h2 className="text-2xl font-bold mb-2">Admin Portal</h2>
+            <h3 className="text-2xl font-bold mb-3">Salon Management</h3>
+            <p className="text-teal-100 text-sm">Manage your salon with ease</p>
+          </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full -translate-y-32 translate-x-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-800/20 rounded-full translate-y-24 -translate-x-24"></div>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Show OTP Verification or Auth Form */}
-        {showOTPVerification && registeredUser ? (
-          <OTPVerification
-            userId={registeredUser.id}
-            email={registeredUser.email}
-            phone={registeredUser.phone}
-            onVerificationComplete={handleVerificationComplete}
-          />
-        ) : (
-          <>
-            {/* App Logo/Brand */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-slate-600 to-blue-600 rounded-2xl mb-4 shadow-lg">
-                <Shield className="w-8 h-8 text-white" />
+      {/* Form Section */}
+      <div className="px-6 py-8">
+        <div className="max-w-md mx-auto">
+          {/* Show OTP Verification or Auth Form */}
+          {showOTPVerification && registeredUser ? (
+            <OTPVerification
+              userId={registeredUser.id}
+              email={registeredUser.email}
+              phone={registeredUser.phone}
+              onVerificationComplete={handleVerificationComplete}
+            />
+          ) : (
+            <>
+              {/* Welcome Section */}
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold font-bricolage text-gray-900 mb-2">
+                  {isLogin ? "Welcome Back" : "Create Account"}
+                </h1>
+                <p className="text-gray-600 text-sm">
+                  {isLogin
+                    ? "Sign in to access your salon management dashboard"
+                    : "Register as a salon owner to manage your business"}
+                </p>
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-blue-600 bg-clip-text text-transparent">
-                SmartQ Admin
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">Salon Management Portal</p>
-            </div>
 
-            {/* Auth Toggle Tabs */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-1 mb-6 shadow-lg border border-white/20">
-              <div className="grid grid-cols-2 gap-1">
-                <button
-                  onClick={() => {
-                    setIsLogin(true);
-                    registerForm.reset();
-                    setShowPassword(false);
-                    setShowConfirmPassword(false);
-                  }}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${isLogin
-                    ? 'bg-gradient-to-r from-slate-600 to-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => {
-                    setIsLogin(false);
-                    loginForm.reset();
-                    setShowPassword(false);
-                    setShowConfirmPassword(false);
-                  }}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 ${!isLogin
-                    ? 'bg-gradient-to-r from-slate-600 to-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                >
-                  Sign Up
-                </button>
-              </div>
-            </div>
-
-            {/* Main Admin Auth Card */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-              <div className="p-8">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UserCheck className="w-8 h-8 text-slate-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                    {isLogin ? "Admin Login" : "Create Admin Account"}
-                  </h2>
-                  <p className="text-gray-600">
-                    {isLogin
-                      ? "Access your salon management dashboard"
-                      : "Register as a salon owner to manage your business"}
-                  </p>
+              {/* Auth Toggle Tabs */}
+              <div className="bg-gray-100 rounded-lg p-1 mb-6">
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => {
+                      setIsLogin(true);
+                      registerForm.reset();
+                      setShowPassword(false);
+                    }}
+                    className={`py-3 px-4 rounded-md font-semibold text-sm transition-all duration-200 ${isLogin
+                      ? 'bg-teal-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsLogin(false);
+                      loginForm.reset();
+                      setShowPassword(false);
+                    }}
+                    className={`py-3 px-4 rounded-md font-semibold text-sm transition-all duration-200 ${!isLogin
+                      ? 'bg-teal-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                  >
+                    Sign Up
+                  </button>
                 </div>
+              </div>
+
+              {/* Form Container */}
+              <div className="space-y-4">
 
                 {isLogin ? (
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     {/* Email Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        Email Address
-                      </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <Mail className="w-5 h-5" />
+                      </div>
                       <Input
                         type="email"
-                        placeholder="Enter your admin email"
-                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        placeholder="Email Address"
+                        className="h-14 pl-12 pr-4 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
                         {...loginForm.register("email")}
                       />
                       {loginForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 mt-2">
                           {loginForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
 
                     {/* Password Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Lock className="w-4 h-4" />
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
-                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                          {...loginForm.register("password")}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <Lock className="w-5 h-5" />
                       </div>
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        className="h-14 pl-12 pr-12 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
+                        {...loginForm.register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
                       {loginForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-red-500 mt-2">
                           {loginForm.formState.errors.password.message}
                         </p>
                       )}
                     </div>
 
                     {/* Login Button */}
-                    <Button
+                    <button
                       type="submit"
                       disabled={loginMutation.isPending}
-                      className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-slate-600 to-blue-600 hover:from-slate-700 hover:to-blue-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                      className="w-full h-14 text-white font-semibold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 mt-8"
                     >
                       {loginMutation.isPending ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                           Signing in...
                         </div>
                       ) : (
-                        "Sign In to Dashboard"
+                        "Sign in"
                       )}
-                    </Button>
+                    </button>
                   </form>
                 ) : (
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-5">
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                     {/* Full Name Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        Full Name
-                      </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <User className="w-5 h-5" />
+                      </div>
                       <Input
-                        placeholder="Enter your full name"
-                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        placeholder="Full Name"
+                        className="h-14 pl-12 pr-4 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
                         {...registerForm.register("name")}
                       />
                       {registerForm.formState.errors.name && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.name.message}</p>
+                        <p className="text-sm text-red-500 mt-2">{registerForm.formState.errors.name.message}</p>
                       )}
                     </div>
 
                     {/* Email Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        Email Address
-                      </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <Mail className="w-5 h-5" />
+                      </div>
                       <Input
                         type="email"
-                        placeholder="Enter your email address"
-                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        placeholder="Email Address"
+                        className="h-14 pl-12 pr-4 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                        <p className="text-sm text-red-500 mt-2">{registerForm.formState.errors.email.message}</p>
                       )}
                     </div>
 
                     {/* Phone Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        Phone Number
-                      </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <Phone className="w-5 h-5" />
+                      </div>
                       <Input
                         type="tel"
-                        placeholder="Enter your phone number"
-                        className="h-14 pl-4 pr-4 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
+                        placeholder="Phone Number"
+                        className="h-14 pl-12 pr-4 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
                         {...registerForm.register("phone")}
                       />
                       {registerForm.formState.errors.phone && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.phone.message}</p>
+                        <p className="text-sm text-red-500 mt-2">{registerForm.formState.errors.phone.message}</p>
                       )}
                     </div>
 
                     {/* Password Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Lock className="w-4 h-4" />
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Create a strong password"
-                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                          {...registerForm.register("password")}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <Lock className="w-5 h-5" />
                       </div>
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        className="h-14 pl-12 pr-12 text-gray-700 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
+                        {...registerForm.register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
                       {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                        <p className="text-sm text-red-500 mt-2">{registerForm.formState.errors.password.message}</p>
                       )}
                     </div>
 
-                    {/* Confirm Password Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Lock className="w-4 h-4" />
-                        Confirm Password
-                      </label>
-                      <div className="relative">
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm your password"
-                          className="h-14 pl-4 pr-12 text-base rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-gray-50/50 transition-all duration-300"
-                          {...registerForm.register("confirmPassword")}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      {registerForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                      )}
-                    </div>
+
 
                     {/* Create Account Button */}
-                    <Button
+                    <button
                       type="submit"
                       disabled={registerMutation.isPending}
-                      className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-slate-600 to-blue-600 hover:from-slate-700 hover:to-blue-700 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] mt-6"
+                      className="w-full h-14 text-white font-semibold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 mt-8"
                     >
                       {registerMutation.isPending ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                           Creating account...
                         </div>
                       ) : (
-                        "Create Admin Account"
+                        "Create Account"
                       )}
-                    </Button>
+                    </button>
                   </form>
                 )}
+              </div>
 
-                {/* Security Features */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-6">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Shield className="w-4 h-4 text-slate-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-900 text-sm mb-1">
-                        Enhanced Security
-                      </h4>
-                      <p className="text-slate-700 text-xs leading-relaxed">
-                        {isLogin
-                          ? "Admin accounts have additional security measures including session monitoring and access logging."
-                          : "All salon owner accounts require email and phone verification for enhanced security."
-                        }
-                      </p>
-                    </div>
+              {/* Security Features */}
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mt-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Shield className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-teal-900 text-sm mb-1">
+                      Enhanced Security
+                    </h4>
+                    <p className="text-teal-700 text-xs leading-relaxed">
+                      {isLogin
+                        ? "Admin accounts have additional security measures including session monitoring and access logging."
+                        : "All salon owner accounts require email and phone verification for enhanced security."
+                      }
+                    </p>
                   </div>
                 </div>
-
-                {/* Customer Login Link */}
-                <div className="text-center pt-4 border-t border-gray-200 mt-6">
-                  <p className="text-sm text-gray-600">
-                    Not a salon owner?{" "}
-                    <button
-                      type="button"
-                      onClick={onSwitchToCustomer}
-                      className="text-blue-600 font-medium hover:underline"
-                    >
-                      Customer Login
-                    </button>
-                  </p>
-                </div>
               </div>
-            </div>
 
-            {/* Footer Text */}
-            <div className="text-center mt-6">
-              <p className="text-sm text-gray-600">
-                Secure admin access protected by SmartQ security protocols
-              </p>
-            </div>
-          </>
-        )}
+              {/* Customer Login Link */}
+              <div className="text-center mt-8">
+                <p className="text-gray-600">
+                  Not a salon owner?{" "}
+                  <button
+                    type="button"
+                    onClick={onSwitchToCustomer}
+                    className="text-orange-500 font-medium hover:underline"
+                  >
+                    Customer Login
+                  </button>
+                </p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

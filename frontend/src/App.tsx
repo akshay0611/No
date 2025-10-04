@@ -49,6 +49,27 @@ function App() {
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [, setLocation] = useLocation();
 
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem('smartq_token');
+    const storedUser = localStorage.getItem('smartq_user');
+    
+    if (storedToken && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        console.log('Found existing auth, user:', user);
+        setAuthenticatedUser(user);
+        // Skip auth/intro phases and go directly to app
+        setCurrentPhase('app');
+      } catch (error) {
+        console.error('Failed to parse stored user data:', error);
+        localStorage.removeItem('smartq_token');
+        localStorage.removeItem('smartq_user');
+        // Stay in auth phase if stored data is invalid
+      }
+    }
+  }, []);
+
   const handleAuthComplete = (user?: any) => {
     console.log('App: Auth complete, user:', user);
     setAuthenticatedUser(user);
