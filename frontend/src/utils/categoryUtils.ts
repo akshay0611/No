@@ -26,15 +26,3 @@ export const getCategoryDisplayName = (category: UserCategory): string => {
   }
 };
 
-export const getCategoryDescription = (category: UserCategory): string => {
-  switch (category) {
-    case 'men':
-      return 'Grooming & styling services for men';
-    case 'women':
-      return 'Beauty & wellness services for women';
-    case 'unisex':
-      return 'Services for everyone';
-    default:
-      return '';
-  }
-};

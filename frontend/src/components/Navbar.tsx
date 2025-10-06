@@ -6,11 +6,46 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Clock, Bell, User, LogOut, Settings } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Clock, Bell, User, LogOut, Settings, UserCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getUserCategory, setUserCategory, type UserCategory } from "../utils/categoryUtils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navbar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
+  const { toast } = useToast();
+
+  // Update local state when category changes in localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setSelectedCategory(getUserCategory() || 'unisex');
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleCategoryChange = (category: UserCategory) => {
+    setSelectedCategory(category);
+    setUserCategory(category);
+    
+    toast({
+      title: "Category Updated",
+      description: `Your preferred category has been changed to ${category === 'men' ? "Men's" : category === 'women' ? "Women's" : "Unisex"} Salons`,
+    });
+
+    // Reload the page to update the home page with new category
+    window.location.reload();
+  };
 
   if (user?.role === 'salon_owner') {
     return null;
@@ -25,10 +60,10 @@ export default function Navbar() {
             {/* Logo */}
             <div className="hidden md:flex items-center space-x-3">
               <Link href="/" className="flex items-center space-x-2" data-testid="link-home">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-md">
+                <div className="w-8 h-8 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg flex items-center justify-center shadow-md">
                   <Clock className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent md:text-2xl">
+                <span className="text-lg font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent md:text-2xl">
                   SmartQ
                 </span>
               </Link>
@@ -40,7 +75,7 @@ export default function Navbar() {
                 <>
                   {/* Mobile Notifications */}
                   <button 
-                    className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                    className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200"
                     data-testid="button-notifications"
                   >
                     <Bell className="h-5 w-5" />
@@ -51,7 +86,7 @@ export default function Navbar() {
                 <div className="hidden md:block">
                   <Link href="/auth" data-testid="link-auth">
                     <Button 
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium px-4 py-2 text-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                      className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium px-4 py-2 text-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                       data-testid="button-signin"
                     >
                       Sign In
@@ -73,8 +108,8 @@ export default function Navbar() {
                   href="/" 
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                     location === '/' 
-                      ? 'text-purple-600 bg-purple-50' 
-                      : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                      ? 'text-teal-600 bg-teal-50' 
+                      : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                   }`}
                   data-testid="link-discover"
                 >
@@ -86,8 +121,8 @@ export default function Navbar() {
                       href="/queue" 
                       className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 relative ${
                         location === '/queue' 
-                          ? 'text-purple-600 bg-purple-50' 
-                          : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                          ? 'text-teal-600 bg-teal-50' 
+                          : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                       }`}
                       data-testid="link-queue"
                     >
@@ -99,8 +134,8 @@ export default function Navbar() {
                         href="/dashboard" 
                         className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                           location === '/dashboard' 
-                            ? 'text-purple-600 bg-purple-50' 
-                            : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                            ? 'text-teal-600 bg-teal-50' 
+                            : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                         }`}
                         data-testid="link-dashboard"
                       >
@@ -131,7 +166,7 @@ export default function Navbar() {
             <Link 
               href="/" 
               className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                location === '/' ? 'text-purple-600 bg-purple-50' : 'text-gray-600'
+                location === '/' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
               }`}
             >
               <Clock className="h-5 w-5 mb-1" />
@@ -141,7 +176,7 @@ export default function Navbar() {
             <Link 
               href="/queue" 
               className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors relative ${
-                location === '/queue' ? 'text-purple-600 bg-purple-50' : 'text-gray-600'
+                location === '/queue' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
               }`}
             >
               <Bell className="h-5 w-5 mb-1" />
@@ -153,7 +188,7 @@ export default function Navbar() {
               <Link 
                 href="/dashboard" 
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                  location === '/dashboard' ? 'text-purple-600 bg-purple-50' : 'text-gray-600'
+                  location === '/dashboard' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
                 }`}
               >
                 <Settings className="h-5 w-5 mb-1" />
@@ -166,7 +201,7 @@ export default function Navbar() {
                 <button
                   className="flex flex-col items-center py-2 px-3 rounded-lg text-gray-600"
                 >
-                  <div className="w-5 h-5 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-xs font-medium mb-1">
+                  <div className="w-5 h-5 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-medium mb-1">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
                   <span className="text-xs font-medium">Profile</span>
@@ -175,7 +210,7 @@ export default function Navbar() {
               <SheetContent>
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
+                    <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium">
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div>
@@ -200,6 +235,49 @@ export default function Navbar() {
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
                 </Link>
+
+                {/* Category Selector */}
+                <div className="px-4 py-3 border-t border-gray-100">
+                  <div className="flex items-start space-x-3">
+                    <UserCircle className="h-4 w-4 text-gray-500 mt-2" />
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Preferred Category
+                      </label>
+                      <Select
+                        value={selectedCategory}
+                        onValueChange={(value: UserCategory) => handleCategoryChange(value)}
+                      >
+                        <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-teal-500 rounded-lg bg-white">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="men">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                              <span>Men's Salons</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="women">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                              <span>Women's Salons</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="unisex">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                              <span>Unisex Salons</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Personalizes your home page
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="border-t border-gray-100 mt-2 pt-2">
                   <button

@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     User,
     Mail,
     Phone,
@@ -34,10 +41,12 @@ import {
     Sparkles,
     Crown,
     Gift,
-    Zap
+    Zap,
+    UserCircle
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getUserCategory, setUserCategory, type UserCategory } from "../utils/categoryUtils";
 
 export default function Profile() {
     const { user, updateUser } = useAuth();
@@ -45,6 +54,7 @@ export default function Profile() {
     const [isEditing, setIsEditing] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [activeTab, setActiveTab] = useState("profile");
+    const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
 
     const [formData, setFormData] = useState({
         name: user?.name || "",
@@ -86,6 +96,9 @@ export default function Profile() {
             // Update profile via API
             await api.auth.completeProfile(formData.name, formData.email || undefined);
             
+            // Save category preference
+            setUserCategory(selectedCategory);
+            
             // Update user context with new data
             if (user) {
                 const updatedUser = {
@@ -122,6 +135,7 @@ export default function Profile() {
             newPassword: "",
             confirmPassword: ""
         });
+        setSelectedCategory(getUserCategory() || 'unisex');
         setIsEditing(false);
     };
 
@@ -205,11 +219,11 @@ export default function Profile() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 relative overflow-hidden">
+        <div className="min-h-screen bg-gray-50 relative overflow-hidden">
             {/* Animated Background Elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-teal-500/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-500/20 to-teal-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
             </div>
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -217,14 +231,14 @@ export default function Profile() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
                                 My Profile
                             </h1>
                             <p className="text-xl text-gray-600 mt-2">
                                 Manage your account and preferences
                             </p>
                         </div>
-                        <Badge className="bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 border-0 px-4 py-2">
+                        <Badge className="bg-gradient-to-r from-teal-100 to-teal-200 text-teal-700 border-0 px-4 py-2">
                             <Sparkles className="w-4 h-4 mr-2" />
                             Premium Member
                         </Badge>
@@ -237,8 +251,8 @@ export default function Profile() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ${activeTab === tab.id
-                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                                        ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
+                                        : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                                     }`}
                             >
                                 <tab.icon className="w-4 h-4 mr-2" />
@@ -255,7 +269,7 @@ export default function Profile() {
                         <div className="lg:col-span-1">
                             <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
                                 <div className="relative">
-                                    <div className="h-32 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600"></div>
+                                    <div className="h-32 bg-gradient-to-r from-teal-600 to-teal-700"></div>
                                     <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
                                         <div className="relative group">
                                             <div className="w-32 h-32 bg-white rounded-full p-2 shadow-xl">
@@ -266,12 +280,12 @@ export default function Profile() {
                                                         className="w-full h-full rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                                                    <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
                                                         <User className="w-12 h-12 text-white" />
                                                     </div>
                                                 )}
                                             </div>
-                                            <button className="absolute bottom-2 right-2 w-10 h-10 bg-purple-600 hover:bg-purple-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300">
+                                            <button className="absolute bottom-2 right-2 w-10 h-10 bg-teal-600 hover:bg-teal-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300">
                                                 <Camera className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -290,10 +304,10 @@ export default function Profile() {
                                     <div className="grid grid-cols-2 gap-4 mt-6">
                                         {userStats.map((stat, index) => (
                                             <div key={index} className="text-center">
-                                                <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-purple-500 to-purple-600' :
+                                                <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-teal-500 to-teal-600' :
                                                         stat.color === 'pink' ? 'from-pink-500 to-pink-600' :
                                                             stat.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
-                                                                'from-blue-500 to-blue-600'
+                                                                'from-teal-500 to-teal-600'
                                                     } flex items-center justify-center`}>
                                                     <stat.icon className="w-6 h-6 text-white" />
                                                 </div>
@@ -316,7 +330,7 @@ export default function Profile() {
                                     {!isEditing ? (
                                         <Button
                                             onClick={() => setIsEditing(true)}
-                                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                                            className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800"
                                         >
                                             <Edit3 className="w-4 h-4 mr-2" />
                                             Edit Profile
@@ -325,7 +339,7 @@ export default function Profile() {
                                         <div className="flex space-x-2">
                                             <Button
                                                 onClick={handleSave}
-                                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800"
                                             >
                                                 <Save className="w-4 h-4 mr-2" />
                                                 Save
@@ -355,7 +369,7 @@ export default function Profile() {
                                                     value={formData.name}
                                                     onChange={handleInputChange}
                                                     disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
+                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
                                                     placeholder="Enter your full name"
                                                 />
                                             </div>
@@ -373,7 +387,7 @@ export default function Profile() {
                                                     value={formData.email}
                                                     onChange={handleInputChange}
                                                     disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
+                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
                                                     placeholder="Enter your email"
                                                 />
                                             </div>
@@ -392,7 +406,7 @@ export default function Profile() {
                                                     value={formData.phone}
                                                     onChange={handleInputChange}
                                                     disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
+                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
                                                     placeholder="Enter your phone number"
                                                 />
                                             </div>
@@ -409,11 +423,52 @@ export default function Profile() {
                                                     value={formData.location}
                                                     onChange={handleInputChange}
                                                     disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
+                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
                                                     placeholder="Enter your location"
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                            Preferred Salon Category
+                                        </label>
+                                        <div className="relative">
+                                            <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                                            <Select
+                                                value={selectedCategory}
+                                                onValueChange={(value: UserCategory) => setSelectedCategory(value)}
+                                                disabled={!isEditing}
+                                            >
+                                                <SelectTrigger className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl bg-white">
+                                                    <SelectValue placeholder="Select your preferred category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="men">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                            <span>Men's Salons</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="women">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                                                            <span>Women's Salons</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="unisex">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                                                            <span>Unisex Salons</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            This will personalize your home page to show relevant salons
+                                        </p>
                                     </div>
 
                                     <div>
@@ -426,7 +481,7 @@ export default function Profile() {
                                             onChange={handleInputChange}
                                             disabled={!isEditing}
                                             rows={4}
-                                            className="border-2 border-gray-200 focus:border-purple-500 rounded-xl resize-none"
+                                            className="border-2 border-gray-200 focus:border-teal-500 rounded-xl resize-none"
                                             placeholder="Tell us about yourself..."
                                         />
                                     </div>
@@ -442,7 +497,7 @@ export default function Profile() {
                         <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
                             <CardHeader>
                                 <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <TrendingUp className="w-6 h-6 mr-3 text-purple-600" />
+                                    <TrendingUp className="w-6 h-6 mr-3 text-teal-600" />
                                     Recent Activity
                                 </CardTitle>
                             </CardHeader>
@@ -475,7 +530,7 @@ export default function Profile() {
                         <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
                             <CardHeader>
                                 <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Award className="w-6 h-6 mr-3 text-purple-600" />
+                                    <Award className="w-6 h-6 mr-3 text-teal-600" />
                                     Achievements
                                 </CardTitle>
                             </CardHeader>
@@ -507,7 +562,7 @@ export default function Profile() {
                                                             </div>
                                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                                 <div
-                                                                    className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
+                                                                    className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-500"
                                                                     style={{ width: `${achievement.progress}%` }}
                                                                 ></div>
                                                             </div>
@@ -530,7 +585,7 @@ export default function Profile() {
                         <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
                             <CardHeader>
                                 <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Bell className="w-6 h-6 mr-3 text-purple-600" />
+                                    <Bell className="w-6 h-6 mr-3 text-teal-600" />
                                     Notification Preferences
                                 </CardTitle>
                             </CardHeader>
