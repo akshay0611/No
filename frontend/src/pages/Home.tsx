@@ -28,7 +28,7 @@ export default function Home() {
   const favoritesRef = useRef<HTMLElement>(null);
   const [showFavoritesSection, setShowFavoritesSection] = useState(false);
   const [exploreFilter, setExploreFilter] = useState<'highly-rated' | 'nearest'>('highly-rated');
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [selectedSalonType, setSelectedSalonType] = useState<'men' | 'women' | 'unisex'>(() => {
     // Initialize with user's selected category from localStorage, fallback to 'unisex'
     return getUserCategory() || 'unisex';
@@ -72,12 +72,12 @@ export default function Home() {
   // Create a component for salon photo thumbnail
   const SalonPhotoThumbnail = ({ photos, salonName }: { photos: SalonPhoto[]; salonName: string }) => {
     console.log('SalonPhotoThumbnail - Salon:', salonName, 'Photos:', photos);
-    
+
     if (photos && photos.length > 0) {
       console.log('Using uploaded photo:', photos[0].url);
       return (
-        <img 
-          src={photos[0].url} 
+        <img
+          src={photos[0].url}
           alt={salonName}
           className="w-20 h-20 object-cover rounded-lg"
         />
@@ -115,18 +115,18 @@ export default function Home() {
       console.warn('Salon missing required properties:', salon);
       return false;
     }
-    
-    
+
+
     // Filter by salon type first
     const matchesType = salon.type === selectedSalonType;
-    
+
     // Search in salon name OR services
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      salon.services?.some(service => 
+      salon.services?.some(service =>
         service.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    
+
     const matchesLocation = !location || salon.location.toLowerCase().includes(location.toLowerCase());
     return matchesType && matchesSearch && matchesLocation;
   });
@@ -136,10 +136,10 @@ export default function Home() {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
@@ -168,7 +168,7 @@ export default function Home() {
   // Get explore salons based on filter and salon type
   const exploreSalons = useMemo(() => {
     const typedSalons = salons.filter(salon => salon.type === selectedSalonType);
-    
+
     if (exploreFilter === 'highly-rated') {
       return [...typedSalons]
         .sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -417,28 +417,22 @@ export default function Home() {
   const currentTheme = getThemeConfig(selectedSalonType);
 
   return (
-    <div className={`min-h-screen ${currentTheme.background}`}>
+    <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
         /* Logged In User - Personalized Welcome */
-        <section className="relative overflow-hidden min-h-[45vh] flex items-center">
+        <section className="relative overflow-hidden min-h-[45vh] flex items-center bg-gradient-to-br from-teal-600 to-teal-700">
           {/* Background Image */}
           <div className="absolute inset-0">
-            <img 
-              src={currentTheme.heroImage} 
+            <img
+              src={currentTheme.heroImage}
               alt={`${selectedSalonType.charAt(0).toUpperCase() + selectedSalonType.slice(1)} Salon Interior`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover opacity-20"
             />
-            <div className={`absolute inset-0 ${
-              selectedSalonType === 'men' 
-                ? 'bg-gradient-to-r from-blue-900/80 via-slate-900/70 to-gray-900/80'
-                : selectedSalonType === 'women'
-                ? 'bg-gradient-to-r from-pink-900/80 via-rose-900/70 to-purple-900/80'
-                : 'bg-gradient-to-r from-purple-900/80 via-indigo-900/70 to-blue-900/80'
-            }`}></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-600/90 to-teal-700/90"></div>
           </div>
-          
+
           {/* Content */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center">
@@ -453,20 +447,20 @@ export default function Home() {
                   )}
                 </div>
                 <h1 className="text-3xl font-oswald md:text-5xl font-bold text-white mb-3 tracking-tight">
-                  Welcome back, {user.name?.split(' ')[0] || 'User'}! 
+                  Welcome back, {user.name?.split(' ')[0] || 'User'}!
                 </h1>
                 <p className="text-white/90 text-sm font-bricolage tracking-tighter md:text-xl max-w-2xl mx-auto">
-                Ready to skip the wait? Discover your ideal salon now!
+                  Ready to skip the wait? Discover your ideal salon now!
                 </p>
               </div>
-              
+
               {/* Search Bar for logged in users */}
               <div className="max-w-lg mx-auto">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <Input 
-                    type="text" 
-                    placeholder="Search salons or services ..." 
+                  <Input
+                    type="text"
+                    placeholder="Search salons or services ..."
                     className="pl-12 font-bricolage pr-4 py-2 text-lg border-0 focus-visible:ring-2 focus-visible:ring-white/50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -480,47 +474,39 @@ export default function Home() {
       ) : (
         /* Not Logged In - Marketing Hero */
         <>
-          <section className="relative overflow-hidden min-h-[60vh] flex items-center justify-center text-center">
+          <section className="relative overflow-hidden min-h-[60vh] flex items-center justify-center text-center bg-gradient-to-br from-teal-600 to-teal-700">
             {/* Background Image with Softer Blur/Overlay */}
             <div className="absolute inset-0">
-              <img 
-                src={currentTheme.heroImage} 
+              <img
+                src={currentTheme.heroImage}
                 alt={`${selectedSalonType.charAt(0).toUpperCase() + selectedSalonType.slice(1)} Salon Interior`}
-                className="w-full h-full object-cover blur-sm" // Added blur
+                className="w-full h-full object-cover blur-sm opacity-20"
               />
-              <div className={`absolute inset-0 ${
-                selectedSalonType === 'men' 
-                  ? 'bg-gradient-to-r from-blue-900/80 via-slate-900/70 to-gray-900/80'
-                  : selectedSalonType === 'women'
-                  ? 'bg-gradient-to-r from-pink-900/80 via-rose-900/70 to-purple-900/80'
-                  : 'bg-gradient-to-r from-purple-900/80 via-indigo-900/70 to-blue-900/80'
-              }`}></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-teal-600/90 to-teal-700/90"></div>
             </div>
-            
+
             {/* Content */}
             <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               {/* 1. Tagline */}
               <p className="text-white/80 font-medium text-sm md:text-base mb-4">
                 Skip the Wait, Join the Queue
               </p>
-              
+
               {/* 2. Main Headline */}
               <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-6 tracking-tighter">
                 SmartQ – Unisex Salon Queue System
               </h1>
-              
+
               {/* 3. CTA Button */}
               <div className="mb-4">
                 <Link href="/auth">
-                  <Button size="lg" className={`bg-white hover:bg-gray-200 px-10 py-6 rounded-full font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 group ${
-                    selectedSalonType === 'men' ? 'text-blue-600' : selectedSalonType === 'women' ? 'text-pink-600' : 'text-purple-600'
-                  }`}>
+                  <Button size="lg" className="bg-white hover:bg-gray-200 px-10 py-6 rounded-full font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 group text-teal-600">
                     Get Started Free
                     <Sparkles className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:rotate-12" />
                   </Button>
                 </Link>
               </div>
-              
+
               {/* 4. Social Proof */}
               <div className="flex items-center justify-center text-white/70 text-sm">
                 <Users className="w-4 h-4 mr-2" />
@@ -531,60 +517,24 @@ export default function Home() {
 
           {/* Search Bar Section - Moved from Hero */}
           <section className="py-8 px-4 -mt-12 relative z-20">
-  <div className="max-w-lg mx-auto">
-    <div className="relative">
-      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-      <Input 
-        type="text" 
-        placeholder="Search salons or services..." 
-        className="pl-12 pr-4 py-4 text-lg border-2 border-gray-200 focus-visible:ring-2 focus-visible:ring-purple-400 bg-white rounded-2xl shadow-lg"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        data-testid="input-search"
-      />
-    </div>
-  </div>
-</section>
+            <div className="max-w-lg mx-auto">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  type="text"
+                  placeholder="Search salons or services..."
+                  className="pl-12 pr-4 py-4 text-lg border-2 border-gray-200 focus-visible:ring-2 focus-visible:ring-purple-400 bg-white rounded-2xl shadow-lg"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  data-testid="input-search"
+                />
+              </div>
+            </div>
+          </section>
         </>
       )}
 
-{/* Salon Type Selector */}
-<section className="py-4 px-4  border-b border-gray-200">
-  <div className="max-w-md mx-auto">
-    <div className="flex gap-2">
-      <button
-        onClick={() => setSelectedSalonType('men')}
-        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
-          selectedSalonType === 'men'
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-        }`}
-      >
-        Men
-      </button>
-      <button
-        onClick={() => setSelectedSalonType('women')}
-        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
-          selectedSalonType === 'women'
-            ? 'bg-pink-600 text-white border-pink-600'
-            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-        }`}
-      >
-        Women
-      </button>
-      <button
-        onClick={() => setSelectedSalonType('unisex')}
-        className={`flex-1 px-4 py-2 font-bricolage text-sm font-medium rounded-lg border-2 shadow-2xl transition-colors ${
-          selectedSalonType === 'unisex'
-            ? 'bg-purple-600 text-white border-purple-600'
-            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-        }`}
-      >
-        Unisex
-      </button>
-    </div>
-  </div>
-</section>
+
 
       {/* Banner Section & Action Buttons */}
       <section className="py-8 px-4">
@@ -602,8 +552,8 @@ export default function Home() {
                     <div className="p-1">
                       <Card className="overflow-hidden rounded-xl">
                         <CardContent className="flex aspect-video items-center justify-center p-0">
-                          <img 
-                            src={src} 
+                          <img
+                            src={src}
                             alt={`${selectedSalonType.charAt(0).toUpperCase() + selectedSalonType.slice(1)} Salon Banner ${index + 1}`}
                             className="w-full h-full object-cover"
                           />
@@ -615,34 +565,24 @@ export default function Home() {
               </CarouselContent>
             </Carousel>
           )}
-          
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
             <Button
-              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-500 ${
-                !showFavoritesSection 
-                  ? `${selectedSalonType === 'men' 
-                      ? 'bg-gradient-to-r from-blue-600 to-slate-600' 
-                      : selectedSalonType === 'women' 
-                      ? 'bg-gradient-to-r from-pink-600 to-rose-600' 
-                      : 'bg-gradient-to-r from-purple-600 to-indigo-600'} text-white shadow-lg` 
-                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-              }`}
+              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-500 ${!showFavoritesSection
+                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
+                }`}
               onClick={() => setShowFavoritesSection(false)}
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Recommended
             </Button>
             <Button
-              className={`flex-1 h-14 font-semibold rounded-xl shadow-lg transition-all duration-500 ${
-                showFavoritesSection 
-                  ? `${selectedSalonType === 'men' 
-                      ? 'bg-gradient-to-r from-blue-600 to-slate-600' 
-                      : selectedSalonType === 'women' 
-                      ? 'bg-gradient-to-r from-pink-600 to-rose-600' 
-                      : 'bg-gradient-to-r from-purple-600 to-indigo-600'} text-white shadow-lg` 
-                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-              }`}
+              className={`flex-1 h-14 font-semibold rounded-xl shadow-lg transition-all duration-500 ${showFavoritesSection
+                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
+                }`}
               onClick={() => {
                 if (!user) {
                   // Redirect to login if not authenticated
@@ -671,7 +611,7 @@ export default function Home() {
               {showFavoritesSection ? `${favoriteSalons.length} saved` : `${topSalonsWithOffers.length} available`}
             </div>
           </div>
-          
+
           {/* Container for horizontal scrolling */}
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex flex-col gap-4 min-w-max">
@@ -694,14 +634,8 @@ export default function Home() {
                     <p className="text-gray-500 text-center max-w-md">
                       Start exploring salons and add your favorites by clicking the heart icon!
                     </p>
-                    <Button 
-                      className={`mt-4 text-white px-6 py-2 rounded-full ${
-                        selectedSalonType === 'men' 
-                          ? 'bg-gradient-to-r from-blue-600 to-slate-600' 
-                          : selectedSalonType === 'women' 
-                          ? 'bg-gradient-to-r from-pink-600 to-rose-600' 
-                          : 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                      }`}
+                    <Button
+                      className="mt-4 text-white px-6 py-2 rounded-full bg-gradient-to-r from-teal-600 to-teal-700"
                       onClick={() => setShowFavoritesSection(false)}
                     >
                       Explore Salons
@@ -753,29 +687,27 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-4">Explore</h2>
           <div className="flex gap-3 justify-center mb-6">
-            <Button 
+            <Button
               onClick={() => setExploreFilter('highly-rated')}
-              className={`px-6 h-10 font-medium rounded-full shadow-md ${
-                exploreFilter === 'highly-rated' 
-                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white' 
-                  : 'bg-white border-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50'
-              }`}
+              className={`px-6 h-10 font-medium rounded-full shadow-md ${exploreFilter === 'highly-rated'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white'
+                : 'bg-white border-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50'
+                }`}
             >
               <Star className="w-4 h-4 mr-2" />
               Highly Rated
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setExploreFilter('nearest');
                 if (!userLocation) {
                   getUserLocation();
                 }
               }}
-              className={`px-6 h-10 font-medium rounded-full shadow-md ${
-                exploreFilter === 'nearest' 
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white' 
-                  : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50'
-              }`}
+              className={`px-6 h-10 font-medium rounded-full shadow-md ${exploreFilter === 'nearest'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
+                : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50'
+                }`}
             >
               <MapPin className="w-4 h-4 mr-2" />
               Nearest
@@ -785,9 +717,9 @@ export default function Home() {
           {/* Explore Salons Display */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {exploreSalons.map((salon) => (
-              <SalonCard 
-                key={salon.id} 
-                salon={salon} 
+              <SalonCard
+                key={salon.id}
+                salon={salon}
                 showDistance={exploreFilter === 'nearest'}
                 distance={(salon as any).distance}
               />
@@ -800,18 +732,18 @@ export default function Home() {
       <section className="py-6">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-6 text-center">What's on your mind?</h2>
-          
+
           {/* Circular Service Categories Grid */}
           <div className="grid grid-cols-4 md:grid-cols-8 gap-6 max-w-4xl mx-auto">
             {salonServiceCategories.map((category) => (
-              <div 
-                key={category.id} 
+              <div
+                key={category.id}
                 className="flex flex-col items-center cursor-pointer group"
                 onClick={() => setSearchQuery(category.searchQuery)}
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <img 
-                    src={category.image} 
+                  <img
+                    src={category.image}
                     alt={category.name}
                     className="w-full h-full object-cover"
                   />
@@ -829,7 +761,7 @@ export default function Home() {
       <section id="all-salons" ref={allSalonsRef} className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-6">All Salons</h2>
-          
+
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
@@ -854,8 +786,8 @@ export default function Home() {
                 {searchQuery || location ? 'No salons found' : 'No salons available yet'}
               </h3>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                {searchQuery || location 
-                  ? 'Try adjusting your search criteria or check back later.' 
+                {searchQuery || location
+                  ? 'Try adjusting your search criteria or check back later.'
                   : 'New salons are joining SmartQ every day. Check back soon or sign up as a salon owner!'}
               </p>
               {!searchQuery && !location && (
@@ -885,7 +817,7 @@ export default function Home() {
                               <span className="text-sm font-medium text-gray-900">{salon.rating}</span>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-2">
                               <div className={`w-2 h-2 rounded-full ${salon.queueCount > 5 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
@@ -893,7 +825,7 @@ export default function Home() {
                             </div>
                             <span className="text-sm font-medium text-gray-900">~{salon.estimatedWaitTime || 15} min wait</span>
                           </div>
-                          
+
                           {salon.offers && salon.offers.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
                               {salon.offers.slice(0, 2).map((offer) => (
@@ -904,7 +836,7 @@ export default function Home() {
                               ))}
                             </div>
                           )}
-                          
+
                           <div className="flex flex-wrap gap-2">
                             {salon.services.slice(0, 3).map((service) => (
                               <Badge key={service.id} variant="secondary" className="text-xs">
@@ -927,7 +859,7 @@ export default function Home() {
           )}
         </div>
       </section>
-      
+
     </div>
   );
 }
