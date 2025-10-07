@@ -16,6 +16,7 @@ export interface Salon {
   name: string;
   description?: string;
   location: string;
+  manualLocation?: string;
   type: "men" | "women" | "unisex";
   operatingHours?: any;
   rating: string;

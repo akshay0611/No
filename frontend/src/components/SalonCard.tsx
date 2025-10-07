@@ -85,7 +85,8 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
 
   // Effect to fetch address when component mounts if we have coordinates but no address
   useEffect(() => {
-    if (salon.latitude && salon.longitude && !salon.fullAddress && !salon.location && !resolvedAddress) {
+    // Only fetch resolved address if we don't have manualLocation, fullAddress, or location
+    if (salon.latitude && salon.longitude && !salon.manualLocation && !salon.fullAddress && !salon.location && !resolvedAddress) {
       const cacheKey = `${salon.latitude},${salon.longitude}`;
 
       // Check cache first
@@ -95,10 +96,14 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
         fetchAddressFromCoordinates(salon.latitude, salon.longitude);
       }
     }
-  }, [salon.latitude, salon.longitude, salon.fullAddress, salon.location, resolvedAddress]);
+  }, [salon.latitude, salon.longitude, salon.manualLocation, salon.fullAddress, salon.location, resolvedAddress]);
 
   const getDisplayLocation = () => {
-    // Priority order: fullAddress > location > resolvedAddress > coordinates-based fallback
+    // Priority order: manualLocation > fullAddress > location > resolvedAddress > coordinates-based fallback
+    if (salon.manualLocation && salon.manualLocation.trim()) {
+      return salon.manualLocation;
+    }
+
     if (salon.fullAddress && salon.fullAddress.trim()) {
       return salon.fullAddress;
     }

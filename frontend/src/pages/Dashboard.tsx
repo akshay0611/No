@@ -55,6 +55,7 @@ import { insertSalonSchema, insertServiceSchema, insertOfferSchema } from "../li
 import type { QueueWithDetails, Analytics } from "../types";
 import GalleryManager from "../components/GalleryManager";
 import LocationPicker from "../components/LocationPicker";
+import LocationInputModal from "../components/LocationInputModal";
 
 const serviceFormSchema = insertServiceSchema.omit({ salonId: true });
 const offerFormSchema = insertOfferSchema.omit({ salonId: true });
@@ -78,6 +79,7 @@ export default function Dashboard() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Redirect to auth if no user (e.g., after logout)
   useEffect(() => {
@@ -625,7 +627,12 @@ export default function Dashboard() {
                 />
               </div>
               <div>
-                <p className="text-sm font-medium text-teal-700">Salon Dashboard</p>
+                <p className="text-sm font-medium text-teal-700">
+                  {salons.find((s: any) => s.id === selectedSalonId)?.name || "Salon Dashboard"}
+                </p>
+                {salons.find((s: any) => s.id === selectedSalonId)?.name && (
+                  <p className="text-xs text-gray-500">Welcome 👋</p>
+                )}
               </div>
             </div>
           </div>
@@ -1157,16 +1164,22 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-bold text-black">Services</h2>
+                      <Button
+                        className="bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-4 py-2"
+                        data-testid="button-add-service"
+                        onClick={() => {
+                          const currentSalon = salons.find((s: any) => s.id === selectedSalonId);
+                          if (!currentSalon?.manualLocation || currentSalon.manualLocation.trim() === '') {
+                            setIsLocationModalOpen(true);
+                          } else {
+                            setIsServiceDialogOpen(true);
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add
+                      </Button>
                       <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button
-                            className="bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-4 py-2"
-                            data-testid="button-add-service"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add
-                          </Button>
-                        </DialogTrigger>
                         <DialogContent className="mx-2 max-w-[95vw] sm:max-w-md w-full max-h-[90vh] overflow-hidden rounded-3xl p-0">
                           <div className="max-h-[90vh] overflow-y-auto">
                             <DialogHeader className="text-center p-6 pb-4 sticky top-0 bg-white z-10 border-b border-gray-100">
@@ -1671,6 +1684,20 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Location Input Modal */}
+      {selectedSalonId && (
+        <LocationInputModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          salonId={selectedSalonId}
+          onSuccess={() => {
+            setIsLocationModalOpen(false);
+            setIsServiceDialogOpen(true);
+            queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
+          }}
+        />
+      )}
     </div>
   );
 }
