@@ -1169,9 +1169,18 @@ export default function Dashboard() {
                         data-testid="button-add-service"
                         onClick={() => {
                           const currentSalon = salons.find((s: any) => s.id === selectedSalonId);
+                          console.log('Add Service clicked - Current salon:', {
+                            id: currentSalon?.id,
+                            name: currentSalon?.name,
+                            manualLocation: currentSalon?.manualLocation,
+                            hasManualLocation: !!currentSalon?.manualLocation && currentSalon.manualLocation.trim() !== ''
+                          });
+                          
                           if (!currentSalon?.manualLocation || currentSalon.manualLocation.trim() === '') {
+                            console.log('Opening location modal - no manual location set');
                             setIsLocationModalOpen(true);
                           } else {
+                            console.log('Opening service dialog - manual location exists:', currentSalon.manualLocation);
                             setIsServiceDialogOpen(true);
                           }
                         }}
