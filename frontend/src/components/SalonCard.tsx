@@ -217,7 +217,9 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
               <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-50 to-amber-50 px-2.5 py-1 rounded-full border border-yellow-200/50">
                 <Star className="w-4 h-4 text-amber-500 fill-current" />
                 <span className="text-sm font-bold text-gray-900">{salon.rating}</span>
-                <span className="text-xs text-gray-500">(0)</span>
+                <span className="text-xs text-gray-500">
+                  ({salon.reviewCount ?? salon.reviews?.length ?? 0})
+                </span>
               </div>
             </div>
 

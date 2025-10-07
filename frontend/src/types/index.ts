@@ -81,6 +81,8 @@ export interface SalonWithDetails extends Salon {
   estimatedWaitTime: number;
   offers: Offer[];
   photos: SalonPhoto[];
+  reviews?: Review[];
+  reviewCount?: number;
   latitude?: number;
   longitude?: number;
   fullAddress?: string;
