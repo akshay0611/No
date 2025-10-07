@@ -29,7 +29,7 @@ export default function Navbar() {
     const handleStorageChange = () => {
       setSelectedCategory(getUserCategory() || 'unisex');
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
@@ -37,7 +37,7 @@ export default function Navbar() {
   const handleCategoryChange = (category: UserCategory) => {
     setSelectedCategory(category);
     setUserCategory(category);
-    
+
     toast({
       title: "Category Updated",
       description: `Your preferred category has been changed to ${category === 'men' ? "Men's" : category === 'women' ? "Women's" : "Unisex"} Salons`,
@@ -74,18 +74,25 @@ export default function Navbar() {
               {user ? (
                 <>
                   {/* Mobile Notifications */}
-                  <button 
+                  <button
                     className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200"
                     data-testid="button-notifications"
                   >
                     <Bell className="h-5 w-5" />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                   </button>
+
+                  {/* Profile Icon */}
+                  <Link href="/profile">
+                    <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <User className="h-4 w-4" />
+                    </div>
+                  </Link>
                 </>
               ) : (
                 <div className="hidden md:block">
                   <Link href="/auth" data-testid="link-auth">
-                    <Button 
+                    <Button
                       className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium px-4 py-2 text-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                       data-testid="button-signin"
                     >
@@ -104,39 +111,36 @@ export default function Navbar() {
             <div className="flex items-center justify-center py-4">
               {/* Desktop Navigation */}
               <nav className="flex items-center space-x-1">
-                <Link 
-                  href="/" 
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    location === '/' 
-                      ? 'text-teal-600 bg-teal-50' 
+                <Link
+                  href="/"
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${location === '/'
+                      ? 'text-teal-600 bg-teal-50'
                       : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
-                  }`}
+                    }`}
                   data-testid="link-discover"
                 >
                   Discover
                 </Link>
                 {user && (
                   <>
-                    <Link 
-                      href="/queue" 
-                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 relative ${
-                        location === '/queue' 
-                          ? 'text-teal-600 bg-teal-50' 
+                    <Link
+                      href="/queue"
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 relative ${location === '/queue'
+                          ? 'text-teal-600 bg-teal-50'
                           : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
-                      }`}
+                        }`}
                       data-testid="link-queue"
                     >
                       My Queue
                       <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </Link>
                     {user.role === 'salon_owner' && (
-                      <Link 
-                        href="/dashboard" 
-                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                          location === '/dashboard' 
-                            ? 'text-teal-600 bg-teal-50' 
+                      <Link
+                        href="/dashboard"
+                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${location === '/dashboard'
+                            ? 'text-teal-600 bg-teal-50'
                             : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
-                        }`}
+                          }`}
                         data-testid="link-dashboard"
                       >
                         Dashboard
@@ -148,10 +152,17 @@ export default function Navbar() {
 
               {/* Desktop User Section (Simplified) */}
               {user && (
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600" data-testid="text-username">
-                    Welcome, {user.name}
-                  </span>
+                <div className="flex items-center space-x-4 ml-8">
+                  <Link href="/profile">
+                    <div className="flex items-center space-x-2 hover:bg-teal-50 rounded-lg p-2 transition-all duration-200 cursor-pointer">
+                      <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium shadow-md">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm text-gray-600 font-medium" data-testid="text-username">
+                        {user.name?.split(' ')[0] || 'User'}
+                      </span>
+                    </div>
+                  </Link>
                 </div>
               )}
             </div>
@@ -163,21 +174,19 @@ export default function Navbar() {
       {user && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 z-40 md:hidden">
           <nav className="flex justify-around">
-            <Link 
-              href="/" 
-              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                location === '/' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
-              }`}
+            <Link
+              href="/"
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${location === '/' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
+                }`}
             >
               <Clock className="h-5 w-5 mb-1" />
               <span className="text-xs font-medium">Discover</span>
             </Link>
 
-            <Link 
-              href="/queue" 
-              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors relative ${
-                location === '/queue' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
-              }`}
+            <Link
+              href="/queue"
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors relative ${location === '/queue' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
+                }`}
             >
               <Bell className="h-5 w-5 mb-1" />
               <span className="text-xs font-medium">Queue</span>
@@ -185,11 +194,10 @@ export default function Navbar() {
             </Link>
 
             {user.role === 'salon_owner' && (
-              <Link 
-                href="/dashboard" 
-                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                  location === '/dashboard' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
-                }`}
+              <Link
+                href="/dashboard"
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${location === '/dashboard' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
+                  }`}
               >
                 <Settings className="h-5 w-5 mb-1" />
                 <span className="text-xs font-medium">Dashboard</span>
@@ -219,17 +227,17 @@ export default function Navbar() {
                     </div>
                   </div>
                 </div>
-                
-                <Link 
-                  href="/profile" 
+
+                <Link
+                  href="/profile"
                   className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <User className="h-4 w-4" />
                   <span>My Profile</span>
                 </Link>
-                
-                <Link 
-                  href="/settings" 
+
+                <Link
+                  href="/settings"
                   className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Settings className="h-4 w-4" />
@@ -278,7 +286,7 @@ export default function Navbar() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="border-t border-gray-100 mt-2 pt-2">
                   <button
                     onClick={() => {

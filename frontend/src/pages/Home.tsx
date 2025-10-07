@@ -5,15 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Star, Users, Clock, Smartphone, Gift, Bell, BarChart3, Handshake, Award, Heart, Scissors, Palette, Sparkles, Zap, Crown, Flame, ImageIcon } from "lucide-react";
+import { Search, MapPin, Star, Users, Gift, Heart, Scissors, Palette, Sparkles, Zap, Crown, Flame, ImageIcon, User as UserIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import SalonCard from "../components/SalonCard";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -33,33 +26,59 @@ export default function Home() {
     // Initialize with user's selected category from localStorage, fallback to 'unisex'
     return getUserCategory() || 'unisex';
   });
+  const [currentSlide, setCurrentSlide] = useState(0);
+
 
   const plugin = useRef(
     Autoplay({ delay: 3000, stopOnInteraction: false, stopOnMouseEnter: true })
   );
 
-  const womenBannerImages = [
-    "https://cdn.dribbble.com/userupload/16515653/file/original-0a3ae9e144f9930637375fe3b579880d.png?resize=752x&vertical=center",
-    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400"
+  // Promotional carousel slides
+  const promoSlides = [
+    {
+      id: 1,
+      title: "Look more stylish and earn more discount",
+      subtitle: "Premium salon services at unbeatable prices",
+      discount: "50%",
+      buttonText: "Get Offer Now !",
+      image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400",
+      gradient: "from-black/60 to-transparent"
+    },
+    {
+      id: 2,
+      title: "Transform your look with expert stylists",
+      subtitle: "Book now and save big on premium services",
+      discount: "30%",
+      buttonText: "Book Now !",
+      image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400",
+      gradient: "from-purple-900/60 to-transparent"
+    },
+    {
+      id: 3,
+      title: "Weekend special offers",
+      subtitle: "Relax and rejuvenate with our spa treatments",
+      discount: "40%",
+      buttonText: "Explore Deals !",
+      image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400",
+      gradient: "from-teal-900/60 to-transparent"
+    }
   ];
 
-  const menBannerImages = [
-    "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400",
-    "https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400"
-  ];
+  // Auto-advance carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % promoSlides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [promoSlides.length]);
 
-  const unisexBannerImages = [
-    "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400",
-    "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=400"
-  ];
-
-  const bannerImages = {
-    women: womenBannerImages,
-    men: menBannerImages,
-    unisex: unisexBannerImages,
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % promoSlides.length);
   };
 
-  const currentBannerImages = bannerImages[selectedSalonType];
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + promoSlides.length) % promoSlides.length);
+  };
 
   const { data: salons = [], isLoading, error } = useQuery<SalonWithDetails[]>({
     queryKey: ['/api/salons'],
@@ -111,10 +130,10 @@ export default function Home() {
 
   const filteredSalons = salons.filter(salon => {
     // Ensure salon has required properties
-    if (!salon.name || !salon.location) {
-      console.warn('Salon missing required properties:', salon);
-      return false;
-    }
+    // if (!salon.name || !salon.location) {
+    //   console.warn('Salon missing required properties:', salon);
+    //   return false;
+    // }
 
 
     // Filter by salon type first
@@ -181,8 +200,8 @@ export default function Home() {
             userLocation.lat,
             userLocation.lng,
             // Assuming salon has lat/lng or we parse from location string
-            parseFloat(salon.lat || '30.7333'),
-            parseFloat(salon.lng || '76.7794')
+            parseFloat((salon as any).lat || '30.7333'),
+            parseFloat((salon as any).lng || '76.7794')
           )
         }))
         .sort((a, b) => (a.distance || 0) - (b.distance || 0))
@@ -195,8 +214,8 @@ export default function Home() {
   const topSalonsWithOffers = [...salons]
     .filter(salon => salon.type === selectedSalonType && salon.offers && salon.offers.length > 0)
     .sort((a, b) => {
-      const maxOfferA = Math.max(...(a.offers?.map(offer => offer.discount) || [0]));
-      const maxOfferB = Math.max(...(b.offers?.map(offer => offer.discount) || [0]));
+      const maxOfferA = Math.max(...(a.offers?.map(offer => Number(offer.discount) || 0) || [0]));
+      const maxOfferB = Math.max(...(b.offers?.map(offer => Number(offer.discount) || 0) || [0]));
       return maxOfferB - maxOfferA;
     });
 
@@ -417,57 +436,34 @@ export default function Home() {
   const currentTheme = getThemeConfig(selectedSalonType);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white pb-20 md:pb-0">
 
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
-        /* Logged In User - Personalized Welcome */
-        <section className="relative overflow-hidden min-h-[45vh] flex items-center bg-gradient-to-br from-teal-600 to-teal-700">
-          {/* Background Image */}
-          <div className="absolute inset-0">
-            <img
-              src={currentTheme.heroImage}
-              alt={`${selectedSalonType.charAt(0).toUpperCase() + selectedSalonType.slice(1)} Salon Interior`}
-              className="w-full h-full object-cover opacity-20"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-600/90 to-teal-700/90"></div>
-          </div>
-
-          {/* Content */}
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-center">
-              <div className="mb-8">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-                  {user.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <span className="text-white text-xl font-bold">
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  )}
-                </div>
-                <h1 className="text-3xl font-oswald md:text-5xl font-bold text-white mb-3 tracking-tight">
-                  Welcome back, {user.name?.split(' ')[0] || 'User'}!
-                </h1>
-                <p className="text-white/90 text-sm font-bricolage tracking-tighter md:text-xl max-w-2xl mx-auto">
-                  Ready to skip the wait? Discover your ideal salon now!
-                </p>
-              </div>
-
-              {/* Search Bar for logged in users */}
-              <div className="max-w-lg mx-auto">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <Input
-                    type="text"
-                    placeholder="Search salons or services ..."
-                    className="pl-12 font-bricolage pr-4 py-2 text-lg border-0 focus-visible:ring-2 focus-visible:ring-white/50 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    data-testid="input-search"
-                  />
+        /* Logged In User - Clean Header */
+        <section className="bg-white px-4 py-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Header with Profile and Logo */}
+            <div className="flex items-center justify-between mb-6">
+              {/* Left: Profile */}
+              <div className="flex items-center space-x-3">
+                <Link href="/profile">
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <UserIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  </div>
+                </Link>
+                <div>
+                  <p className="text-gray-500 text-sm">Hello</p>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {user.name?.split(' ')[1] || user.name || 'User'}
+                  </h1>
                 </div>
               </div>
+
+              {/* Right: Logo */}
+
             </div>
           </div>
         </section>
@@ -536,80 +532,102 @@ export default function Home() {
 
 
 
-      {/* Banner Section & Action Buttons */}
-      <section className="py-8 px-4">
+      {/* Promotional Carousel */}
+      <section className="px-4 pb-6">
         <div className="max-w-7xl mx-auto">
-          {currentBannerImages && (
-            <Carousel
-              plugins={[plugin.current]}
-              className="w-full max-w-5xl mx-auto mb-8"
-              onMouseEnter={plugin.current.stop}
-              onMouseLeave={plugin.current.reset}
+          <div className="relative rounded-3xl overflow-hidden shadow-xl h-64 md:h-80">
+            {/* Carousel Container */}
+            <div
+              className="flex transition-transform duration-500 ease-in-out h-full"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-              <CarouselContent>
-                {currentBannerImages.map((src, index) => (
-                  <CarouselItem key={index}>
-                    <div className="p-1">
-                      <Card className="overflow-hidden rounded-xl">
-                        <CardContent className="flex aspect-video items-center justify-center p-0">
-                          <img
-                            src={src}
-                            alt={`${selectedSalonType.charAt(0).toUpperCase() + selectedSalonType.slice(1)} Salon Banner ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          )}
+              {promoSlides.map((slide) => (
+                <div key={slide.id} className="w-full flex-shrink-0 relative">
+                  {/* Background Image */}
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`}></div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <Button
-              className={`flex-1 h-14 font-semibold rounded-2xl shadow-lg transition-all duration-500 ${!showFavoritesSection
-                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-                }`}
-              onClick={() => setShowFavoritesSection(false)}
-            >
-              <Sparkles className="w-5 h-5 mr-2" />
-              Recommended
-            </Button>
-            <Button
-              className={`flex-1 h-14 font-semibold rounded-xl shadow-lg transition-all duration-500 ${showFavoritesSection
-                ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300'
-                }`}
-              onClick={() => {
-                if (!user) {
-                  // Redirect to login if not authenticated
-                  window.location.href = '/auth';
-                  return;
-                }
-                setShowFavoritesSection(true);
-              }}
-              disabled={user && favoriteSalons.length === 0}
-            >
-              <Heart className="w-5 h-5 mr-2" />
-              {user ? 'Favorites' : 'Sign in for Favorites'}
-            </Button>
+                  {/* Content */}
+                  <div className="absolute inset-0 flex items-center justify-between px-4 md:px-8">
+                    <div className="text-white max-w-xs md:max-w-md">
+                      <h2 className="text-xl md:text-3xl font-bold mb-1 md:mb-2 leading-tight">
+                        {slide.title}
+                      </h2>
+                      <p className="text-sm md:text-base text-white/80 mb-3 md:mb-4">
+                        {slide.subtitle}
+                      </p>
+                      <Button className="bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-semibold px-4 md:px-8 py-3 md:py-6 rounded-full text-sm md:text-lg shadow-lg">
+                        {slide.buttonText}
+                      </Button>
+                    </div>
+
+                    {/* Discount Badge */}
+                    <div className="bg-amber-100 rounded-full w-24 h-20 md:w-32 md:h-32 flex flex-col items-center justify-center shadow-2xl">
+                      <p className="text-xs md:text-sm text-amber-800 font-medium">Up to</p>
+                      <p className="text-xl md:text-4xl font-bold text-amber-600">{slide.discount}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+
+
+            {/* Dots Indicator */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+              {promoSlides.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-200 ${index === currentSlide ? 'bg-white' : 'bg-white/50'
+                    }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Service Categories - What are you looking for today */}
+      <section className="px-4 py-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">What are you looking for today ?</h2>
+
+          {/* Dynamic Service Categories Grid - Same as "What's on your mind" */}
+          <div className="grid grid-cols-4 md:grid-cols-6 gap-4 max-w-4xl mx-auto">
+            {salonServiceCategories.map((category) => (
+              <div
+                key={category.id}
+                className="flex flex-col items-center cursor-pointer group"
+                onClick={() => setSearchQuery(category.searchQuery)}
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-cyan-100">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-700 mt-2 text-center group-hover:text-cyan-600 transition-colors">
+                  {category.name}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Top Salons / Favorites Section */}
-      <section className="py-8">
+      <section className="py-6 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold  bg-gray-700 font-bricolage bg-clip-text text-transparent">
-              {showFavoritesSection ? " Your Favorites" : " Trending Salons"}
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {showFavoritesSection ? "Your Favorites" : "Trending Salons"}
             </h2>
-            <div className="text-sm text-gray-500">
-              {showFavoritesSection ? `${favoriteSalons.length} saved` : `${topSalonsWithOffers.length} available`}
-            </div>
           </div>
 
           {/* Container for horizontal scrolling */}
@@ -690,8 +708,8 @@ export default function Home() {
             <Button
               onClick={() => setExploreFilter('highly-rated')}
               className={`px-6 h-10 font-medium rounded-full shadow-md ${exploreFilter === 'highly-rated'
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white'
-                : 'bg-white border-2 border-yellow-300 text-yellow-700 hover:bg-yellow-50'
+                ? 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white'
+                : 'bg-white border-2 border-teal-300 text-teal-700 hover:bg-teal-50'
                 }`}
             >
               <Star className="w-4 h-4 mr-2" />
@@ -705,8 +723,8 @@ export default function Home() {
                 }
               }}
               className={`px-6 h-10 font-medium rounded-full shadow-md ${exploreFilter === 'nearest'
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white'
-                : 'bg-white border-2 border-blue-300 text-blue-700 hover:bg-blue-50'
+                ? 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white'
+                : 'bg-white border-2 border-teal-300 text-teal-700 hover:bg-teal-50'
                 }`}
             >
               <MapPin className="w-4 h-4 mr-2" />
@@ -728,34 +746,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* What's on Your Mind Section - Circular Categories like Food Delivery */}
-      <section className="py-6">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-gray-800 font-bricolage mb-6 text-center">What's on your mind?</h2>
-
-          {/* Circular Service Categories Grid */}
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-6 max-w-4xl mx-auto">
-            {salonServiceCategories.map((category) => (
-              <div
-                key={category.id}
-                className="flex flex-col items-center cursor-pointer group"
-                onClick={() => setSearchQuery(category.searchQuery)}
-              >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="text-sm font-medium text-gray-700 mt-2 text-center group-hover:text-purple-600 transition-colors">
-                  {category.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* All Salons Section */}
       <section id="all-salons" ref={allSalonsRef} className="py-8 px-4">
@@ -859,6 +850,10 @@ export default function Home() {
           )}
         </div>
       </section>
+
+
+
+
 
     </div>
   );
