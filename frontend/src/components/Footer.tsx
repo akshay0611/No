@@ -8,6 +8,9 @@ export default function Footer() {
   if (user?.role === 'salon_owner') {
     return null;
   }
+  if (user?.role|| window.location.pathname === '/queue') {
+    return null;
+  }
 
   return (
     <footer className="bg-white border-t border-blue-100 py-10 px-6 pb-24 md:pb-10">
