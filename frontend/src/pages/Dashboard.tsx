@@ -18,7 +18,7 @@ import {
   Users,
   Clock,
   Star,
-  DollarSign,
+  IndianRupee,
   Plus,
   Percent,
   BarChart3,
@@ -56,6 +56,7 @@ import type { QueueWithDetails, Analytics } from "../types";
 import GalleryManager from "../components/GalleryManager";
 import LocationPicker from "../components/LocationPicker";
 import LocationInputModal from "../components/LocationInputModal";
+import QuickServiceTemplates from "../components/QuickServiceTemplates";
 
 const serviceFormSchema = insertServiceSchema.omit({ salonId: true });
 const offerFormSchema = insertOfferSchema.omit({ salonId: true });
@@ -967,7 +968,7 @@ export default function Dashboard() {
 
                   <div className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <DollarSign className="h-5 w-5 text-teal-600" />
+                      <IndianRupee className="h-5 w-5 text-teal-600" />
                       <span className="text-xs text-teal-500">REVENUE</span>
                     </div>
                     <div className="text-2xl font-bold text-teal-900" data-testid="text-revenue">
@@ -1067,18 +1068,18 @@ export default function Dashboard() {
                                     {queue.services.map((service) => (
                                       <div key={service.id} className="flex justify-between items-center text-sm">
                                         <span className="text-gray-700">{service.name}</span>
-                                        <span className="text-black font-medium">${service.price}</span>
+                                        <span className="text-black font-medium">₹{service.price}</span>
                                       </div>
                                     ))}
                                     <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
                                       <span className="text-sm font-medium text-black">Total</span>
-                                      <span className="font-bold text-black">${queue.totalPrice}</span>
+                                      <span className="font-bold text-black">₹{queue.totalPrice}</span>
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-700">{queue.service?.name}</span>
-                                    <span className="text-black font-medium">${queue.service?.price}</span>
+                                    <span className="text-black font-medium">₹{queue.service?.price}</span>
                                   </div>
                                 )}
                               </div>
@@ -1243,10 +1244,10 @@ export default function Dashboard() {
                                       name="price"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-medium text-teal-900">Price ($)</FormLabel>
+                                          <FormLabel className="text-sm font-medium text-teal-900">Price (₹)</FormLabel>
                                           <FormControl>
                                             <Input
-                                              placeholder="0.00"
+                                              placeholder="0"
                                               {...field}
                                               data-testid="input-service-price"
                                               className="rounded-xl border-gray-300 focus:border-teal-500 focus:ring-teal-500"
@@ -1293,6 +1294,17 @@ export default function Dashboard() {
                       </Dialog>
                     </div>
 
+                    {/* Quick Service Templates */}
+                    {selectedSalonId && salons.find((s: any) => s.id === selectedSalonId) && (
+                      <QuickServiceTemplates
+                        salonType={salons.find((s: any) => s.id === selectedSalonId)?.type || "unisex"}
+                        salonId={selectedSalonId}
+                        onServicesAdded={() => {
+                          queryClient.invalidateQueries({ queryKey: ['salon-services', selectedSalonId] });
+                        }}
+                      />
+                    )}
+
                     <div className="space-y-3">
                       {servicesLoading ? (
                         [...Array(3)].map((_, i) => (
@@ -1311,7 +1323,7 @@ export default function Dashboard() {
                                     {service.duration} min
                                   </span>
                                   <span className="text-sm font-medium text-black">
-                                    ${service.price}
+                                    ₹{service.price}
                                   </span>
                                 </div>
                                 {service.description && (

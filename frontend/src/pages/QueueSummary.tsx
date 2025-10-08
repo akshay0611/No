@@ -201,7 +201,7 @@ export default function QueueSummary() {
                     <div className="flex items-center gap-3 ml-4">
                       <div className="text-right">
                         <span className="text-2xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                          ${item.service.price}
+                          ₹{item.service.price}
                         </span>
                       </div>
                       <Button
