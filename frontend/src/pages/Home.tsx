@@ -440,7 +440,7 @@ export default function Home() {
   const currentTheme = getThemeConfig(selectedSalonType);
 
   return (
-    <div className="min-h-screen bg-white pb-20 md:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 pb-20 md:pb-0">
 
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
