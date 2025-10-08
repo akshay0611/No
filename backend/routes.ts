@@ -96,7 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/register', async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return user data without token (no auto-login)
       const { password, ...userWithoutPassword } = user;
-      res.json({ 
+      res.json({
         user: userWithoutPassword,
         message: 'Account created successfully. Please verify your email and phone number.'
       });
@@ -130,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = loginSchema.parse(req.body);
       let user;
-      
+
       if (email) {
         user = await storage.getUserByEmail(email);
       }
@@ -142,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if user is verified
       if (!user.isVerified) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           message: 'Account not verified. Please complete email and phone verification.',
           requiresVerification: true,
           userId: user.id
@@ -174,25 +174,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ====================
   // PHONE AUTHENTICATION ROUTES
   // ====================
-  
+
   // Rate limiting store for OTP requests
   const otpRateLimit = new Map<string, { count: number; resetTime: number }>();
-  
+
   const checkRateLimit = (phoneNumber: string): boolean => {
     const now = Date.now();
     const key = phoneNumber;
     const limit = otpRateLimit.get(key);
-    
+
     if (!limit || now > limit.resetTime) {
       // Reset or create new limit
       otpRateLimit.set(key, { count: 1, resetTime: now + 5 * 60 * 1000 }); // 5 minutes
       return true;
     }
-    
+
     if (limit.count >= 3) {
       return false; // Rate limited
     }
-    
+
     limit.count++;
     return true;
   };
@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/send-otp', async (req, res) => {
     try {
       const { phoneNumber } = req.body;
-      
+
       if (!phoneNumber) {
         return res.status(400).json({ message: 'Phone number is required' });
       }
@@ -213,8 +213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check rate limiting
       if (!checkRateLimit(phoneNumber)) {
-        return res.status(429).json({ 
-          message: 'Too many OTP requests. Please try again in 5 minutes.' 
+        return res.status(429).json({
+          message: 'Too many OTP requests. Please try again in 5 minutes.'
         });
       }
 
@@ -227,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isNewUser = true;
         user = await storage.createUser({
 
-         
+
 
           name: '', // Will be filled later
           email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
@@ -254,8 +254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: Send actual SMS via Twilio or other service
       console.log(`📱 OTP for ${phoneNumber}: ${otp}`);
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         isNewUser,
         message: 'OTP sent successfully',
         // For testing only - remove in production
@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/verify-otp', async (req, res) => {
     try {
       const { phoneNumber, otp } = req.body;
-      
+
       if (!phoneNumber || !otp) {
         return res.status(400).json({ message: 'Phone number and OTP are required' });
       }
@@ -302,10 +302,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user.id, 
-          phone: user.phone, 
-          role: user.role || 'customer' 
+        {
+          userId: user.id,
+          phone: user.phone,
+          role: user.role || 'customer'
         },
         JWT_SECRET,
         { expiresIn: '24h' }
@@ -313,13 +313,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return user data without sensitive fields
       const { password, phoneOTP, otpExpiry, ...userWithoutSensitiveData } = user;
-      
-      res.json({ 
+
+      res.json({
         user: {
           ...userWithoutSensitiveData,
           phoneVerified: true,
           isVerified: true,
-        }, 
+        },
         token,
         message: 'Phone verified successfully'
       });
@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/user/complete', authenticateToken, async (req, res) => {
     try {
       const { name, email } = req.body;
-      
+
       if (!name || name.trim().length < 2) {
         return res.status(400).json({ message: 'Name is required and must be at least 2 characters' });
       }
@@ -364,15 +364,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedUser = await storage.updateUser(req.user!.userId, updates);
-      
+
       if (!updatedUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
       // Return updated user without sensitive data
       const { password, phoneOTP, emailOTP, otpExpiry, ...userWithoutSensitiveData } = updatedUser;
-      
-      res.json({ 
+
+      res.json({
         user: userWithoutSensitiveData,
         message: 'Profile updated successfully'
       });
@@ -484,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Salon creation request received');
       console.log('User role:', req.user!.role);
       console.log('Request body:', req.body);
-      
+
       if (req.user!.role !== 'salon_owner') {
         console.log('Authorization failed - not salon owner');
         return res.status(403).json({ message: 'Only salon owners can create salons' });
@@ -492,10 +492,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const salonData = insertSalonSchema.parse({ ...req.body, ownerId: req.user!.userId });
       console.log('Parsed salon data:', salonData);
-      
+
       const salon = await storage.createSalon(salonData);
       console.log('Salon created successfully:', salon);
-      
+
       res.status(201).json(salon);
     } catch (error) {
       console.error('Salon creation error:', error);
@@ -562,6 +562,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service templates endpoint
+  app.get('/api/service-templates/:salonType', (req, res) => {
+    const { salonType } = req.params;
+
+    const templates = {
+      men: [
+        { name: 'Haircut', duration: 30, price: '300', description: 'Basic haircut' },
+        { name: 'Beard Trim', duration: 15, price: '150', description: 'Beard shaping and trim' },
+        { name: 'Shave', duration: 20, price: '200', description: 'Clean shave' },
+        { name: 'Hair Color', duration: 60, price: '800', description: 'Hair coloring service' },
+        { name: 'Facial', duration: 45, price: '500', description: 'Facial treatment' },
+      ],
+      women: [
+        { name: 'Haircut', duration: 45, price: '600', description: 'Hair cutting and styling' },
+        { name: 'Hair Color', duration: 120, price: '1500', description: 'Full hair coloring' },
+        { name: 'Highlights', duration: 90, price: '1200', description: 'Hair highlights' },
+        { name: 'Blowdry', duration: 30, price: '400', description: 'Hair blow dry and styling' },
+        { name: 'Manicure', duration: 30, price: '300', description: 'Nail care and polish' },
+        { name: 'Pedicure', duration: 45, price: '500', description: 'Foot care and polish' },
+        { name: 'Facial', duration: 60, price: '800', description: 'Facial treatment' },
+        { name: 'Waxing', duration: 30, price: '400', description: 'Hair removal service' },
+      ],
+      unisex: [
+        { name: 'Haircut', duration: 30, price: '400', description: 'Basic haircut' },
+        { name: 'Hair Color', duration: 90, price: '1000', description: 'Hair coloring service' },
+        { name: 'Beard Trim', duration: 15, price: '150', description: 'Beard shaping and trim' },
+        { name: 'Facial', duration: 45, price: '600', description: 'Facial treatment' },
+        { name: 'Manicure', duration: 30, price: '300', description: 'Nail care and polish' },
+        { name: 'Pedicure', duration: 45, price: '500', description: 'Foot care and polish' },
+      ],
+    };
+
+    const salonTemplates = templates[salonType as keyof typeof templates] || templates.unisex;
+    res.json(salonTemplates);
+  });
+
   // Service routes
   app.get('/api/salons/:salonId/services', async (req, res) => {
     try {
@@ -576,16 +612,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Service creation request received:', req.body);
       console.log('User:', req.user);
-      
+
       const serviceData = insertServiceSchema.parse(req.body);
       console.log('Parsed service data:', serviceData);
-      
+
       // Verify salon ownership
       const salon = await storage.getSalon(serviceData.salonId);
       console.log('Salon found:', salon);
       console.log('Salon ownerId:', salon?.ownerId);
       console.log('Current userId:', req.user!.userId);
-      
+
       if (!salon || salon.ownerId !== req.user!.userId) {
         console.log('Authorization failed - salon not found or wrong owner');
         return res.status(403).json({ message: 'Not authorized to add services to this salon' });
@@ -650,11 +686,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/queues/my', authenticateToken, async (req, res) => {
     try {
       const queues = await storage.getQueuesByUser(req.user!.userId);
-      
+
       const queuesWithDetails = await Promise.all(
         queues.map(async (queue) => {
           const salon = await storage.getSalon(queue.salonId);
-          
+
           // Fetch all services for the queue
           let services = [];
           if (queue.serviceIds && queue.serviceIds.length > 0) {
@@ -664,14 +700,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             services = (await Promise.all(servicePromises)).filter(Boolean);
           }
-          
+
           // For backward compatibility
           const service = queue.serviceId ? await storage.getService(queue.serviceId) : null;
-          
+
           const salonQueues = await storage.getQueuesBySalon(queue.salonId);
           // Waiting list should be sorted by position ascending, which getQueuesBySalon does.
           const waitingQueues = salonQueues.filter(q => q.status === 'waiting');
-          
+
           let userPosition = queue.position;
           if (queue.status === 'waiting') {
             const userInWaitingList = waitingQueues.findIndex(q => q.id === queue.id);
@@ -681,7 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (queue.status === 'in-progress') {
             userPosition = 0; // Indicates "in progress"
           }
-          
+
           // Ensure we have a valid services array
           const queueWithDetails = {
             ...queue,
@@ -691,10 +727,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             services: services.length > 0 ? services : undefined, // Add all services if available
             totalInQueue: waitingQueues.length,
           };
-          
+
           // For debugging
           console.log(`Queue ${queue.id} services:`, services);
-          
+
           return queueWithDetails;
         })
       );
@@ -717,12 +753,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queues = await storage.getQueuesBySalon(req.params.salonId);
-      
+
       // Get user and service details
       const queuesWithDetails = await Promise.all(
         queues.map(async (queue) => {
           const user = await storage.getUser(queue.userId);
-          
+
           // Fetch all services for the queue
           let services = [];
           if (queue.serviceIds && queue.serviceIds.length > 0) {
@@ -732,10 +768,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             services = (await Promise.all(servicePromises)).filter(Boolean);
           }
-          
+
           // For backward compatibility
           const service = queue.serviceId ? await storage.getService(queue.serviceId) : null;
-          
+
           // Ensure we have a valid services array
           const queueWithDetails = {
             ...queue,
@@ -743,10 +779,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             service, // Keep for backward compatibility
             services: services.length > 0 ? services : undefined, // Add all services if available
           };
-          
+
           // For debugging
           console.log(`Salon queue ${queue.id} services:`, services);
-          
+
           return queueWithDetails;
         })
       );
@@ -784,12 +820,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Queue creation request body:', req.body);
       console.log('User ID from token:', req.user!.userId);
-      
+
       const queueData = insertQueueSchema.parse({
         ...req.body,
         userId: req.user!.userId,
       });
-      
+
       console.log('Parsed queue data:', queueData);
 
       // Check if user is already in active queue for this salon
@@ -799,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queue = await storage.createQueue(queueData);
-      
+
       // Broadcast queue update
       const salonQueues = await storage.getQueuesBySalon(queueData.salonId);
       broadcastQueueUpdate(queueData.salonId, { queues: salonQueues });
@@ -830,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updates = insertQueueSchema.partial().parse(req.body);
       const updatedQueue = await storage.updateQueue(req.params.id, updates);
-      
+
       // Broadcast queue update
       const salonQueues = await storage.getQueuesBySalon(queue.salonId);
       broadcastQueueUpdate(queue.salonId, { queues: salonQueues });
@@ -853,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteQueue(req.params.id);
-      
+
       // Broadcast queue update
       const salonQueues = await storage.getQueuesBySalon(queue.salonId);
       broadcastQueueUpdate(queue.salonId, { queues: salonQueues });
@@ -873,27 +909,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Server error', error });
     }
   });
-  
+
   // Public endpoint to get offers for a salon - no authentication required
   app.get('/api/salons/:salonId/public-offers', async (req, res) => {
     try {
       const salonId = req.params.salonId;
       console.log('Fetching offers for salon:', salonId);
-      
+
       const salon = await storage.getSalon(salonId);
-      
+
       if (!salon) {
         return res.status(404).json({ message: 'Salon not found' });
       }
-      
+
       const offers = await storage.getOffersBySalon(salonId);
       console.log('Found offers for salon:', offers);
-      
+
       // Only return active offers with valid dates
       const now = new Date();
       const activeOffers = offers.filter(offer => offer.isActive && new Date(offer.validityPeriod) > now);
       console.log('Active offers after filtering:', activeOffers);
-      
+
       res.json(activeOffers);
     } catch (error) {
       console.error('Error fetching salon offers:', error);
@@ -906,10 +942,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Raw request body:', req.body);
       console.log('validityPeriod type:', typeof req.body.validityPeriod);
       console.log('validityPeriod value:', req.body.validityPeriod);
-      
+
       const offerData = insertOfferSchema.parse(req.body);
       console.log('Parsed offer data:', offerData);
-      
+
       // Verify salon ownership
       const salon = await storage.getSalon(offerData.salonId);
       if (!salon || salon.ownerId !== req.user!.userId) {
@@ -974,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const review = await storage.createReview(reviewData);
-      
+
       // Update salon rating
       const allReviews = await storage.getReviewsBySalon(reviewData.salonId);
       const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
@@ -1001,7 +1037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate analytics
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const todayQueues = queues.filter(q => q.timestamp >= today);
       const completedQueues = queues.filter(q => q.status === 'completed');
       const totalRevenue = completedQueues.reduce((sum, queue) => {
@@ -1031,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ====================
   // SALON PHOTO ROUTES
   // ====================
-  
+
   // Test endpoint to verify routing
   app.get('/api/test-photos', (req, res) => {
     console.log('=== TEST PHOTOS ENDPOINT HIT ===');
@@ -1042,15 +1078,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/test-photo-save', async (req, res) => {
     try {
       console.log('=== TEST PHOTO SAVE ENDPOINT HIT ===');
-      
+
       const testPhotoData = {
         salonId: 'a5562294-9026-46c6-9086-ef1518ad5b39', // Your salon ID
         url: 'https://test-cloudinary-url.com/test-image.jpg',
         publicId: 'test-public-id',
       };
-      
+
       console.log('Test photo data:', testPhotoData);
-      
+
       // Test schema validation first
       try {
         const validatedData = insertSalonPhotoSchema.parse(testPhotoData);
@@ -1059,14 +1095,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Schema validation failed:', schemaError);
         return res.status(400).json({ error: 'Schema validation failed', details: schemaError.message });
       }
-      
+
       const photo = await storage.createSalonPhoto(testPhotoData);
       console.log('Test photo saved successfully:', photo);
-      
+
       // Verify it was saved by fetching it back
       const savedPhotos = await storage.getSalonPhotosBySalon('a5562294-9026-46c6-9086-ef1518ad5b39');
       console.log('Photos found for salon after test save:', savedPhotos.length);
-      
+
       res.status(201).json({ success: true, photo, totalPhotos: savedPhotos.length });
     } catch (error) {
       console.error('Test photo save error:', error);
@@ -1092,7 +1128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Photo upload request received for salon:', req.params.salonId);
       console.log('File received:', !!req.file);
       console.log('User ID:', req.user?.userId);
-      
+
       if (!req.file) {
         console.log('No file provided in request');
         return res.status(400).json({ message: 'No image file provided' });
@@ -1102,7 +1138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const salon = await storage.getSalon(req.params.salonId);
       console.log('Salon found:', !!salon);
       console.log('Salon owner ID:', salon?.ownerId);
-      
+
       if (!salon || salon.ownerId !== req.user!.userId) {
         console.log('Authorization failed - salon owner mismatch');
         return res.status(403).json({ message: 'Not authorized to upload photos for this salon' });
@@ -1115,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save to database
       console.log('Preparing photo data for database save...');
-      
+
       // Create photo data without schema validation first to test
       const photoData = {
         salonId: req.params.salonId,
@@ -1123,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publicId,
       };
       console.log('Photo data to save:', photoData);
-      
+
       // Validate with schema
       try {
         const validatedData = insertSalonPhotoSchema.parse(photoData);
@@ -1136,12 +1172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Calling storage.createSalonPhoto...');
       const photo = await storage.createSalonPhoto(photoData);
       console.log('Photo saved to database successfully:', photo);
-      
+
       // Verify the photo was saved by fetching it back
       console.log('Verifying photo was saved...');
       const savedPhotos = await storage.getSalonPhotosBySalon(req.params.salonId);
       console.log('Photos found for salon after save:', savedPhotos.length);
-      
+
       res.status(201).json(photo);
     } catch (error) {
       console.error('Photo upload error:', error);
@@ -1189,12 +1225,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OTP Verification Routes
-  
+
   // Send email OTP
   app.post('/api/auth/send-email-otp', async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
@@ -1205,7 +1241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const success = await otpService.sendEmailOTP(userId, user.email, user.name);
-      
+
       if (success) {
         res.json({ message: 'Email OTP sent successfully' });
       } else {
@@ -1221,7 +1257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/send-phone-otp', async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
@@ -1232,7 +1268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const otp = await otpService.sendPhoneOTP(userId, user.phone, user.name);
-      
+
       if (otp) {
         res.json({ message: 'SMS OTP sent successfully', otp });
       } else {
@@ -1248,13 +1284,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/verify-email-otp', async (req, res) => {
     try {
       const { userId, otp } = req.body;
-      
+
       if (!userId || !otp) {
         return res.status(400).json({ message: 'User ID and OTP are required' });
       }
 
       const success = await otpService.verifyEmailOTP(userId, otp);
-      
+
       if (success) {
         res.json({ message: 'Email verified successfully' });
       } else {
@@ -1270,13 +1306,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/verify-phone-otp', async (req, res) => {
     try {
       const { userId, otp } = req.body;
-      
+
       if (!userId || !otp) {
         return res.status(400).json({ message: 'User ID and OTP are required' });
       }
 
       const success = await otpService.verifyPhoneOTP(userId, otp);
-      
+
       if (success) {
         res.json({ message: 'Phone verified successfully' });
       } else {
@@ -1292,13 +1328,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/resend-email-otp', async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
       const success = await otpService.resendEmailOTP(userId);
-      
+
       if (success) {
         res.json({ message: 'Email OTP resent successfully' });
       } else {
@@ -1314,13 +1350,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/resend-phone-otp', async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
       const success = await otpService.resendPhoneOTP(userId);
-      
+
       if (success) {
         res.json({ message: 'SMS OTP resent successfully' });
       } else {
@@ -1341,7 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const whatsappService = await import('./whatsappService');
       const result = await whatsappService.default.verifyWebhook(mode as string, token as string, challenge as string);
-      
+
       if (result) {
         res.status(200).send(result);
       } else {

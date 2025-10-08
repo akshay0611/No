@@ -374,7 +374,7 @@ export default function SalonProfile() {
                         <p className="text-xs text-gray-500 font-medium mb-1">Price</p>
                         <div className="flex items-baseline space-x-1">
                           <span className="text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" data-testid={`text-service-price-${service.id}`}>
-                            ${service.price}
+                            ₹{service.price}
                           </span>
                         </div>
                       </div>
