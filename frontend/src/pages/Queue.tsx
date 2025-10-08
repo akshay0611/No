@@ -428,14 +428,14 @@ export default function Queue() {
                                   {queue.services.map((service) => (
                                     <div key={service.id} className="flex justify-between text-xs">
                                       <span className="text-gray-600">{service.name}</span>
-                                      <span className="text-gray-900 font-medium">${service.price}</span>
+                                      <span className="text-gray-900 font-medium">₹{service.price}</span>
                                     </div>
                                   ))}
                                 </div>
                                 <div className="flex justify-between pt-1.5 border-t border-gray-200">
                                   <span className="text-sm font-medium text-gray-900">Total</span>
                                   <span className="text-sm font-semibold text-gray-900" data-testid={`text-total-price-${queue.id}`}>
-                                    ${queue.totalPrice}
+                                    ₹{queue.totalPrice}
                                   </span>
                                 </div>
                                 {queue.appliedOffers && queue.appliedOffers.length > 0 && (
@@ -449,7 +449,7 @@ export default function Queue() {
                               <div className="space-y-1">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-gray-600" data-testid={`text-service-name-${queue.id}`}>{queue.service?.name}</span>
-                                  <span className="text-gray-900 font-medium" data-testid={`text-service-price-${queue.id}`}>${queue.service?.price}</span>
+                                  <span className="text-gray-900 font-medium" data-testid={`text-service-price-${queue.id}`}>₹{queue.service?.price}</span>
                                 </div>
                                 <p className="text-xs text-gray-500" data-testid={`text-service-duration-${queue.id}`}>
                                   {queue.service?.duration} minutes
