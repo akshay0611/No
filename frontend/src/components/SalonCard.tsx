@@ -198,8 +198,8 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
 
           {/* Offers badge with animation */}
           {salon.offers && salon.offers.length > 0 && (
-            <Badge className="absolute top-3 left-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white px-3 py-1.5 text-xs font-bold shadow-lg animate-pulse">
-              <Sparkles className="w-3 h-3 inline mr-1" />
+            <Badge className="absolute top-3 left-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 text-sm font-bold shadow-xl border-2 border-white/30 backdrop-blur-sm rounded-xl">
+              <Sparkles className="w-4 h-4 inline mr-1.5" />
               {Math.max(...salon.offers.map(offer => offer.discount))}% OFF
             </Badge>
           )}
