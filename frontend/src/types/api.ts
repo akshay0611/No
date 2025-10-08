@@ -18,6 +18,7 @@ export interface InsertSalon {
   name: string;
   description?: string;
   location: string;
+  manualLocation?: string;
   type: "men" | "women" | "unisex";
   operatingHours?: {
     monday?: { open: string; close: string };

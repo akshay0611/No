@@ -2,16 +2,18 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Star, Users, Gift, Heart, Scissors, Palette, Sparkles, Zap, Crown, Flame, ImageIcon, User as UserIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, Star, Users, Gift, Heart, Scissors, Palette, Sparkles, Zap, Crown, Flame, User as UserIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import SalonCard from "../components/SalonCard";
+import AllSalonsCard from "../components/AllSalonsCard";
 import Autoplay from "embla-carousel-autoplay";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { getUserCategory } from "../utils/categoryUtils";
-import type { SalonWithDetails, SalonPhoto } from "../types";
+import type { SalonWithDetails } from "../types";
+import { Input } from "@/components/ui/input";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,29 +90,7 @@ export default function Home() {
   // Debug log to see what data we're getting
   console.log('Salons data from API:', salons);
 
-  // Create a component for salon photo thumbnail
-  const SalonPhotoThumbnail = ({ photos, salonName }: { photos: SalonPhoto[]; salonName: string }) => {
-    console.log('SalonPhotoThumbnail - Salon:', salonName, 'Photos:', photos);
 
-    if (photos && photos.length > 0) {
-      console.log('Using uploaded photo:', photos[0].url);
-      return (
-        <img
-          src={photos[0].url}
-          alt={salonName}
-          className="w-20 h-20 object-cover rounded-lg"
-        />
-      );
-    }
-
-    console.log('Using fallback placeholder for salon:', salonName);
-    // Fallback placeholder
-    return (
-      <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center">
-        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-      </div>
-    );
-  };
 
   if (error) {
     console.error('Error loading salons:', error);
@@ -190,7 +170,7 @@ export default function Home() {
 
     if (exploreFilter === 'highly-rated') {
       return [...typedSalons]
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))
         .slice(0, 5);
     } else if (exploreFilter === 'nearest' && userLocation) {
       return [...typedSalons]
@@ -622,40 +602,66 @@ export default function Home() {
       </section>
 
       {/* Top Salons / Favorites Section */}
-      <section className="py-6 bg-gray-50">
+      <section className="py-8 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {showFavoritesSection ? "Your Favorites" : "Trending Salons"}
-            </h2>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                {showFavoritesSection ? "Your Favorites" : "Trending Salons"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {showFavoritesSection ? "Your saved salons" : "Best offers and deals"}
+              </p>
+            </div>
+            {showFavoritesSection && favoriteSalons.length > 0 && (
+              <Badge variant="secondary" className="bg-pink-100 text-pink-700 px-3 py-1">
+                {favoriteSalons.length} {favoriteSalons.length === 1 ? 'Salon' : 'Salons'}
+              </Badge>
+            )}
           </div>
 
           {/* Container for horizontal scrolling */}
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex flex-col gap-4 min-w-max">
+          <div className="overflow-x-auto scrollbar-hide pb-2">
+            <div className="flex flex-col gap-6 min-w-max">
               {/* Display either Top Salons or Favorites */}
               {showFavoritesSection ? (
                 favoriteSalons.length > 0 ? (
-                  <div className="flex gap-4">
+                  <div className="flex gap-5">
                     {favoriteSalons.map((salon) => (
-                      <div key={salon.id} className="min-w-[320px]">
-                        <SalonCard salon={salon} />
+                      <div
+                        key={salon.id}
+                        className="min-w-[260px] max-w-[260px]"
+                      >
+                        <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
+                          <div className="absolute top-3 right-3 z-10">
+                            <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1">
+                              <Heart className="w-3 h-3 fill-current" />
+                              Favorite
+                            </div>
+                          </div>
+                          <SalonCard salon={salon} />
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center w-full py-12">
-                    <div className="w-24 h-24 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-4">
-                      <Heart className="w-12 h-12 text-purple-400" />
+                  <div className="flex flex-col items-center justify-center w-full py-16 px-4">
+                    <div className="relative">
+                      <div className="w-28 h-28 bg-gradient-to-br from-pink-100 via-purple-100 to-pink-100 rounded-full flex items-center justify-center mb-6 shadow-xl animate-pulse">
+                        <Heart className="w-14 h-14 text-pink-400" />
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-purple-200 rounded-full opacity-60"></div>
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-pink-200 rounded-full opacity-60"></div>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No favorites yet</h3>
-                    <p className="text-gray-500 text-center max-w-md">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3">No favorites yet</h3>
+                    <p className="text-gray-500 text-center max-w-md mb-6 leading-relaxed">
                       Start exploring salons and add your favorites by clicking the heart icon!
                     </p>
                     <Button
-                      className="mt-4 text-white px-6 py-2 rounded-full bg-gradient-to-r from-teal-600 to-teal-700"
+                      className="mt-2 text-white px-8 py-3 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                       onClick={() => setShowFavoritesSection(false)}
                     >
+                      <Sparkles className="w-4 h-4 mr-2" />
                       Explore Salons
                     </Button>
                   </div>
@@ -664,32 +670,62 @@ export default function Home() {
                 topSalonsWithOffers.length > 0 ? (
                   <>
                     {/* First Row */}
-                    <div className="flex gap-4">
+                    <div className="flex gap-5">
                       {topSalonsWithOffers.slice(0, 4).map((salon) => (
-                        <div key={salon.id} className="min-w-[280px]">
-                          <SalonCard salon={salon} />
+                        <div
+                          key={salon.id}
+                          className="min-w-[260px] max-w-[260px]"
+                        >
+                          <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
+                            {salon.offers && salon.offers.length > 0 && (
+                              <div className="absolute top-3 left-3 z-10">
+                                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                                  <Gift className="w-3 h-3" />
+                                  {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
+                                </div>
+                              </div>
+                            )}
+                            <SalonCard salon={salon} />
+                          </div>
                         </div>
                       ))}
                     </div>
 
                     {/* Second Row */}
                     {topSalonsWithOffers.length > 4 && (
-                      <div className="flex gap-4">
+                      <div className="flex gap-5">
                         {topSalonsWithOffers.slice(4, 8).map((salon) => (
-                          <div key={salon.id} className="min-w-[280px]">
-                            <SalonCard salon={salon} />
+                          <div
+                            key={salon.id}
+                            className="min-w-[300px]"
+                          >
+                            <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
+                              {salon.offers && salon.offers.length > 0 && (
+                                <div className="absolute top-3 left-3 z-10">
+                                  <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                                    <Gift className="w-3 h-3" />
+                                    {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
+                                  </div>
+                                </div>
+                              )}
+                              <SalonCard salon={salon} />
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center w-full py-12">
-                    <div className="w-24 h-24 bg-gradient-to-r from-orange-100 to-red-100 rounded-full flex items-center justify-center mb-4">
-                      <Gift className="w-12 h-12 text-orange-400" />
+                  <div className="flex flex-col items-center justify-center w-full py-16 px-4">
+                    <div className="relative">
+                      <div className="w-28 h-28 bg-gradient-to-br from-orange-100 via-amber-100 to-red-100 rounded-full flex items-center justify-center mb-6 shadow-xl animate-pulse">
+                        <Gift className="w-14 h-14 text-orange-500" />
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-200 rounded-full opacity-60"></div>
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-orange-200 rounded-full opacity-60"></div>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No offers right now</h3>
-                    <p className="text-gray-500 text-center max-w-md">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3">No offers right now</h3>
+                    <p className="text-gray-500 text-center max-w-md leading-relaxed">
                       Check back soon for amazing deals and offers from our partner salons!
                     </p>
                   </div>
@@ -738,15 +774,13 @@ export default function Home() {
               <SalonCard
                 key={salon.id}
                 salon={salon}
-                showDistance={exploreFilter === 'nearest'}
-                distance={(salon as any).distance}
               />
             ))}
           </div>
         </div>
       </section>
 
-      
+
 
       {/* All Salons Section */}
       <section id="all-salons" ref={allSalonsRef} className="py-8 px-4">
@@ -790,61 +824,9 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {filteredSalons.map((salon) => (
-                <Link key={salon.id} href={`/salon/${salon.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 bg-white">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        <SalonPhotoThumbnail photos={salon.photos} salonName={salon.name} />
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900">{salon.name}</h3>
-                              <p className="text-sm text-gray-600">{salon.location}</p>
-                            </div>
-                            <div className="flex items-center">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                              <span className="text-sm font-medium text-gray-900">{salon.rating}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <div className={`w-2 h-2 rounded-full ${salon.queueCount > 5 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-                              <span className="text-sm text-gray-600">{salon.queueCount} people in queue</span>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">~{salon.estimatedWaitTime || 15} min wait</span>
-                          </div>
-
-                          {salon.offers && salon.offers.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {salon.offers.slice(0, 2).map((offer) => (
-                                <Badge key={offer.id} className="bg-red-100 text-red-800 text-xs">
-                                  <Gift className="w-3 h-3 mr-1" />
-                                  {offer.discount}% OFF - {offer.title}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap gap-2">
-                            {salon.services.slice(0, 3).map((service) => (
-                              <Badge key={service.id} variant="secondary" className="text-xs">
-                                {service.name}
-                              </Badge>
-                            ))}
-                            {salon.services.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{salon.services.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <AllSalonsCard key={salon.id} salon={salon} />
               ))}
             </div>
           )}

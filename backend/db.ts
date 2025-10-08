@@ -45,6 +45,7 @@ const salonSchema = new mongoose.Schema({
   address: { type: String, required: true },
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
+  manualLocation: { type: String, default: '' },
   type: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },
   description: { type: String },
   imageUrl: { type: String },

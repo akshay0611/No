@@ -32,6 +32,7 @@ export const salons = pgTable("salons", {
   address: text("address").notNull(),
   latitude: decimal("latitude", { precision: 10, scale: 6 }),
   longitude: decimal("longitude", { precision: 10, scale: 6 }),
+  manualLocation: text("manual_location").default(""),
   type: text("type", { enum: ["men", "women", "unisex"] }).notNull().default("unisex"),
   operatingHours: jsonb("operating_hours").$type<{
     monday?: { open: string; close: string };

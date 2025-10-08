@@ -16,6 +16,7 @@ export interface Salon {
   name: string;
   description?: string;
   location: string;
+  manualLocation?: string;
   type: "men" | "women" | "unisex";
   operatingHours?: any;
   rating: string;
@@ -80,6 +81,8 @@ export interface SalonWithDetails extends Salon {
   estimatedWaitTime: number;
   offers: Offer[];
   photos: SalonPhoto[];
+  reviews?: Review[];
+  reviewCount?: number;
   latitude?: number;
   longitude?: number;
   fullAddress?: string;
