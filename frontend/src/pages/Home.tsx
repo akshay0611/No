@@ -12,6 +12,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { getUserCategory } from "../utils/categoryUtils";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import type { SalonWithDetails } from "../types";
 import { Input } from "@/components/ui/input";
 
@@ -421,7 +422,7 @@ export default function Home() {
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
         /* Logged In User - Clean Header */
-        <section className="bg-white px-4 py-6">
+        <section className="bg-white px-4 py-6 relative overflow-hidden">
           <div className="max-w-7xl mx-auto">
             {/* Header with Profile and Logo */}
             <div className="flex items-center justify-between mb-6">
@@ -442,8 +443,14 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: Logo */}
-
+              {/* Right: Animation - Peeking from edge */}
+              <div className="absolute -right-6 top-3 w-24 h-24 pointer-events-none ">
+                <DotLottieReact
+                  src="https://lottie.host/dfb2ab5d-ecdc-4aa4-ab64-181def37bd11/DWB1LXlcDu.lottie"
+                  loop
+                  autoplay
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -621,16 +628,16 @@ export default function Home() {
           </div>
 
           {/* Container for horizontal scrolling */}
-          <div className="overflow-x-auto scrollbar-hide pb-2">
-            <div className="flex flex-col gap-6 min-w-max">
+          <div className="overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+            <div className="flex gap-5 min-w-max">
               {/* Display either Top Salons or Favorites */}
               {showFavoritesSection ? (
                 favoriteSalons.length > 0 ? (
-                  <div className="flex gap-5">
+                  <>
                     {favoriteSalons.map((salon) => (
                       <div
                         key={salon.id}
-                        className="min-w-[260px] max-w-[260px]"
+                        className="min-w-[280px] max-w-[280px] flex-shrink-0"
                       >
                         <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
                           <div className="absolute top-3 right-3 z-10">
@@ -643,7 +650,7 @@ export default function Home() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full py-16 px-4">
                     <div className="relative">
@@ -668,53 +675,26 @@ export default function Home() {
                 )
               ) : (
                 topSalonsWithOffers.length > 0 ? (
-                  <>
-                    {/* First Row */}
-                    <div className="flex gap-5">
-                      {topSalonsWithOffers.slice(0, 4).map((salon) => (
-                        <div
-                          key={salon.id}
-                          className="min-w-[260px] max-w-[260px]"
-                        >
-                          <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
-                            {salon.offers && salon.offers.length > 0 && (
-                              <div className="absolute top-3 left-3 z-10">
-                                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-                                  <Gift className="w-3 h-3" />
-                                  {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
-                                </div>
+                  <div className="flex gap-5">
+                    {topSalonsWithOffers.map((salon) => (
+                      <div
+                        key={salon.id}
+                        className="min-w-[280px] max-w-[280px] flex-shrink-0"
+                      >
+                        <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
+                          {salon.offers && salon.offers.length > 0 && (
+                            <div className="absolute top-3 left-3 z-10">
+                              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                                <Gift className="w-3 h-3" />
+                                {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
                               </div>
-                            )}
-                            <SalonCard salon={salon} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Second Row */}
-                    {topSalonsWithOffers.length > 4 && (
-                      <div className="flex gap-5">
-                        {topSalonsWithOffers.slice(4, 8).map((salon) => (
-                          <div
-                            key={salon.id}
-                            className="min-w-[300px]"
-                          >
-                            <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
-                              {salon.offers && salon.offers.length > 0 && (
-                                <div className="absolute top-3 left-3 z-10">
-                                  <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-                                    <Gift className="w-3 h-3" />
-                                    {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
-                                  </div>
-                                </div>
-                              )}
-                              <SalonCard salon={salon} />
                             </div>
-                          </div>
-                        ))}
+                          )}
+                          <SalonCard salon={salon} />
+                        </div>
                       </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full py-16 px-4">
                     <div className="relative">
