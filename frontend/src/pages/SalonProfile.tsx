@@ -37,6 +37,8 @@ export default function SalonProfile() {
   const { user, updateUser } = useAuth();
   const { addItem, items, getItemCount } = useCart();
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
 
   const isFavorited = useMemo(() => {
     if (!user || !user.favoriteSalons) return false;
@@ -164,7 +166,7 @@ export default function SalonProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 py-8 pb-24 md:pb-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Salon Header */}
         <div className="mb-8">
@@ -189,13 +191,30 @@ export default function SalonProfile() {
               </div>
 
               {salon.description && (
-                <p className="text-gray-600 mb-4 max-w-2xl">{salon.description}</p>
+                <div className="mb-4 max-w-2xl">
+                  <p className="text-gray-600">
+                    {isDescriptionExpanded
+                      ? salon.description
+                      : salon.description.length > 80
+                        ? `${salon.description.slice(0, 80)}...`
+                        : salon.description
+                    }
+                  </p>
+                  {salon.description.length > 80 && (
+                    <button
+                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      className="text-teal-600 hover:text-teal-700 font-medium text-sm mt-1 transition-colors"
+                    >
+                      {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="flex flex-wrap items-center gap-4 text-gray-600">
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-5 w-5 text-teal-600" />
-                  <span data-testid="text-salon-location" className="font-medium">
+                  <span data-testid="text-salon-location" className="font-medium capitalize">
                     {salon.manualLocation || salon.location}
                   </span>
                 </div>
@@ -205,12 +224,7 @@ export default function SalonProfile() {
                     {salon.rating}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${salon.queueCount > 5 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-                  <span data-testid="text-queue-status" className="font-medium">
-                    {salon.queueCount} {salon.queueCount === 1 ? 'person' : 'people'} in queue
-                  </span>
-                </div>
+
               </div>
             </div>
           </div>
@@ -427,25 +441,48 @@ export default function SalonProfile() {
             ) : offers.length > 0 ? (
               <div className="space-y-4">
                 {offers.map((offer: Offer) => (
-                  <div key={offer.id} className="flex items-center justify-between p-5 bg-white border-2 border-teal-100 rounded-xl hover:border-teal-300 hover:shadow-md transition-all">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold px-3 py-1">
-                          {offer.discount}% OFF
-                        </Badge>
-                        <h4 className="font-bold text-gray-900 text-lg">{offer.title}</h4>
-                      </div>
-                      <p className="text-gray-600 mb-2">{offer.description}</p>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Clock className="w-4 h-4" />
-                        <span>
-                          Valid until {new Date(offer.validityPeriod).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
+                  <div key={offer.id} className="p-5 bg-white border-2 border-teal-100 rounded-xl hover:border-teal-300 hover:shadow-md transition-all">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold px-3 py-1">
+                        {offer.discount}% OFF
+                      </Badge>
+                      <h4 className="font-bold text-gray-900 text-lg">{offer.title}</h4>
+                    </div>
+                    <div className="mb-3">
+                      <p className="text-gray-600 text-sm">
+                        {expandedOffers.has(offer.id)
+                          ? offer.description
+                          : offer.description.length > 100
+                            ? `${offer.description.slice(0, 100)}...`
+                            : offer.description
+                        }
+                      </p>
+                      {offer.description.length > 100 && (
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedOffers);
+                            if (expandedOffers.has(offer.id)) {
+                              newExpanded.delete(offer.id);
+                            } else {
+                              newExpanded.add(offer.id);
+                            }
+                            setExpandedOffers(newExpanded);
+                          }}
+                          className="text-teal-600 hover:text-teal-700 font-medium text-xs mt-1 transition-colors"
+                        >
+                          {expandedOffers.has(offer.id) ? 'Read Less' : 'Read More'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        Valid until {new Date(offer.validityPeriod).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
                     </div>
                     <Button
                       onClick={() => {
@@ -458,7 +495,7 @@ export default function SalonProfile() {
                           });
                         }
                       }}
-                      className="ml-4 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold"
+                      className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold"
                       data-testid={`button-apply-offer-${offer.id}`}
                     >
                       Apply Offer
