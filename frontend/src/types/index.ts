@@ -94,6 +94,7 @@ export interface SalonDetails extends Salon {
   reviews: Review[];
   queueCount: number;
   estimatedWaitTime: number;
+  photos?: SalonPhoto[];
   latitude?: number;
   longitude?: number;
   fullAddress?: string;

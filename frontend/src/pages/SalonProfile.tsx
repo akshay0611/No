@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap } from "lucide-react";
+import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap, ArrowLeft } from "lucide-react";
 import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +39,11 @@ export default function SalonProfile() {
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const isFavorited = useMemo(() => {
     if (!user || !user.favoriteSalons) return false;
@@ -166,65 +171,84 @@ export default function SalonProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 py-8 pb-24 md:pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 pb-24 md:pb-8">
+      {/* Hero Banner - Using salon's uploaded photos */}
+      <div className="relative h-48 md:h-64 bg-gradient-to-r from-teal-600 to-cyan-600 overflow-hidden">
+        <div className="absolute inset-0 bg-black/20"></div>
+        {(salon as any).photos && (salon as any).photos.length > 0 ? (
+          <img
+            src={(salon as any).photos[0].url}
+            alt={salon.name}
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920')] bg-cover bg-center opacity-30"></div>
+        )}
+      </div>
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Salon Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-3">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" data-testid="text-salon-name">
-                  {salon.name}
-                </h1>
-                {user && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleFavoriteClick}
-                    disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
-                    data-testid="button-favorite"
-                    className="hover:bg-teal-50"
-                  >
-                    <Heart className={`h-6 w-6 ${isFavorited ? 'text-red-500 fill-current' : 'text-gray-400'}`} />
-                  </Button>
-                )}
-              </div>
-
-              {salon.description && (
-                <div className="mb-4 max-w-2xl">
-                  <p className="text-gray-600">
-                    {isDescriptionExpanded
-                      ? salon.description
-                      : salon.description.length > 80
-                        ? `${salon.description.slice(0, 80)}...`
-                        : salon.description
-                    }
-                  </p>
-                  {salon.description.length > 80 && (
-                    <button
-                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                      className="text-teal-600 hover:text-teal-700 font-medium text-sm mt-1 transition-colors"
+        <div className="mb-8 -mt-16 relative z-10">
+          <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-teal-100">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-3">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" data-testid="text-salon-name">
+                    {salon.name}
+                  </h1>
+                  <Badge className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white capitalize">
+                    {salon.type}
+                  </Badge>
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleFavoriteClick}
+                      disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+                      data-testid="button-favorite"
+                      className="hover:bg-teal-50"
                     >
-                      {isDescriptionExpanded ? 'Read Less' : 'Read More'}
-                    </button>
+                      <Heart className={`h-6 w-6 ${isFavorited ? 'text-red-500 fill-current' : 'text-gray-400'}`} />
+                    </Button>
                   )}
                 </div>
-              )}
 
-              <div className="flex flex-wrap items-center gap-4 text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <MapPin className="h-5 w-5 text-teal-600" />
-                  <span data-testid="text-salon-location" className="font-medium capitalize">
-                    {salon.manualLocation || salon.location}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2 bg-teal-50 px-3 py-1 rounded-full">
-                  <Star className="h-5 w-5 text-yellow-500 fill-current" />
-                  <span data-testid="text-salon-rating" className="font-semibold text-teal-900">
-                    {salon.rating}
-                  </span>
-                </div>
+                {salon.description && (
+                  <div className="mb-4 max-w-2xl">
+                    <p className="text-gray-600">
+                      {isDescriptionExpanded
+                        ? salon.description
+                        : salon.description.length > 80
+                          ? `${salon.description.slice(0, 80)}...`
+                          : salon.description
+                      }
+                    </p>
+                    {salon.description.length > 80 && (
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="text-teal-600 hover:text-teal-700 font-medium text-sm mt-1 transition-colors"
+                      >
+                        {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+                      </button>
+                    )}
+                  </div>
+                )}
 
+                <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-5 w-5 text-teal-600" />
+                    <span data-testid="text-salon-location" className="font-medium capitalize">
+                      {salon.manualLocation || salon.location}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-teal-50 px-3 py-1 rounded-full">
+                    <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                    <span data-testid="text-salon-rating" className="font-semibold text-teal-900">
+                      {salon.rating}
+                    </span>
+                  </div>
+
+                </div>
               </div>
             </div>
           </div>
