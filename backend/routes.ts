@@ -462,6 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offers = await storage.getOffersBySalon(salon.id);
       const reviews = await storage.getReviewsBySalon(salon.id);
       const queues = await storage.getQueuesBySalon(salon.id);
+      const photos = await storage.getSalonPhotosBySalon(salon.id);
       const waitingQueues = queues.filter(q => q.status === 'waiting');
 
       res.json({
@@ -469,6 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         services,
         offers: offers.filter(o => o.isActive),
         reviews,
+        photos,
         queueCount: waitingQueues.length,
         estimatedWaitTime: waitingQueues.length * 15,
       });
