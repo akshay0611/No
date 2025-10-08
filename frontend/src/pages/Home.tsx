@@ -446,7 +446,7 @@ export default function Home() {
       {/* Hero Section - Different for logged in/out users */}
       {user ? (
         /* Logged In User - Clean Header */
-        <section className="bg-white px-4 py-6 relative overflow-hidden">
+        <section className="bg-white px-4 py-6 relative overflow-hidden shadow-md">
           <div className="max-w-7xl mx-auto">
             {/* Header with Profile and Logo */}
             <div className="flex items-center justify-between mb-6">
@@ -708,8 +708,8 @@ export default function Home() {
                         <div className="relative rounded-2xl overflow-hidden shadow-lg bg-white border border-gray-100">
                           {salon.offers && salon.offers.length > 0 && (
                             <div className="absolute top-3 left-3 z-10">
-                              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-                                <Gift className="w-3 h-3" />
+                              <div className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl flex items-center gap-1.5 border-2 border-white/30 backdrop-blur-sm">
+                                <Gift className="w-4 h-4" />
                                 {Math.max(...salon.offers.map(offer => Number(offer.discount) || 0))}% OFF
                               </div>
                             </div>
