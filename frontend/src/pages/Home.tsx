@@ -211,87 +211,99 @@ export default function Home() {
         {
           id: 1,
           name: "Haircut",
-          image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/haircut.png",
           searchQuery: "haircut"
         },
         {
           id: 2,
           name: "Beard Trim",
-          image: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/beard-trimming.png",
           searchQuery: "beard"
         },
         {
           id: 3,
           name: "Shave",
-          image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/shave.png",
           searchQuery: "shave"
         },
         {
           id: 4,
           name: "Hair Styling",
-          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/hairstyling.png",
           searchQuery: "styling"
         },
         {
           id: 5,
-          name: "Head Massage",
-          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          name: "Massage",
+          image: "/body-massage.png",
           searchQuery: "massage"
         },
         {
           id: 6,
-          name: "Men's Facial",
-          image: "https://images.unsplash.com/photo-1559599101-f09722fb4948?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          name: "Facial",
+          image: "/facial-massage.png",
           searchQuery: "facial"
+        },
+        {
+          id: 7,
+          name: "Hair Color",
+          image: "/hair-color.png",
+          searchQuery: "hair color"
+        },
+        {
+          id: 8,
+          name: "Manicure",
+          image: "/manicure.png",
+          searchQuery: "manicure"
         }
       ],
       women: [
         {
           id: 1,
           name: "Haircut",
-          image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/haircut.png",
           searchQuery: "haircut"
         },
         {
           id: 2,
           name: "Hair Color",
-          image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/hair-color.png",
           searchQuery: "hair color"
         },
         {
           id: 3,
           name: "Facial",
-          image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/facial-massage.png",
           searchQuery: "facial"
         },
         {
           id: 4,
           name: "Manicure",
-          image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/manicure.png",
           searchQuery: "manicure"
         },
         {
           id: 5,
           name: "Pedicure",
-          image: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/pedicure.png",
           searchQuery: "pedicure"
         },
         {
           id: 6,
           name: "Makeup",
-          image: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/makeup.png",
           searchQuery: "makeup"
         },
         {
           id: 7,
           name: "Eyebrow",
-          image: "https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/eyebrow.png",
           searchQuery: "eyebrow"
         },
         {
           id: 8,
           name: "Massage",
-          image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/body-massage.png",
           searchQuery: "massage"
         }
       ],
@@ -299,38 +311,50 @@ export default function Home() {
         {
           id: 1,
           name: "Haircut",
-          image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/haircut.png",
           searchQuery: "haircut"
         },
         {
           id: 2,
           name: "Hair Color",
-          image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/hair-color.png",
           searchQuery: "hair color"
         },
         {
           id: 3,
           name: "Facial",
-          image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/facial-massage.png",
           searchQuery: "facial"
         },
         {
           id: 4,
           name: "Massage",
-          image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/body-massage.png",
           searchQuery: "massage"
         },
         {
           id: 5,
           name: "Hair Styling",
-          image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/hairstyling.png",
           searchQuery: "styling"
         },
         {
           id: 6,
           name: "Manicure",
-          image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          image: "/manicure.png",
           searchQuery: "manicure"
+        },
+        {
+          id: 7,
+          name: "Pedicure",
+          image: "/pedicure.png",
+          searchQuery: "pedicure"
+        },
+        {
+          id: 8,
+          name: "Beard Trim",
+          image: "/beard-trimming.png",
+          searchQuery: "beard"
         }
       ]
     };
@@ -429,8 +453,8 @@ export default function Home() {
               <div className="flex items-center space-x-3">
                 <Link href="/profile">
                   <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <UserIcon className="w-8 h-8 text-gray-400" />
+                    <div className="w-full h-full bg-blue-100 flex items-center justify-center">
+                      <UserIcon className="w-8 h-8 text-blue-400" />
                     </div>
                   </div>
                 </Link>
@@ -585,11 +609,11 @@ export default function Home() {
                 className="flex flex-col items-center cursor-pointer group"
                 onClick={() => setSearchQuery(category.searchQuery)}
               >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-cyan-100">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-cyan-100 bg-white flex items-center justify-center p-2">
                   <img
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
                 <span className="text-xs font-medium text-gray-700 mt-2 text-center group-hover:text-cyan-600 transition-colors">
