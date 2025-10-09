@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   updateUser: (user: User) => void;
+  refetchUser: () => Promise<void>;
   // Progressive authentication support
   authFlow: 'customer' | 'admin' | null;
   setAuthFlow: (flow: 'customer' | 'admin' | null) => void;
@@ -102,6 +103,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('smartq_user', JSON.stringify(updatedUserData));
   };
 
+  const refetchUser = async () => {
+    if (!token) return;
+    
+    try {
+      const freshUserData = await api.auth.getProfile();
+      setUser(freshUserData);
+      localStorage.setItem('smartq_user', JSON.stringify(freshUserData));
+    } catch (error) {
+      console.error('Failed to refetch user data:', error);
+    }
+  };
+
   // Progressive authentication helpers
   const needsProfileCompletion = (): boolean => {
     if (!user) return false;
@@ -121,6 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     isLoading: !isInitialized || isVerifying,
     updateUser,
+    refetchUser,
     authFlow,
     setAuthFlow,
     isProfileComplete,
