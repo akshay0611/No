@@ -35,6 +35,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getUserCategory, setUserCategory, type UserCategory } from "../utils/categoryUtils";
+import ImageCropModal from "../components/ImageCropModal";
 
 export default function Profile() {
     const { user, updateUser } = useAuth();
@@ -43,6 +44,8 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState("profile");
     const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [showCropModal, setShowCropModal] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: user?.name || "",
@@ -212,7 +215,7 @@ export default function Profile() {
         }
     }, [user]);
 
-    // Handle profile image upload
+    // Handle profile image selection
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -237,6 +240,21 @@ export default function Profile() {
             return;
         }
 
+        // Read file and show crop modal
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImage(reader.result as string);
+            setShowCropModal(true);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset input
+        event.target.value = '';
+    };
+
+    // Handle cropped image upload
+    const handleCroppedImage = async (croppedBlob: Blob) => {
+        setShowCropModal(false);
         setIsUploadingImage(true);
 
         try {
@@ -245,9 +263,9 @@ export default function Profile() {
                 throw new Error('No authentication token found');
             }
 
-            // Create form data
+            // Create form data with cropped image
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('image', croppedBlob, 'profile.jpg');
 
             // Upload to backend
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app'}/api/user/profile-image`, {
@@ -286,6 +304,7 @@ export default function Profile() {
             });
         } finally {
             setIsUploadingImage(false);
+            setSelectedImage(null);
         }
     };
 
@@ -345,395 +364,409 @@ export default function Profile() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 relative overflow-hidden">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-teal-500/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-500/20 to-teal-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            </div>
+        <>
+            {/* Image Crop Modal */}
+            {showCropModal && selectedImage && (
+                <ImageCropModal
+                    image={selectedImage}
+                    onCropComplete={handleCroppedImage}
+                    onClose={() => {
+                        setShowCropModal(false);
+                        setSelectedImage(null);
+                    }}
+                />
+            )}
 
-            <div className="relative max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8">
-                {/* Header */}
-                <div className="mb-6 sm:mb-8">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
-                                My Profile
-                            </h1>
-                            <p className="text-base sm:text-xl text-gray-600 mt-2">
-                                Manage your account and preferences
-                            </p>
-                        </div>
-                        <Badge className="bg-gradient-to-r from-teal-100 to-teal-200 text-teal-700 border-0 px-3 py-1.5 sm:px-4 sm:py-2 self-start sm:self-auto whitespace-nowrap">
-                            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                            Premium Member
-                        </Badge>
-                    </div>
-
-                    {/* Tab Navigation */}
-                    <div className="flex overflow-x-auto space-x-1 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-lg scrollbar-hide">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
-                                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
-                                    : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
-                                    }`}
-                            >
-                                <tab.icon className="w-4 h-4 mr-1.5 sm:mr-2" />
-                                <span className="text-sm sm:text-base">{tab.label}</span>
-                            </button>
-                        ))}
-                    </div>
+            <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+                {/* Animated Background Elements */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-teal-500/20 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-500/20 to-teal-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
                 </div>
 
-                {/* Profile Tab */}
-                {activeTab === "profile" && (
-                    <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
-                        {/* Profile Card */}
-                        <div className="lg:col-span-1">
-                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden mx-1">
-                                <div className="relative">
-                                    <div className="h-32 bg-gradient-to-r from-teal-600 to-teal-700"></div>
-                                    <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
-                                        <div className="relative group">
-                                            <div className="w-32 h-32 bg-white rounded-full p-2 shadow-xl">
-                                                {isUploadingImage ? (
-                                                    <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
-                                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-                                                    </div>
-                                                ) : user?.profileImage ? (
-                                                    <img
-                                                        src={user.profileImage}
-                                                        alt="Profile"
-                                                        className="w-full h-full rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
-                                                        <User className="w-12 h-12 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <input
-                                                type="file"
-                                                id="profile-image-upload"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                className="hidden"
-                                                disabled={isUploadingImage}
-                                            />
-                                            <label
-                                                htmlFor="profile-image-upload"
-                                                className={`absolute bottom-2 right-2 w-10 h-10 bg-teal-600 hover:bg-teal-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300 ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                            >
-                                                <Camera className="w-4 h-4" />
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <CardContent className="pt-20 pb-6 sm:pb-8 text-center px-4">
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">
-                                        {user?.name || "User Name"}
-                                    </h2>
-                                    <p className="text-sm sm:text-base text-gray-600 mb-4 break-all">
-                                        {user?.phone || "phone-"}
-                                    </p>
-                                    <p className="text-xs sm:text-sm text-gray-500 break-all">
-                                        {user?.email || "+919508212112@placeholder.com"}
-                                    </p>
-
-                                    {/* User Stats */}
-                                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-6">
-                                        {userStats.map((stat, index) => (
-                                            <div key={index} className="text-center">
-                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-teal-500 to-teal-600' :
-                                                    stat.color === 'pink' ? 'from-pink-500 to-pink-600' :
-                                                        stat.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
-                                                            'from-teal-500 to-teal-600'
-                                                    } flex items-center justify-center`}>
-                                                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                                </div>
-                                                <div className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</div>
-                                                <div className="text-xs sm:text-sm text-gray-500">{stat.label}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                <div className="relative max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8">
+                    {/* Header */}
+                    <div className="mb-6 sm:mb-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
+                                    My Profile
+                                </h1>
+                                <p className="text-base sm:text-xl text-gray-600 mt-2">
+                                    Manage your account and preferences
+                                </p>
+                            </div>
+                            <Badge className="bg-gradient-to-r from-teal-100 to-teal-200 text-teal-700 border-0 px-3 py-1.5 sm:px-4 sm:py-2 self-start sm:self-auto whitespace-nowrap">
+                                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                                Premium Member
+                            </Badge>
                         </div>
 
-                        {/* Profile Form */}
-                        <div className="lg:col-span-2">
-                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-                                        Profile Information
-                                    </CardTitle>
-                                    {!isEditing ? (
-                                        <Button
-                                            onClick={() => setIsEditing(true)}
-                                            className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 w-full sm:w-auto"
-                                        >
-                                            <Edit3 className="w-4 h-4 mr-2" />
-                                            Edit Profile
-                                        </Button>
-                                    ) : (
-                                        <div className="flex space-x-2">
-                                            <Button
-                                                onClick={handleSave}
-                                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 flex-1 sm:flex-none"
-                                            >
-                                                <Save className="w-4 h-4 mr-2" />
-                                                Save
-                                            </Button>
-                                            <Button
-                                                onClick={handleCancel}
-                                                variant="outline"
-                                                className="border-gray-300 flex-1 sm:flex-none"
-                                            >
-                                                <X className="w-4 h-4 mr-2" />
-                                                Cancel
-                                            </Button>
-                                        </div>
-                                    )}
-                                </CardHeader>
-
-                                <CardContent className="space-y-4 sm:space-y-6">
-                                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                                Full Name
-                                            </label>
-                                            <div className="relative">
-                                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                                <Input
-                                                    name="name"
-                                                    value={formData.name}
-                                                    onChange={handleInputChange}
-                                                    disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
-                                                    placeholder="Enter your full name"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                                Email Address
-                                            </label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                                <Input
-                                                    name="email"
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={handleInputChange}
-                                                    disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
-                                                    placeholder="Enter your email"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                                Phone Number
-                                            </label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                                <Input
-                                                    name="phone"
-                                                    value={formData.phone}
-                                                    onChange={handleInputChange}
-                                                    disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
-                                                    placeholder="Enter your phone number"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                                Location
-                                            </label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                                <Input
-                                                    name="location"
-                                                    value={formData.location}
-                                                    onChange={handleInputChange}
-                                                    disabled={!isEditing}
-                                                    className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
-                                                    placeholder="Enter your location"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                            Preferred Salon Category
-                                        </label>
-                                        <div className="relative">
-                                            <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-                                            <Select
-                                                value={selectedCategory}
-                                                onValueChange={(value: UserCategory) => setSelectedCategory(value)}
-                                                disabled={!isEditing}
-                                            >
-                                                <SelectTrigger className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl bg-white">
-                                                    <SelectValue placeholder="Select your preferred category" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="men">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                                            <span>Men's Salons</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                    <SelectItem value="women">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                                                            <span>Women's Salons</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                    <SelectItem value="unisex">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                                                            <span>Unisex Salons</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            This will personalize your home page to show relevant salons
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                            Bio
-                                        </label>
-                                        <Textarea
-                                            name="bio"
-                                            value={formData.bio}
-                                            onChange={handleInputChange}
-                                            disabled={!isEditing}
-                                            rows={4}
-                                            className="border-2 border-gray-200 focus:border-teal-500 rounded-xl resize-none"
-                                            placeholder="Tell us about yourself..."
-                                        />
-                                    </div>
-                                </CardContent>
-                            </Card>
+                        {/* Tab Navigation */}
+                        <div className="flex overflow-x-auto space-x-1 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-lg scrollbar-hide">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                                        ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
+                                        : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
+                                        }`}
+                                >
+                                    <tab.icon className="w-4 h-4 mr-1.5 sm:mr-2" />
+                                    <span className="text-sm sm:text-base">{tab.label}</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
-                )}
 
-                {/* Activity Tab */}
-                {activeTab === "activity" && (
-                    <div className="space-y-6 sm:space-y-8">
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                            <CardHeader>
-                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
-                                    Recent Activity
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {recentActivity.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <Clock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
-                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Activity Yet</h3>
-                                        <p className="text-sm sm:text-base text-gray-500">
-                                            Start joining queues to see your activity here
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 sm:space-y-4">
-                                        {recentActivity.map((activity, index) => (
-                                            <div key={index} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                                    }`}>
-                                                    <activity.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{activity.title}</h4>
-                                                    <p className="text-xs sm:text-sm text-gray-500">{activity.time}</p>
-                                                </div>
-                                                <Badge variant={activity.status === 'completed' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
-                                                    {activity.status}
-                                                </Badge>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Achievements Tab */}
-                {activeTab === "achievements" && (
-                    <div className="space-y-6 sm:space-y-8">
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                            <CardHeader>
-                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                                    <Award className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
-                                    Achievements
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-                                    {achievements.map((achievement, index) => (
-                                        <div key={index} className={`relative p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 ${achievement.earned
-                                            ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50'
-                                            : 'border-gray-200 bg-gray-50 hover:border-purple-300'
-                                            }`}>
-                                            <div className="flex items-start space-x-3 sm:space-x-4">
-                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${achievement.color} flex items-center justify-center flex-shrink-0 ${!achievement.earned ? 'opacity-50' : ''
-                                                    }`}>
-                                                    <achievement.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center space-x-2 mb-2">
-                                                        <h3 className="font-bold text-base sm:text-lg text-gray-900">{achievement.title}</h3>
-                                                        {achievement.earned && (
-                                                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm sm:text-base text-gray-600 mb-3">{achievement.description}</p>
-                                                    {!achievement.earned && achievement.progress && (
-                                                        <div>
-                                                            <div className="flex justify-between text-xs sm:text-sm text-gray-500 mb-1">
-                                                                <span>Progress</span>
-                                                                <span>{achievement.progress}%</span>
-                                                            </div>
-                                                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                                                <div
-                                                                    className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-500"
-                                                                    style={{ width: `${achievement.progress}%` }}
-                                                                ></div>
-                                                            </div>
+                    {/* Profile Tab */}
+                    {activeTab === "profile" && (
+                        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
+                            {/* Profile Card */}
+                            <div className="lg:col-span-1">
+                                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden mx-1">
+                                    <div className="relative">
+                                        <div className="h-32 bg-gradient-to-r from-teal-600 to-teal-700"></div>
+                                        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+                                            <div className="relative group">
+                                                <div className="w-32 h-32 bg-white rounded-full p-2 shadow-xl">
+                                                    {isUploadingImage ? (
+                                                        <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
+                                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                                                        </div>
+                                                    ) : user?.profileImage ? (
+                                                        <img
+                                                            src={user.profileImage}
+                                                            alt="Profile"
+                                                            className="w-full h-full rounded-full object-contain bg-white"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
+                                                            <User className="w-12 h-12 text-white" />
                                                         </div>
                                                     )}
                                                 </div>
+                                                <input
+                                                    type="file"
+                                                    id="profile-image-upload"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
+                                                    disabled={isUploadingImage}
+                                                />
+                                                <label
+                                                    htmlFor="profile-image-upload"
+                                                    className={`absolute bottom-2 right-2 w-10 h-10 bg-teal-600 hover:bg-teal-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300 ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                    <Camera className="w-4 h-4" />
+                                                </label>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                                    </div>
+
+                                    <CardContent className="pt-20 pb-6 sm:pb-8 text-center px-4">
+                                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">
+                                            {user?.name || "User Name"}
+                                        </h2>
+                                        <p className="text-sm sm:text-base text-gray-600 mb-4 break-all">
+                                            {user?.phone || "phone-"}
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-gray-500 break-all">
+                                            {user?.email || "+919508212112@placeholder.com"}
+                                        </p>
+
+                                        {/* User Stats */}
+                                        <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-6">
+                                            {userStats.map((stat, index) => (
+                                                <div key={index} className="text-center">
+                                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-teal-500 to-teal-600' :
+                                                        stat.color === 'pink' ? 'from-pink-500 to-pink-600' :
+                                                            stat.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
+                                                                'from-teal-500 to-teal-600'
+                                                        } flex items-center justify-center`}>
+                                                        <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                                    </div>
+                                                    <div className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</div>
+                                                    <div className="text-xs sm:text-sm text-gray-500">{stat.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Profile Form */}
+                            <div className="lg:col-span-2">
+                                <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
+                                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                                        <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                                            Profile Information
+                                        </CardTitle>
+                                        {!isEditing ? (
+                                            <Button
+                                                onClick={() => setIsEditing(true)}
+                                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 w-full sm:w-auto"
+                                            >
+                                                <Edit3 className="w-4 h-4 mr-2" />
+                                                Edit Profile
+                                            </Button>
+                                        ) : (
+                                            <div className="flex space-x-2">
+                                                <Button
+                                                    onClick={handleSave}
+                                                    className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 flex-1 sm:flex-none"
+                                                >
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                    Save
+                                                </Button>
+                                                <Button
+                                                    onClick={handleCancel}
+                                                    variant="outline"
+                                                    className="border-gray-300 flex-1 sm:flex-none"
+                                                >
+                                                    <X className="w-4 h-4 mr-2" />
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardHeader>
+
+                                    <CardContent className="space-y-4 sm:space-y-6">
+                                        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                    Full Name
+                                                </label>
+                                                <div className="relative">
+                                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                                    <Input
+                                                        name="name"
+                                                        value={formData.name}
+                                                        onChange={handleInputChange}
+                                                        disabled={!isEditing}
+                                                        className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
+                                                        placeholder="Enter your full name"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                    Email Address
+                                                </label>
+                                                <div className="relative">
+                                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                                    <Input
+                                                        name="email"
+                                                        type="email"
+                                                        value={formData.email}
+                                                        onChange={handleInputChange}
+                                                        disabled={!isEditing}
+                                                        className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
+                                                        placeholder="Enter your email"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                    Phone Number
+                                                </label>
+                                                <div className="relative">
+                                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                                    <Input
+                                                        name="phone"
+                                                        value={formData.phone}
+                                                        onChange={handleInputChange}
+                                                        disabled={!isEditing}
+                                                        className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
+                                                        placeholder="Enter your phone number"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                    Location
+                                                </label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                                    <Input
+                                                        name="location"
+                                                        value={formData.location}
+                                                        onChange={handleInputChange}
+                                                        disabled={!isEditing}
+                                                        className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl"
+                                                        placeholder="Enter your location"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                Preferred Salon Category
+                                            </label>
+                                            <div className="relative">
+                                                <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                                                <Select
+                                                    value={selectedCategory}
+                                                    onValueChange={(value: UserCategory) => setSelectedCategory(value)}
+                                                    disabled={!isEditing}
+                                                >
+                                                    <SelectTrigger className="pl-12 h-12 border-2 border-gray-200 focus:border-teal-500 rounded-xl bg-white">
+                                                        <SelectValue placeholder="Select your preferred category" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="men">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                                <span>Men's Salons</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="women">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                                                                <span>Women's Salons</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                        <SelectItem value="unisex">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                                                                <span>Unisex Salons</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                This will personalize your home page to show relevant salons
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                                Bio
+                                            </label>
+                                            <Textarea
+                                                name="bio"
+                                                value={formData.bio}
+                                                onChange={handleInputChange}
+                                                disabled={!isEditing}
+                                                rows={4}
+                                                className="border-2 border-gray-200 focus:border-teal-500 rounded-xl resize-none"
+                                                placeholder="Tell us about yourself..."
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Activity Tab */}
+                    {activeTab === "activity" && (
+                        <div className="space-y-6 sm:space-y-8">
+                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
+                                <CardHeader>
+                                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                        <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
+                                        Recent Activity
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {recentActivity.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <Clock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
+                                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Activity Yet</h3>
+                                            <p className="text-sm sm:text-base text-gray-500">
+                                                Start joining queues to see your activity here
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3 sm:space-y-4">
+                                            {recentActivity.map((activity, index) => (
+                                                <div key={index} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                        }`}>
+                                                        <activity.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{activity.title}</h4>
+                                                        <p className="text-xs sm:text-sm text-gray-500">{activity.time}</p>
+                                                    </div>
+                                                    <Badge variant={activity.status === 'completed' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
+                                                        {activity.status}
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Achievements Tab */}
+                    {activeTab === "achievements" && (
+                        <div className="space-y-6 sm:space-y-8">
+                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
+                                <CardHeader>
+                                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                        <Award className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
+                                        Achievements
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+                                        {achievements.map((achievement, index) => (
+                                            <div key={index} className={`relative p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 ${achievement.earned
+                                                ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50'
+                                                : 'border-gray-200 bg-gray-50 hover:border-purple-300'
+                                                }`}>
+                                                <div className="flex items-start space-x-3 sm:space-x-4">
+                                                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${achievement.color} flex items-center justify-center flex-shrink-0 ${!achievement.earned ? 'opacity-50' : ''
+                                                        }`}>
+                                                        <achievement.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <h3 className="font-bold text-base sm:text-lg text-gray-900">{achievement.title}</h3>
+                                                            {achievement.earned && (
+                                                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm sm:text-base text-gray-600 mb-3">{achievement.description}</p>
+                                                        {!achievement.earned && achievement.progress && (
+                                                            <div>
+                                                                <div className="flex justify-between text-xs sm:text-sm text-gray-500 mb-1">
+                                                                    <span>Progress</span>
+                                                                    <span>{achievement.progress}%</span>
+                                                                </div>
+                                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                                    <div
+                                                                        className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-500"
+                                                                        style={{ width: `${achievement.progress}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
 
 
+                </div>
             </div>
-        </div>
+        </>
     );
 }

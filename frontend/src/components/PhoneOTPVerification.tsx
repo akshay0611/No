@@ -24,7 +24,6 @@ export default function PhoneOTPVerification({
   const { toast } = useToast();
   const otpInputRef = useRef<HTMLInputElement>(null);
 
-  // Get debug OTP from localStorage
   useEffect(() => {
     const storedOTP = localStorage.getItem('debug_otp');
     if (storedOTP) {
@@ -32,7 +31,6 @@ export default function PhoneOTPVerification({
     }
   }, []);
 
-  // Countdown timer for resend
   useEffect(() => {
     if (resendCountdown > 0) {
       const timer = setTimeout(() => {
@@ -44,7 +42,6 @@ export default function PhoneOTPVerification({
     }
   }, [resendCountdown]);
 
-  // Auto-focus OTP input
   useEffect(() => {
     if (otpInputRef.current) {
       otpInputRef.current.focus();
@@ -63,7 +60,6 @@ export default function PhoneOTPVerification({
     setOtp(value);
     setError(null);
 
-    // Auto-submit when OTP is complete
     if (value.length === 6) {
       handleVerifyOTP(value);
     }
@@ -82,12 +78,11 @@ export default function PhoneOTPVerification({
       const { api } = await import("../lib/api");
       const response = await api.auth.verifyOTP(phoneNumber, otpValue);
 
-      // Clean up debug OTP
       localStorage.removeItem('debug_otp');
 
       toast({
         title: "Phone Verified!",
-        description: "Welcome to AltQ!",
+        description: "Welcome to SmartQ!",
       });
 
       onVerificationSuccess(response.user, response.token);
@@ -103,7 +98,6 @@ export default function PhoneOTPVerification({
         setOtp("");
       }
 
-      // Focus back to input
       setTimeout(() => {
         if (otpInputRef.current) {
           otpInputRef.current.focus();
@@ -124,7 +118,6 @@ export default function PhoneOTPVerification({
       const { api } = await import("../lib/api");
       const response = await api.auth.sendOTP(phoneNumber);
 
-      // Update debug OTP if available
       if (response.debug?.otp) {
         localStorage.setItem('debug_otp', response.debug.otp);
         setCurrentDebugOTP(response.debug.otp);
@@ -142,13 +135,11 @@ export default function PhoneOTPVerification({
         });
       }
 
-      // Reset state
       setResendCountdown(30);
       setCanResend(false);
       setAttempts(0);
       setOtp("");
 
-      // Focus input
       if (otpInputRef.current) {
         otpInputRef.current.focus();
       }
@@ -164,153 +155,146 @@ export default function PhoneOTPVerification({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Banner Section */}
-      <div className="bg-gradient-to-br from-teal-600 to-teal-700 px-6 py-12 relative overflow-hidden">
-        <div className="max-w-md mx-auto relative z-10">
-          {/* Back Button */}
-          
+    <div className="fixed inset-0 z-50 bg-black overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src="/4.png"
+          alt="Background"
+          className="w-full h-full object-cover"
+        />
+       
+      </div>
 
+      {/* Content */}
+      <div className="relative flex flex-col h-full">
+        {/* Back Button */}
+        <div className="absolute top-6 left-6 z-20">
+          <button
+            onClick={onBack}
+            className="text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+
+       
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col justify-center items-center px-4 py-8">
           {/* Logo */}
-          <div className="mb-6 ">
+          <div className="flex justify-center mb-12">
             <img
               src="/loadlogo.png"
-              alt="YEF Samrat Logo"
-              className="h-20 w-auto brightness-0 invert"
+              alt="SmartQ Logo"
+              className="h-24 w-auto drop-shadow-2xl"
             />
           </div>
 
-          {/* Banner Content */}
-          <div className="text-white">
-            <h2 className="text-2xl font-bold mb-2">Verify Your Phone</h2>
-            <h3 className="text-xl font-bold mb-3">Enter Verification Code</h3>
-            <p className="text-teal-100 text-sm">We've sent a 6-digit code to your phone</p>
-          </div>
-        </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full -translate-y-32 translate-x-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-800/20 rounded-full translate-y-24 -translate-x-24"></div>
-      </div>
-
-      {/* Form Section */}
-      <div className="px-6 py-8">
-        <div className="max-w-md mx-auto">
-          {/* Welcome Section */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold font-bricolage text-gray-900 mb-2">Verification Code</h1>
-            <p className="text-gray-600 text-sm mb-4">
-              We have sent a verification code to
-            </p>
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <p className="text-gray-900 font-semibold text-lg font-bricolage">
-                {maskPhoneNumber(phoneNumber)}
+          {/* OTP Card */}
+          <div className="w-full max-w-sm bg-white/95 backdrop-blur-md rounded-2xl px-6 py-8 shadow-2xl border border-white/20">
+            {/* Header */}
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Code</h1>
+              <p className="text-gray-500 text-sm leading-relaxed mb-3">
+                We've sent a 6-digit code to
               </p>
-              <button
-                onClick={onBack}
-                className="text-teal-600 hover:text-teal-700 transition-colors ml-1"
-                aria-label="Edit phone number"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Debug OTP Display */}
-          {currentDebugOTP && (
-            <div className="mb-8 p-4 bg-teal-50 border border-teal-200 rounded-xl">
-              <p className="text-sm text-teal-700 text-center font-medium">
-                🔐 Your verification code: <span className="font-bold text-lg text-teal-800">{currentDebugOTP}</span>
-              </p>
-              <p className="text-xs text-teal-600 text-center mt-2">
-                Development mode - code shown for testing
-              </p>
-              <button
-                onClick={() => {
-                  setOtp(currentDebugOTP);
-                  handleVerifyOTP(currentDebugOTP);
-                }}
-                className="mt-3 w-full px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                Auto-fill & Verify
-              </button>
-            </div>
-          )}
-
-          {/* OTP Input */}
-          <div className="mb-8">
-            <div className="flex justify-center mb-6">
-              <InputOTP
-                ref={otpInputRef}
-                maxLength={6}
-                value={otp}
-                onChange={handleOTPChange}
-                disabled={isLoading}
-              >
-                <InputOTPGroup className="gap-3">
-                  <InputOTPSlot index={0} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                  <InputOTPSlot index={1} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                  <InputOTPSlot index={2} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                  <InputOTPSlot index={3} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                  <InputOTPSlot index={4} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                  <InputOTPSlot index={5} className="w-12 h-12 text-xl font-bold rounded-lg border-2 border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-100 text-gray-900" />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-                <p className="text-sm text-red-600 text-center font-medium">
-                  {error}
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-gray-900 font-semibold">
+                  {maskPhoneNumber(phoneNumber)}
                 </p>
+                <button
+                  onClick={onBack}
+                  className="text-teal-600 hover:text-teal-700 transition-colors"
+                  aria-label="Edit phone number"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Debug OTP Display */}
+            {currentDebugOTP && (
+              <div className="mb-6 p-3 bg-teal-50 border border-teal-200 rounded-xl">
+                <p className="text-xs text-teal-700 text-center font-medium">
+                  🔐 Code: <span className="font-bold text-base text-teal-800">{currentDebugOTP}</span>
+                </p>
+                <button
+                  onClick={() => {
+                    setOtp(currentDebugOTP);
+                    handleVerifyOTP(currentDebugOTP);
+                  }}
+                  className="mt-2 w-full px-3 py-2 bg-teal-600 text-white text-xs font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  Auto-fill & Verify
+                </button>
               </div>
             )}
 
+            {/* OTP Input */}
+            <div className="mb-6">
+              <div className="flex justify-center mb-4">
+                <InputOTP
+                  ref={otpInputRef}
+                  maxLength={6}
+                  value={otp}
+                  onChange={handleOTPChange}
+                  disabled={isLoading}
+                >
+                  <InputOTPGroup className="gap-2">
+                    <InputOTPSlot index={0} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                    <InputOTPSlot index={1} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                    <InputOTPSlot index={2} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                    <InputOTPSlot index={3} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                    <InputOTPSlot index={4} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                    <InputOTPSlot index={5} className="w-10 h-12 text-lg font-bold rounded-lg border border-gray-300 focus:border-teal-500 focus:ring-0 bg-gray-50 text-gray-900" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl mb-4">
+                  <p className="text-xs text-red-600 text-center font-medium">
+                    {error}
+                  </p>
+                </div>
+              )}
+
+              {isLoading && (
+                <div className="flex items-center justify-center py-3">
+                  <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-teal-600 font-medium text-sm">Verifying...</span>
+                </div>
+              )}
+            </div>
+
             {/* Resend Section */}
-            <div className="text-center">
-              <p className="text-gray-600 font-medium">
-                Didn't get the OTP?{" "}
+            <div className="text-center pt-6 border-t border-gray-200">
+              <p className="text-gray-500 text-sm">
+                Didn't receive code?{" "}
                 {canResend ? (
                   <button
                     onClick={handleResendOTP}
                     disabled={isLoading}
                     className="text-teal-600 hover:text-teal-700 transition-colors font-semibold"
                   >
-                    Resend SMS
+                    Resend
                   </button>
                 ) : (
-                  <span className="text-gray-500">
-                    Resend SMS in {resendCountdown}s
+                  <span className="text-gray-400">
+                    Resend in {resendCountdown}s
                   </span>
                 )}
               </p>
             </div>
           </div>
 
-          {/* Auto-verify when OTP is complete - no manual button needed */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-4">
-              <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-3 text-teal-600 font-medium">Verifying...</span>
-            </div>
-          )}
-
-          {/* Back to Login */}
-          <div className="text-center mt-8">
-            <button
-              onClick={onBack}
-              className="text-gray-600 hover:text-gray-700 transition-colors font-medium"
-            >
-              ← Back to phone number
-            </button>
+          {/* Trust Badge */}
+          <div className="text-center mt-6">
+            <p className="text-white/60 text-xs">
+              🔒 Your data is secure and encrypted
+            </p>
           </div>
-
-          {/* Debug Info (remove in production) */}
-          {!currentDebugOTP && (
-            <div className="text-center mt-6">
-              <p className="text-xs text-gray-400">Development Mode: Use 123456 or 000000 for testing</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

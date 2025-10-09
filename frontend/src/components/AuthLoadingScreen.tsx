@@ -31,7 +31,18 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2E5E66] via-[#3a7078] to-[#2E5E66] overflow-hidden">
+    <div className="fixed inset-0 z-50  overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src="/4.png"
+          alt="Background"
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay */}
+       
+      </div>
+
       {/* Animated background circles */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
@@ -51,10 +62,10 @@ export default function AuthLoadingScreen({ onComplete }: AuthLoadingScreenProps
           />
         </div>
 
-        
+
 
         {/* Animated dots */}
-        
+
       </div>
 
       <style jsx>{`
