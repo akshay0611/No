@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
     Select,
     SelectContent,
@@ -21,27 +20,16 @@ import {
     Edit3,
     Save,
     X,
-    Bell,
-    Shield,
     Heart,
     Clock,
     Star,
-    Settings,
-    Smartphone,
-    Globe,
-    Lock,
-    Eye,
-    EyeOff,
     Calendar,
     Award,
     TrendingUp,
     Users,
     CheckCircle,
-    AlertCircle,
     Sparkles,
     Crown,
-    Gift,
-    Zap,
     UserCircle
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -52,7 +40,6 @@ export default function Profile() {
     const { user, updateUser } = useAuth();
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
     const [activeTab, setActiveTab] = useState("profile");
     const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
     const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -68,19 +55,7 @@ export default function Profile() {
         confirmPassword: ""
     });
 
-    const [notifications, setNotifications] = useState({
-        queueUpdates: true,
-        promotions: false,
-        reminders: true,
-        newsletter: false
-    });
 
-    const [privacy, setPrivacy] = useState({
-        profileVisible: true,
-        showLocation: false,
-        showPhone: false,
-        allowMessages: true
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({
@@ -366,8 +341,7 @@ export default function Profile() {
     const tabs = [
         { id: "profile", label: "Profile", icon: User },
         { id: "activity", label: "Activity", icon: TrendingUp },
-        { id: "achievements", label: "Achievements", icon: Award },
-        { id: "settings", label: "Settings", icon: Settings }
+        { id: "achievements", label: "Achievements", icon: Award }
     ];
 
     return (
@@ -758,148 +732,7 @@ export default function Profile() {
                     </div>
                 )}
 
-                {/* Settings Tab */}
-                {activeTab === "settings" && (
-                    <div className="space-y-6 sm:space-y-8">
-                        {/* Notifications */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                            <CardHeader>
-                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                                    <Bell className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
-                                    Notification Preferences
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4 sm:space-y-6">
-                                {Object.entries(notifications).map(([key, value]) => (
-                                    <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 capitalize">
-                                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                                            </h4>
-                                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                                                {key === 'queueUpdates' && 'Get notified about queue status changes'}
-                                                {key === 'promotions' && 'Receive promotional offers and deals'}
-                                                {key === 'reminders' && 'Get reminders about upcoming appointments'}
-                                                {key === 'newsletter' && 'Receive our weekly newsletter'}
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            checked={value}
-                                            onCheckedChange={(checked) =>
-                                                setNotifications({ ...notifications, [key]: checked })
-                                            }
-                                            className="flex-shrink-0"
-                                        />
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
 
-                        {/* Privacy Settings */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                            <CardHeader>
-                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-purple-600" />
-                                    Privacy Settings
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4 sm:space-y-6">
-                                {Object.entries(privacy).map(([key, value]) => (
-                                    <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 capitalize">
-                                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                                            </h4>
-                                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                                                {key === 'profileVisible' && 'Make your profile visible to other users'}
-                                                {key === 'showLocation' && 'Display your location on your profile'}
-                                                {key === 'showPhone' && 'Show your phone number to salons'}
-                                                {key === 'allowMessages' && 'Allow other users to send you messages'}
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            checked={value}
-                                            onCheckedChange={(checked) =>
-                                                setPrivacy({ ...privacy, [key]: checked })
-                                            }
-                                            className="flex-shrink-0"
-                                        />
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
-                        {/* Password Change */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
-                            <CardHeader>
-                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
-                                    <Lock className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-purple-600" />
-                                    Change Password
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4 sm:space-y-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                        Current Password
-                                    </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                        <Input
-                                            name="currentPassword"
-                                            type={showPassword ? "text" : "password"}
-                                            value={formData.currentPassword}
-                                            onChange={handleInputChange}
-                                            className="pl-12 pr-12 h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
-                                            placeholder="Enter current password"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                            New Password
-                                        </label>
-                                        <Input
-                                            name="newPassword"
-                                            type="password"
-                                            value={formData.newPassword}
-                                            onChange={handleInputChange}
-                                            className="h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
-                                            placeholder="Enter new password"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                                            Confirm Password
-                                        </label>
-                                        <Input
-                                            name="confirmPassword"
-                                            type="password"
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            className="h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl"
-                                            placeholder="Confirm new password"
-                                        />
-                                    </div>
-                                </div>
-
-                                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 w-full sm:w-auto">
-                                    <Lock className="w-4 h-4 mr-2" />
-                                    Update Password
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
             </div>
         </div>
     );
