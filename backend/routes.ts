@@ -543,6 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const waitingQueues = queues.filter(q => q.status === 'waiting');
           const offers = await storage.getOffersBySalon(salon.id);
           const photos = await storage.getSalonPhotosBySalon(salon.id);
+          const reviews = await storage.getReviewsBySalon(salon.id);
           console.log(`Found ${photos.length} photos for salon ${salon.id}`);
 
           return {
@@ -552,6 +553,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             estimatedWaitTime: waitingQueues.length * 15,
             offers: offers.filter(o => o.isActive),
             photos,
+            reviews,
+            reviewCount: reviews.length,
           };
         })
       );
@@ -589,6 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         photos,
         queueCount: waitingQueues.length,
         estimatedWaitTime: waitingQueues.length * 15,
+        reviewCount: reviews.length,
       });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error });
@@ -982,6 +986,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updates = insertQueueSchema.partial().parse(req.body);
       const updatedQueue = await storage.updateQueue(req.params.id, updates);
+
+      // Award loyalty points when queue is completed
+      if (updates.status === 'completed' && queue.status !== 'completed') {
+        const user = await storage.getUser(queue.userId);
+        if (user) {
+          const salonLoyaltyPoints = user.salonLoyaltyPoints || {};
+          const currentPoints = salonLoyaltyPoints[queue.salonId] || 0;
+          const newPoints = currentPoints + 25;
+          
+          // Update salon-specific loyalty points
+          salonLoyaltyPoints[queue.salonId] = newPoints;
+          
+          // Update total loyalty points
+          const totalLoyaltyPoints = (user.loyaltyPoints || 0) + 25;
+          
+          await storage.updateUser(queue.userId, {
+            loyaltyPoints: totalLoyaltyPoints,
+            salonLoyaltyPoints: salonLoyaltyPoints
+          });
+        }
+      }
 
       // Broadcast queue update
       const salonQueues = await storage.getQueuesBySalon(queue.salonId);

@@ -9,6 +9,7 @@ export interface User {
   bio?: string;
   profileImage?: string;
   loyaltyPoints: number;
+  salonLoyaltyPoints?: Record<string, number>;
   favoriteSalons: string[];
   createdAt: Date;
 }
@@ -68,6 +69,8 @@ export interface Review {
   rating: number;
   comment?: string;
   createdAt: Date;
+  userName?: string;
+  userProfileImage?: string | null;
 }
 
 export interface SalonPhoto {

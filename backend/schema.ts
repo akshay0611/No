@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImage: text("profile_image"),
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  salonLoyaltyPoints: jsonb("salon_loyalty_points").$type<Record<string, number>>().default({}),
   favoriteSalons: jsonb("favorite_salons").$type<string[]>().default([]),
   // OTP and verification fields
   phoneOTP: text("phone_otp"),

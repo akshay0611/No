@@ -42,8 +42,8 @@ export class MongoStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     // Only hash password if it exists and is not empty
-    const hashedPassword = insertUser.password && insertUser.password.trim() !== '' 
-      ? await bcrypt.hash(insertUser.password, 10) 
+    const hashedPassword = insertUser.password && insertUser.password.trim() !== ''
+      ? await bcrypt.hash(insertUser.password, 10)
       : undefined;
 
     const userObject = {
@@ -71,13 +71,13 @@ export class MongoStorage implements IStorage {
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
-    
+
     const updatedUser = await UserModel.findOneAndUpdate(
       { id },
       { $set: updates },
       { new: true }
     ).lean();
-    
+
     return updatedUser ? updatedUser as unknown as User : undefined;
   }
 
@@ -111,8 +111,8 @@ export class MongoStorage implements IStorage {
   }
 
   async getSalonsByLocation(location: string): Promise<Salon[]> {
-    const salons = await SalonModel.find({ 
-      address: { $regex: location, $options: 'i' } 
+    const salons = await SalonModel.find({
+      address: { $regex: location, $options: 'i' }
     }).lean();
     return salons as unknown as Salon[];
   }
@@ -135,7 +135,7 @@ export class MongoStorage implements IStorage {
       rating: 0,
       createdAt: new Date(),
     };
-    
+
     await SalonModel.create(newSalon);
     return newSalon;
   }
@@ -146,7 +146,7 @@ export class MongoStorage implements IStorage {
       { $set: updates },
       { new: true }
     ).lean();
-    
+
     return updatedSalon ? updatedSalon as unknown as Salon : undefined;
   }
 
@@ -173,7 +173,7 @@ export class MongoStorage implements IStorage {
       id,
       createdAt: new Date(),
     };
-    
+
     console.log('MongoDB: Creating service with data:', newService);
     const result = await ServiceModel.create(newService);
     console.log('MongoDB: Service creation result:', result);
@@ -186,7 +186,7 @@ export class MongoStorage implements IStorage {
       { $set: updates },
       { new: true }
     ).lean();
-    
+
     return updatedService ? updatedService as unknown as Service : undefined;
   }
 
@@ -218,7 +218,7 @@ export class MongoStorage implements IStorage {
   async createQueue(queue: InsertQueue): Promise<Queue> {
     const id = randomUUID();
     const position = await this.getNextQueuePosition(queue.salonId);
-    
+
     const newQueue: Queue = {
       ...queue,
       id,
@@ -228,7 +228,7 @@ export class MongoStorage implements IStorage {
       createdAt: new Date(),
       userId: queue.userId, // Add userId to the newQueue object
     };
-    
+
     await QueueModel.create(newQueue);
     return newQueue;
   }
@@ -239,7 +239,7 @@ export class MongoStorage implements IStorage {
       updates,
       { new: true }
     ).lean();
-    
+
     return updatedQueue ? updatedQueue as unknown as Queue : undefined;
   }
 
@@ -253,7 +253,7 @@ export class MongoStorage implements IStorage {
       .sort({ position: -1 })
       .limit(1)
       .lean();
-    
+
     return lastQueue ? (lastQueue.position as number) + 1 : 1;
   }
 
@@ -272,7 +272,7 @@ export class MongoStorage implements IStorage {
 
   async getActiveOffers(): Promise<Offer[]> {
     console.log('MongoDB: Searching for active offers');
-    const offers = await OfferModel.find({ 
+    const offers = await OfferModel.find({
       validityPeriod: { $gt: new Date() },
       isActive: true
     }).lean();
@@ -286,7 +286,7 @@ export class MongoStorage implements IStorage {
       id,
       createdAt: new Date(),
     };
-    
+
     console.log('MongoDB: Creating offer:', newOffer);
     await OfferModel.create(newOffer);
     console.log('MongoDB: Offer created successfully');
@@ -299,7 +299,7 @@ export class MongoStorage implements IStorage {
       { $set: updates },
       { new: true }
     ).lean();
-    
+
     return updatedOffer ? updatedOffer as unknown as Offer : undefined;
   }
 
@@ -316,7 +316,20 @@ export class MongoStorage implements IStorage {
 
   async getReviewsBySalon(salonId: string): Promise<Review[]> {
     const reviews = await ReviewModel.find({ salonId }).lean();
-    return reviews as unknown as Review[];
+
+    // Populate user details for each review
+    const reviewsWithUserDetails = await Promise.all(
+      reviews.map(async (review) => {
+        const user = await UserModel.findOne({ id: review.userId }).lean();
+        return {
+          ...review,
+          userName: user?.name || 'Anonymous',
+          userProfileImage: user?.profileImage || null,
+        } as unknown as Review;
+      })
+    );
+
+    return reviewsWithUserDetails;
   }
 
   async createReview(review: InsertReview): Promise<Review> {
@@ -326,19 +339,19 @@ export class MongoStorage implements IStorage {
       id,
       createdAt: new Date(),
     };
-    
+
     await ReviewModel.create(newReview);
-    
+
     // Update salon rating
     const allReviews = await this.getReviewsBySalon(review.salonId);
     const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
     const averageRating = totalRating / allReviews.length;
-    
+
     await SalonModel.updateOne(
       { id: review.salonId },
       { $set: { rating: averageRating } }
     );
-    
+
     return newReview;
   }
 
@@ -348,47 +361,47 @@ export class MongoStorage implements IStorage {
       { $set: updates },
       { new: true }
     ).lean();
-    
+
     if (updatedReview && updates.rating) {
       // Update salon rating
       const salonId = updatedReview.salonId;
       const allReviews = await this.getReviewsBySalon(salonId);
       const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
       const averageRating = totalRating / allReviews.length;
-      
+
       await SalonModel.updateOne(
         { id: salonId },
         { $set: { rating: averageRating } }
       );
     }
-    
+
     return updatedReview ? updatedReview as unknown as Review : undefined;
   }
 
   async deleteReview(id: string): Promise<boolean> {
     const review = await ReviewModel.findOne({ id }).lean();
     if (!review) return false;
-    
+
     const result = await ReviewModel.deleteOne({ id });
-    
+
     if (result.deletedCount > 0) {
       // Update salon rating
       const salonId = review.salonId;
       const allReviews = await this.getReviewsBySalon(salonId);
-      
+
       if (allReviews.length > 0) {
         const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
         const averageRating = totalRating / allReviews.length;
-        
+
         await SalonModel.updateOne(
           { id: salonId },
           { $set: { rating: averageRating } }
         );
       }
-      
+
       return true;
     }
-    
+
     return false;
   }
 
@@ -410,7 +423,7 @@ export class MongoStorage implements IStorage {
       id,
       createdAt: new Date(),
     };
-    
+
     await SalonPhotoModel.create(newPhoto);
     return newPhoto;
   }

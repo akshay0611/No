@@ -260,7 +260,6 @@ export default function Queue() {
   }
 
   const activeQueues = queues.filter(q => q.status === 'waiting' || q.status === 'in-progress');
-  const completedQueues = queues.filter(q => q.status === 'completed' || q.status === 'no-show');
 
   const getServiceName = (queue: QueueWithDetails) => {
     if (queue.services && queue.services.length > 0) {
@@ -305,7 +304,7 @@ export default function Queue() {
 
         {/* Content Section */}
         <div className="max-w-2xl mx-auto px-4 py-6">
-          {activeQueues.length === 0 && completedQueues.length === 0 ? (
+          {activeQueues.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-200">
               <div className="w-14 h-14 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <Clock className="h-7 w-7 text-gray-400" />
@@ -486,51 +485,7 @@ export default function Queue() {
                 </div>
               )}
 
-              {/* Queue History */}
-              {completedQueues.length > 0 && (
-                <div>
-                  <h2 className="text-base font-semibold text-gray-900 mb-3">History</h2>
-                  <div className="space-y-2">
-                    {completedQueues.map((queue) => (
-                      <div key={queue.id} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200" data-testid={`history-queue-${queue.id}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 text-sm truncate" data-testid={`text-history-salon-${queue.id}`}>
-                              {queue.salon?.name}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-0.5" data-testid={`text-history-service-${queue.id}`}>
-                              {queue.services && queue.services.length > 0 ?
-                                (queue.services.length > 1 ?
-                                  `${queue.services.length} services` :
-                                  queue.services[0].name) :
-                                queue.service?.name}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(queue.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <div className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${queue.status === 'completed'
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-red-50 text-red-700'
-                              }`} data-testid={`badge-history-status-${queue.id}`}>
-                              {queue.status === 'completed' ? 'Completed' : 'No Show'}
-                            </div>
-                            {queue.status === 'completed' && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                                <span className="text-xs text-gray-600">
-                                  +{Math.floor(parseFloat(queue.service?.price || '0') / 10)} pts
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           )}
         </div>

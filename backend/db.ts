@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   bio: { type: String },
   profileImage: { type: String },
   loyaltyPoints: { type: Number, default: 0 },
+  salonLoyaltyPoints: { type: Map, of: Number, default: {} },
   favoriteSalons: { type: [String], default: [] },
   // Verification fields
   emailVerified: { type: Boolean, default: false },

@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap, ArrowLeft } from "lucide-react";
+import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap } from "lucide-react";
 import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -573,26 +573,49 @@ export default function SalonProfile() {
               ) : (
                 salon.reviews.map((review) => (
                   <div key={review.id} className="p-5 bg-white border-2 border-gray-100 rounded-xl hover:border-teal-200 transition-colors" data-testid={`review-${review.id}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-5 w-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="font-semibold text-gray-900">{review.rating}.0</span>
+                    {/* User Info Header */}
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-teal-100 bg-gray-100 flex-shrink-0">
+                        {review.userProfileImage ? (
+                          <img
+                            src={review.userProfileImage}
+                            alt={review.userName || 'User'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-teal-100 flex items-center justify-center">
+                            <span className="text-teal-600 font-bold text-lg">
+                              {(review.userName || 'A').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm text-gray-500" data-testid={`text-review-date-${review.id}`}>
-                        {new Date(review.createdAt).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{review.userName || 'Anonymous'}</p>
+                        <span className="text-xs text-gray-500" data-testid={`text-review-date-${review.id}`}>
+                          {new Date(review.createdAt).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
                     </div>
+                    
+                    {/* Rating */}
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-5 w-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="font-semibold text-gray-900">{review.rating}.0</span>
+                    </div>
+                    
+                    {/* Comment */}
                     {review.comment && (
                       <p className="text-gray-700 leading-relaxed" data-testid={`text-review-comment-${review.id}`}>
                         {review.comment}
