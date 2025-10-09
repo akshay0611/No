@@ -55,6 +55,7 @@ export default function Profile() {
     const [showPassword, setShowPassword] = useState(false);
     const [activeTab, setActiveTab] = useState("profile");
     const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     const [formData, setFormData] = useState({
         name: user?.name || "",
@@ -236,6 +237,83 @@ export default function Profile() {
         }
     }, [user]);
 
+    // Handle profile image upload
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast({
+                title: "Invalid file type",
+                description: "Please upload an image file",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            toast({
+                title: "File too large",
+                description: "Please upload an image smaller than 5MB",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsUploadingImage(true);
+
+        try {
+            const token = localStorage.getItem('smartq_token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Upload to backend
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app'}/api/user/profile-image`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to upload image');
+            }
+
+            const data = await response.json();
+
+            // Update user context with new profile image
+            if (user) {
+                const updatedUser = {
+                    ...user,
+                    profileImage: data.profileImage,
+                } as any;
+                updateUser(updatedUser);
+            }
+
+            toast({
+                title: "Profile picture updated!",
+                description: "Your profile picture has been updated successfully.",
+            });
+        } catch (error: any) {
+            toast({
+                title: "Upload failed",
+                description: error.message || "Failed to upload profile picture",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
     const [userStats, setUserStats] = useState([
         { label: "Queues Joined", value: "0", icon: Clock, color: "purple" },
         { label: "Favorite Salons", value: "0", icon: Heart, color: "pink" },
@@ -347,7 +425,11 @@ export default function Profile() {
                                     <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
                                         <div className="relative group">
                                             <div className="w-32 h-32 bg-white rounded-full p-2 shadow-xl">
-                                                {user?.profileImage ? (
+                                                {isUploadingImage ? (
+                                                    <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                                                    </div>
+                                                ) : user?.profileImage ? (
                                                     <img
                                                         src={user.profileImage}
                                                         alt="Profile"
@@ -359,9 +441,20 @@ export default function Profile() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button className="absolute bottom-2 right-2 w-10 h-10 bg-teal-600 hover:bg-teal-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300">
+                                            <input
+                                                type="file"
+                                                id="profile-image-upload"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                                disabled={isUploadingImage}
+                                            />
+                                            <label
+                                                htmlFor="profile-image-upload"
+                                                className={`absolute bottom-2 right-2 w-10 h-10 bg-teal-600 hover:bg-teal-700 rounded-full flex items-center justify-center text-white shadow-lg transition-colors group-hover:scale-110 transform duration-300 ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            >
                                                 <Camera className="w-4 h-4" />
-                                            </button>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>

@@ -391,6 +391,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile image upload endpoint
+  app.post('/api/user/profile-image', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+
+      // Get current user to delete old image if exists
+      const currentUser = await storage.getUser(req.user!.userId);
+      
+      // Delete old profile image from Cloudinary if exists
+      if (currentUser?.profileImage) {
+        try {
+          // Extract public_id from Cloudinary URL
+          // URL format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{folder}/{public_id}.{ext}
+          const urlParts = currentUser.profileImage.split('/');
+          const uploadIndex = urlParts.indexOf('upload');
+          if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+            // Get everything after 'upload/v{version}/'
+            const pathAfterUpload = urlParts.slice(uploadIndex + 2).join('/');
+            // Remove file extension
+            const publicId = pathAfterUpload.replace(/\.[^/.]+$/, '');
+            await deleteImageFromCloudinary(publicId);
+          }
+        } catch (error) {
+          console.error('Error deleting old profile image:', error);
+          // Continue even if deletion fails
+        }
+      }
+
+      // Upload new image to Cloudinary
+      const uploadResult = await uploadImageToCloudinary(req.file.buffer, 'profile_images');
+
+      // Update user profile with new image URL
+      const updatedUser = await storage.updateUser(req.user!.userId, {
+        profileImage: uploadResult.url,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        profileImage: uploadResult.url,
+        message: 'Profile image updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      res.status(500).json({ message: 'Failed to upload profile image', error });
+    }
+  });
+
   // ====================
   // FAVORITES ROUTES
   // ====================
