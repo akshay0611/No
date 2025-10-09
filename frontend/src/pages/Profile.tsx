@@ -90,11 +90,33 @@ export default function Profile() {
 
     const handleSave = async () => {
         try {
-            // Import API dynamically to avoid circular dependencies
-            const { api } = await import("../lib/api");
+            // Update profile via API with all fields
+            const token = localStorage.getItem('smartq_token');
 
-            // Update profile via API
-            await api.auth.completeProfile(formData.name, formData.email || undefined);
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app'}/api/user/complete`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email || undefined,
+                    location: formData.location || undefined,
+                    bio: formData.bio || undefined
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to update profile');
+            }
+
+            const data = await response.json();
 
             // Save category preference
             setUserCategory(selectedCategory);
@@ -105,7 +127,9 @@ export default function Profile() {
                     ...user,
                     name: formData.name,
                     email: formData.email || user.email,
-                };
+                    location: formData.location,
+                    bio: formData.bio,
+                } as any;
                 updateUser(updatedUser);
             }
 

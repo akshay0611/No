@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile completion endpoint for progressive user data collection
   app.put('/api/user/complete', authenticateToken, async (req, res) => {
     try {
-      const { name, email } = req.body;
+      const { name, email, location, bio } = req.body;
 
       if (!name || name.trim().length < 2) {
         return res.status(400).json({ message: 'Name is required and must be at least 2 characters' });
@@ -361,6 +361,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (email && email.trim()) {
         updates.email = email.trim().toLowerCase();
         updates.emailVerified = false; // Reset email verification if email changes
+      }
+
+      if (location !== undefined) {
+        updates.location = location.trim();
+      }
+
+      if (bio !== undefined) {
+        updates.bio = bio.trim();
       }
 
       const updatedUser = await storage.updateUser(req.user!.userId, updates);
