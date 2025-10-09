@@ -54,18 +54,22 @@ export default function ImageCropModal({ image, onCropComplete, onClose }: Image
         console.log('Crop data:', pixelCrop);
         console.log('Image dimensions:', image.width, 'x', image.height);
 
-        // Use the actual crop dimensions (should be square for aspect 1:1)
-        const size = pixelCrop.width;
-        canvas.width = size;
-        canvas.height = size;
+        // Use a fixed size for better quality (500x500 is a good balance)
+        const outputSize = 500;
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
         // Save context state
         ctx.save();
 
         // Translate to center for rotation
-        ctx.translate(size / 2, size / 2);
+        ctx.translate(outputSize / 2, outputSize / 2);
         ctx.rotate((rotation * Math.PI) / 180);
-        ctx.translate(-size / 2, -size / 2);
+        ctx.translate(-outputSize / 2, -outputSize / 2);
 
         // Draw the cropped portion of the image (full square, no circular clip)
         ctx.drawImage(
@@ -76,8 +80,8 @@ export default function ImageCropModal({ image, onCropComplete, onClose }: Image
             pixelCrop.height,
             0,
             0,
-            size,
-            size
+            outputSize,
+            outputSize
         );
 
         // Restore context state

@@ -6,47 +6,14 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Clock, Bell, User, LogOut, Settings, UserCircle } from "lucide-react";
-import { useState, useEffect } from "react";
-import { getUserCategory, setUserCategory, type UserCategory } from "../utils/categoryUtils";
-import { useToast } from "@/hooks/use-toast";
+import { Clock, Bell, User, Settings } from "lucide-react";
+import { useState } from "react";
+import ProfileSheet from "./ProfileSheet";
 
 export default function Navbar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
-  const { toast } = useToast();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  // Update local state when category changes in localStorage
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setSelectedCategory(getUserCategory() || 'unisex');
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const handleCategoryChange = (category: UserCategory) => {
-    setSelectedCategory(category);
-    setUserCategory(category);
-
-    toast({
-      title: "Category Updated",
-      description: `Your preferred category has been changed to ${category === 'men' ? "Men's" : category === 'women' ? "Women's" : "Unisex"} Salons`,
-    });
-
-    // Reload the page to update the home page with new category
-    window.location.reload();
-  };
 
   if (user?.role === 'salon_owner') {
     return null;
@@ -246,103 +213,12 @@ export default function Navbar() {
                   <span className="text-xs font-medium">Profile</span>
                 </button>
               </SheetTrigger>
-              <SheetContent>
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
-                      {user.profileImage ? (
-                        <img
-                          src={user.profileImage}
-                          alt="Profile"
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
-                          {user.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{user.name || 'User'}</p>
-                      <p className="text-xs text-gray-500 capitalize">{user.role?.replace('_', ' ') || 'Customer'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/profile"
-                  onClick={() => setIsSheetOpen(false)}
-                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <User className="h-4 w-4" />
-                  <span>My Profile</span>
-                </Link>
-
-                <Link
-                  href="/settings"
-                  onClick={() => setIsSheetOpen(false)}
-                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-
-                {/* Category Selector */}
-                <div className="px-4 py-3 border-t border-gray-100">
-                  <div className="flex items-start space-x-3">
-                    <UserCircle className="h-4 w-4 text-gray-500 mt-2" />
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Preferred Category
-                      </label>
-                      <Select
-                        value={selectedCategory}
-                        onValueChange={(value: UserCategory) => handleCategoryChange(value)}
-                      >
-                        <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-teal-500 rounded-lg bg-white">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="men">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                              <span>Men's Salons</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="women">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              <span>Women's Salons</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="unisex">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                              <span>Unisex Salons</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Personalizes your home page
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-100 mt-2 pt-2">
-                  <button
-                    onClick={() => {
-                      setIsSheetOpen(false);
-                      logout();
-                    }}
-                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
-                    data-testid="button-logout"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+              <SheetContent className="w-80">
+                <ProfileSheet
+                  user={user}
+                  logout={logout}
+                  onClose={() => setIsSheetOpen(false)}
+                />
               </SheetContent>
             </Sheet>
           </nav>

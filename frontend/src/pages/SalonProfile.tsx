@@ -31,6 +31,14 @@ const isPopularService = (_serviceId: string, index: number) => {
   return index === 0;
 };
 
+// Helper function to capitalize each word
+const capitalizeWords = (text: string) => {
+  return text
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function SalonProfile() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -237,8 +245,8 @@ export default function SalonProfile() {
                 <div className="flex flex-wrap items-center gap-4 text-gray-600">
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-5 w-5 text-teal-600" />
-                    <span data-testid="text-salon-location" className="font-medium capitalize">
-                      {salon.manualLocation || salon.location}
+                    <span data-testid="text-salon-location" className="font-medium">
+                      {capitalizeWords(salon.manualLocation || salon.location || '')}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 bg-teal-50 px-3 py-1 rounded-full">
