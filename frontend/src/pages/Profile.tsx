@@ -26,7 +26,6 @@ import {
     Calendar,
     Award,
     TrendingUp,
-    Users,
     CheckCircle,
     Sparkles,
     Crown,
@@ -152,6 +151,7 @@ export default function Profile() {
 
             // Calculate stats
             const totalQueues = queues.length;
+            const completedQueues = queues.filter((q: any) => q.status === 'completed');
             const favoritesCount = user?.favoriteSalons?.length || 0;
 
             // Get member since year
@@ -163,30 +163,73 @@ export default function Profile() {
             setUserStats([
                 { label: "Queues Joined", value: totalQueues.toString(), icon: Clock, color: "purple" },
                 { label: "Favorite Salons", value: favoritesCount.toString(), icon: Heart, color: "pink" },
-                { label: "Reviews Written", value: "0", icon: Star, color: "yellow" },
+                { label: "Completed", value: completedQueues.length.toString(), icon: CheckCircle, color: "green" },
                 { label: "Member Since", value: memberSince, icon: Calendar, color: "blue" }
             ]);
 
-            // Format activity from queues
+            // Format activity from completed/no-show queues only
             const activities = queues
-                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .slice(0, 10) // Get last 10 activities
+                .filter((q: any) => q.status === 'completed' || q.status === 'no-show')
+                .sort((a: any, b: any) => new Date(b.timestamp || b.createdAt).getTime() - new Date(a.timestamp || a.createdAt).getTime())
                 .map((queue: any) => {
-                    const timeAgo = getTimeAgo(new Date(queue.createdAt));
+                    const timeAgo = getTimeAgo(new Date(queue.timestamp || queue.createdAt));
                     const salonName = queue.salon?.name || "Unknown Salon";
+                    const serviceName = queue.services && queue.services.length > 0
+                        ? (queue.services.length > 1 ? `${queue.services.length} services` : queue.services[0].name)
+                        : queue.service?.name || 'Service';
 
                     return {
                         type: "queue",
-                        title: `Joined queue at ${salonName}`,
+                        title: `${salonName} - ${serviceName}`,
                         time: timeAgo,
-                        status: queue.status === 'completed' ? 'completed' :
-                            queue.status === 'cancelled' ? 'cancelled' :
-                                queue.status === 'in-progress' ? 'completed' : 'completed',
-                        icon: Clock
+                        date: new Date(queue.timestamp || queue.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+                        status: queue.status,
+                        loyaltyPoints: queue.status === 'completed' ? 25 : 0,
+                        totalPrice: queue.totalPrice,
+                        icon: queue.status === 'completed' ? CheckCircle : Clock,
+                        salonId: queue.salonId
                     };
                 });
 
             setRecentActivity(activities);
+
+            // Update achievements based on loyalty points
+            const salonLoyaltyPoints = user?.salonLoyaltyPoints || {};
+            const maxSalonPoints = Math.max(...Object.values(salonLoyaltyPoints), 0);
+
+            setAchievements([
+                {
+                    title: "Early Adopter",
+                    description: "One of the first 1000 users",
+                    icon: Crown,
+                    earned: true,
+                    color: "from-yellow-400 to-orange-500"
+                },
+                {
+                    title: "Queue Master",
+                    description: "Joined 50+ queues",
+                    icon: Award,
+                    earned: totalQueues >= 50,
+                    color: "from-purple-400 to-indigo-500",
+                    progress: Math.min((totalQueues / 50) * 100, 100)
+                },
+                {
+                    title: "Loyal Customer",
+                    description: "Earn 50 points at any salon",
+                    icon: Star,
+                    earned: maxSalonPoints >= 50,
+                    color: "from-blue-400 to-cyan-500",
+                    progress: Math.min((maxSalonPoints / 50) * 100, 100)
+                },
+                {
+                    title: "VIP Member",
+                    description: "Earn 100 points at any salon",
+                    icon: Crown,
+                    earned: maxSalonPoints >= 100,
+                    color: "from-pink-400 to-rose-500",
+                    progress: Math.min((maxSalonPoints / 100) * 100, 100)
+                }
+            ]);
         } catch (error) {
             console.error('Error fetching activity data:', error);
         }
@@ -319,11 +362,15 @@ export default function Profile() {
         type: string;
         title: string;
         time: string;
+        date?: string;
         status: string;
+        loyaltyPoints?: number;
+        totalPrice?: number;
         icon: any;
+        salonId?: string;
     }>>([]);
 
-    const achievements = [
+    const [achievements, setAchievements] = useState([
         {
             title: "Early Adopter",
             description: "One of the first 1000 users",
@@ -337,25 +384,25 @@ export default function Profile() {
             icon: Award,
             earned: false,
             color: "from-purple-400 to-indigo-500",
-            progress: 94
+            progress: 0
         },
         {
-            title: "Review Expert",
-            description: "Written 25+ helpful reviews",
+            title: "Loyal Customer",
+            description: "Earn 50 points at any salon",
             icon: Star,
             earned: false,
             color: "from-blue-400 to-cyan-500",
-            progress: 92
+            progress: 0
         },
         {
-            title: "Social Butterfly",
-            description: "Referred 10+ friends",
-            icon: Users,
+            title: "VIP Member",
+            description: "Earn 100 points at any salon",
+            icon: Crown,
             earned: false,
             color: "from-pink-400 to-rose-500",
-            progress: 30
+            progress: 0
         }
-    ];
+    ]);
 
     const tabs = [
         { id: "profile", label: "Profile", icon: User },
@@ -683,24 +730,44 @@ export default function Profile() {
                                             <Clock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
                                             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Activity Yet</h3>
                                             <p className="text-sm sm:text-base text-gray-500">
-                                                Start joining queues to see your activity here
+                                                Complete services to see your history here
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-3 sm:space-y-4">
+                                        <div className="space-y-3">
                                             {recentActivity.map((activity, index) => (
-                                                <div key={index} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                                        }`}>
-                                                        <activity.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                <div key={index} className="bg-white rounded-xl p-4 shadow-sm border-2 border-gray-100 hover:border-teal-200 transition-all">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                                                                {activity.title}
+                                                            </h4>
+                                                            <p className="text-xs text-gray-500 mb-2">
+                                                                {activity.date}
+                                                            </p>
+                                                            {activity.totalPrice && (
+                                                                <p className="text-sm text-gray-700 font-medium">
+                                                                    ₹{activity.totalPrice}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col items-end gap-2">
+                                                            <Badge
+                                                                variant={activity.status === 'completed' ? 'default' : 'destructive'}
+                                                                className={`text-xs ${activity.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-red-100 text-red-700 hover:bg-red-100'}`}
+                                                            >
+                                                                {activity.status === 'completed' ? 'Completed' : 'No Show'}
+                                                            </Badge>
+                                                            {activity.status === 'completed' && activity.loyaltyPoints && activity.loyaltyPoints > 0 && (
+                                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-full">
+                                                                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                                                                    <span className="text-xs font-semibold text-amber-700">
+                                                                        +{activity.loyaltyPoints || 0} pts
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{activity.title}</h4>
-                                                        <p className="text-xs sm:text-sm text-gray-500">{activity.time}</p>
-                                                    </div>
-                                                    <Badge variant={activity.status === 'completed' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
-                                                        {activity.status}
-                                                    </Badge>
                                                 </div>
                                             ))}
                                         </div>
@@ -759,6 +826,81 @@ export default function Profile() {
                                             </div>
                                         ))}
                                     </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Salon Loyalty Points */}
+                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
+                                <CardHeader>
+                                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                        <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-amber-500 fill-amber-500" />
+                                        Salon Loyalty Points
+                                    </CardTitle>
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        Earn 25 points for each completed service. Reach 50 points for 10% off, 100 points for 20% off!
+                                    </p>
+                                </CardHeader>
+                                <CardContent>
+                                    {user?.salonLoyaltyPoints && Object.keys(user.salonLoyaltyPoints).length > 0 ? (
+                                        <div className="space-y-4">
+                                            {Object.entries(user.salonLoyaltyPoints)
+                                                .sort(([, a], [, b]) => b - a)
+                                                .map(([salonId, points]) => {
+                                                    const discount = points >= 100 ? 20 : points >= 50 ? 10 : 0;
+                                                    const nextMilestone = points >= 100 ? null : points >= 50 ? 100 : 50;
+                                                    const progress = nextMilestone ? (points / nextMilestone) * 100 : 100;
+
+                                                    return (
+                                                        <div key={salonId} className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border-2 border-amber-200">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex-1">
+                                                                    <h4 className="font-bold text-gray-900 text-sm mb-1">
+                                                                        Salon ID: {salonId.slice(0, 8)}...
+                                                                    </h4>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                                                            <span className="text-lg font-bold text-amber-700">
+                                                                                {points} points
+                                                                            </span>
+                                                                        </div>
+                                                                        {discount > 0 && (
+                                                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                                                                                {discount}% OFF
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {nextMilestone && (
+                                                                <div>
+                                                                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                                                        <span>Next reward at {nextMilestone} points</span>
+                                                                        <span>{nextMilestone - points} more needed</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-amber-200 rounded-full h-2">
+                                                                        <div
+                                                                            className="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full transition-all duration-500"
+                                                                            style={{ width: `${progress}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Star className="w-10 h-10 text-amber-500" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Loyalty Points Yet</h3>
+                                            <p className="text-gray-600">
+                                                Complete services at salons to start earning loyalty points and unlock discounts!
+                                            </p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
