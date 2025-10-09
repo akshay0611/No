@@ -24,13 +24,16 @@ export const uploadImageToCloudinary = async (
   folder: string = 'salon_photos'
 ): Promise<{ url: string; publicId: string }> => {
   return new Promise((resolve, reject) => {
+    // Different transformations based on folder
+    const transformation = folder === 'profile_images'
+      ? [{ width: 500, height: 500, crop: 'limit', quality: 'auto' }] // Maintain aspect ratio for profile images
+      : [{ width: 800, height: 600, crop: 'fill', quality: 'auto' }]; // Fill for salon photos
+
     cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type: 'image',
-        transformation: [
-          { width: 800, height: 600, crop: 'fill', quality: 'auto' }
-        ]
+        transformation
       },
       (error, result) => {
         if (error) {

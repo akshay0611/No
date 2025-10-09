@@ -439,7 +439,7 @@ export default function Profile() {
                                                         <img
                                                             src={user.profileImage}
                                                             alt="Profile"
-                                                            className="w-full h-full rounded-full object-contain bg-white"
+                                                            className="w-full h-full rounded-full object-cover"
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center">
@@ -767,6 +767,18 @@ export default function Profile() {
 
                 </div>
             </div>
+
+            {/* Image Crop Modal */}
+            {showCropModal && selectedImage && (
+                <ImageCropModal
+                    image={selectedImage}
+                    onCropComplete={handleCroppedImage}
+                    onClose={() => {
+                        setShowCropModal(false);
+                        setSelectedImage(null);
+                    }}
+                />
+            )}
         </>
     );
 }
