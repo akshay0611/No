@@ -98,23 +98,31 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
     }
   }, [salon.latitude, salon.longitude, salon.manualLocation, salon.fullAddress, salon.location, resolvedAddress]);
 
+  // Helper function to capitalize each word
+  const capitalizeWords = (text: string) => {
+    return text
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const getDisplayLocation = () => {
     // Priority order: manualLocation > fullAddress > location > resolvedAddress > coordinates-based fallback
     if (salon.manualLocation && salon.manualLocation.trim()) {
-      return salon.manualLocation;
+      return capitalizeWords(salon.manualLocation);
     }
 
     if (salon.fullAddress && salon.fullAddress.trim()) {
-      return salon.fullAddress;
+      return capitalizeWords(salon.fullAddress);
     }
 
     if (salon.location && salon.location.trim()) {
-      return salon.location;
+      return capitalizeWords(salon.location);
     }
 
     // Use resolved address from coordinates
     if (resolvedAddress) {
-      return resolvedAddress;
+      return capitalizeWords(resolvedAddress);
     }
 
     // If we have coordinates but address is still loading
