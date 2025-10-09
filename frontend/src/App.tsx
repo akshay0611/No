@@ -19,6 +19,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import HelpCenter from "./pages/HelpCenter";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "@/pages/not-found";
 import SkeletonLoadingScreen from "./components/SkeletonLoadingScreen";
 import IntroScreen from "./components/IntroScreen";
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/terms" component={TermsOfService} />
       <Route path="/help" component={HelpCenter} />
       <Route path="/profile" component={Profile} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

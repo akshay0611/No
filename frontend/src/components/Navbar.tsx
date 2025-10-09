@@ -23,6 +23,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<UserCategory>(getUserCategory() || 'unisex');
   const { toast } = useToast();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Update local state when category changes in localStorage
   useEffect(() => {
@@ -84,8 +85,18 @@ export default function Navbar() {
 
                   {/* Profile Icon */}
                   <Link href="/profile">
-                    <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer">
-                      <User className="h-4 w-4" />
+                    <div className="w-8 h-8 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden">
+                      {user.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
+                          <User className="h-4 w-4" />
+                        </div>
+                      )}
                     </div>
                   </Link>
                 </>
@@ -114,8 +125,8 @@ export default function Navbar() {
                 <Link
                   href="/"
                   className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${location === '/'
-                      ? 'text-teal-600 bg-teal-50'
-                      : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
+                    ? 'text-teal-600 bg-teal-50'
+                    : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                     }`}
                   data-testid="link-discover"
                 >
@@ -126,8 +137,8 @@ export default function Navbar() {
                     <Link
                       href="/queue"
                       className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 relative ${location === '/queue'
-                          ? 'text-teal-600 bg-teal-50'
-                          : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
+                        ? 'text-teal-600 bg-teal-50'
+                        : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                         }`}
                       data-testid="link-queue"
                     >
@@ -138,8 +149,8 @@ export default function Navbar() {
                       <Link
                         href="/dashboard"
                         className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${location === '/dashboard'
-                            ? 'text-teal-600 bg-teal-50'
-                            : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
+                          ? 'text-teal-600 bg-teal-50'
+                          : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                           }`}
                         data-testid="link-dashboard"
                       >
@@ -155,8 +166,18 @@ export default function Navbar() {
                 <div className="flex items-center space-x-4 ml-8">
                   <Link href="/profile">
                     <div className="flex items-center space-x-2 hover:bg-teal-50 rounded-lg p-2 transition-all duration-200 cursor-pointer">
-                      <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium shadow-md">
-                        <User className="h-4 w-4" />
+                      <div className="w-8 h-8 rounded-full shadow-md overflow-hidden">
+                        {user.profileImage ? (
+                          <img
+                            src={user.profileImage}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
+                            <User className="h-4 w-4" />
+                          </div>
+                        )}
                       </div>
                       <span className="text-sm text-gray-600 font-medium" data-testid="text-username">
                         {user.name?.split(' ')[0] || 'User'}
@@ -204,13 +225,23 @@ export default function Navbar() {
               </Link>
             )}
 
-            <Sheet>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <button
                   className="flex flex-col items-center py-2 px-3 rounded-lg text-gray-600"
                 >
-                  <div className="w-5 h-5 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-medium mb-1">
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  <div className="w-5 h-5 rounded-full overflow-hidden mb-1">
+                    {user.profileImage ? (
+                      <img
+                        src={user.profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white text-xs font-medium">
+                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                    )}
                   </div>
                   <span className="text-xs font-medium">Profile</span>
                 </button>
@@ -218,8 +249,18 @@ export default function Navbar() {
               <SheetContent>
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-medium">
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
+                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                      {user.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
+                          {user.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">{user.name || 'User'}</p>
@@ -230,6 +271,7 @@ export default function Navbar() {
 
                 <Link
                   href="/profile"
+                  onClick={() => setIsSheetOpen(false)}
                   className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <User className="h-4 w-4" />
@@ -238,6 +280,7 @@ export default function Navbar() {
 
                 <Link
                   href="/settings"
+                  onClick={() => setIsSheetOpen(false)}
                   className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Settings className="h-4 w-4" />
@@ -290,6 +333,7 @@ export default function Navbar() {
                 <div className="border-t border-gray-100 mt-2 pt-2">
                   <button
                     onClick={() => {
+                      setIsSheetOpen(false);
                       logout();
                     }}
                     className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
