@@ -85,12 +85,12 @@ export default function Navbar() {
 
                   {/* Profile Icon */}
                   <Link href="/profile">
-                    <div className="w-8 h-8 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden">
+                    <div className="w-8 h-8 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden bg-white">
                       {user.profileImage ? (
                         <img
                           src={user.profileImage}
                           alt="Profile"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
@@ -166,12 +166,12 @@ export default function Navbar() {
                 <div className="flex items-center space-x-4 ml-8">
                   <Link href="/profile">
                     <div className="flex items-center space-x-2 hover:bg-teal-50 rounded-lg p-2 transition-all duration-200 cursor-pointer">
-                      <div className="w-8 h-8 rounded-full shadow-md overflow-hidden">
+                      <div className="w-8 h-8 rounded-full shadow-md overflow-hidden bg-white">
                         {user.profileImage ? (
                           <img
                             src={user.profileImage}
                             alt="Profile"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
@@ -230,12 +230,12 @@ export default function Navbar() {
                 <button
                   className="flex flex-col items-center py-2 px-3 rounded-lg text-gray-600"
                 >
-                  <div className="w-5 h-5 rounded-full overflow-hidden mb-1">
+                  <div className="w-5 h-5 rounded-full overflow-hidden mb-1 bg-white">
                     {user.profileImage ? (
                       <img
                         src={user.profileImage}
                         alt="Profile"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white text-xs font-medium">
@@ -249,12 +249,12 @@ export default function Navbar() {
               <SheetContent>
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
                       {user.profileImage ? (
                         <img
                           src={user.profileImage}
                           alt="Profile"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">

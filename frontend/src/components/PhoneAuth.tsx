@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Phone, ArrowLeft } from "lucide-react";
 
 interface PhoneAuthProps {
   onOTPSent: (phoneNumber: string) => void;
@@ -7,22 +8,31 @@ interface PhoneAuthProps {
   onSwitchToAdmin?: () => void;
 }
 
-export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps) {
+export default function PhoneAuth({ onOTPSent, onBack, onSwitchToAdmin }: PhoneAuthProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const countryCode = "+91"; // Fixed to India only
+  const countryCode = "+91";
 
   const formatPhoneNumber = (value: string) => {
-    const digits = value.replace(/\D/g, '');
+    // Remove all non-digits
+    let digits = value.replace(/\D/g, '');
+    
+    // Remove leading zeros
+    digits = digits.replace(/^0+/, '');
+    
+    // Limit to 10 digits
+    digits = digits.slice(0, 10);
+    
+    // Format with space after 5 digits
     if (digits.length <= 5) return digits;
     return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
   };
 
   const validatePhoneNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
+    const digits = phone.replace(/\D/g, '').replace(/^0+/, '');
     return digits.length === 10 && /^[6-9]/.test(digits);
   };
 
@@ -37,7 +47,7 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
     const fullPhoneNumber = `${countryCode}${cleanPhone}`;
 
     if (!validatePhoneNumber(phoneNumber)) {
-      setError("Please enter a valid phone number");
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
 
@@ -48,7 +58,6 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
       const { api } = await import("../lib/api");
       const response = await api.auth.sendOTP(fullPhoneNumber);
 
-      // Store OTP for dev/debug
       if (response.debug?.otp) {
         localStorage.setItem("debug_otp", response.debug.otp);
         toast({
@@ -78,102 +87,125 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isLoading && phoneNumber.trim()) {
+      handleSendOTP();
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Banner Section */}
-      <div className="bg-gradient-to-br from-teal-600 to-teal-700 px-6 py-12 relative overflow-hidden">
-        <div className="max-w-md mx-auto relative z-10">
-          {/* Logo */}
-          <div className="mb-6">
-            <img
-              src="/loadlogo.png"
-              alt="YEF Samrat Logo"
-              className="h-20 w-auto brightness-0 invert"
-            />
-          </div>
-
-          {/* Banner Content */}
-          <div className="text-white">
-            <h2 className="text-2xl font-bold mb-2">India's Leading Salon</h2>
-            <h3 className="text-2xl font-bold mb-3">Booking Platform</h3>
-            <p className="text-teal-100 text-sm">Book appointments with ease</p>
-          </div>
-        </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full -translate-y-32 translate-x-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-800/20 rounded-full translate-y-24 -translate-x-24"></div>
+    <div className="fixed inset-0 z-50  overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src="/4.png"
+          alt="Background"
+          className="w-full h-full object-cover"
+        />
+       
       </div>
 
-      {/* Form Section */}
-      <div className="px-6 py-8">
-        <div className="max-w-md mx-auto">
-          {/* Welcome Section */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold font-bricolage text-gray-900 mb-2">Get Started</h1>
-            <p className="text-gray-600 text-sm"> Login to continue where you left off, or sign up to explore the app.</p>
+      {/* Content */}
+      <div className="relative flex flex-col h-full">
+
+
+
+
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col justify-center items-center px-4 py-6">
+          {/* Logo & Hero Text */}
+          <div className="text-center mb-6">
+            <img
+              src="/loadlogo.png"
+              alt="SmartQ Logo"
+              className="h-24 w-auto drop-shadow-2xl mx-auto mb-2"
+            />
+            <h1 className="text-3xl font-bold text-white mb-2 leading-tight">
+              India's Leading Salon<br />Booking Platform
+            </h1>
+            <p className="text-white/80 text-base font-medium">
+              Book appointments with ease
+            </p>
           </div>
 
-          {/* Form */}
-          <div className="space-y-4">
-            {/* Phone Input */}
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 5a2 2 0 0 1 2-2h3.28a1 1 0 0 1 .948.684l1.498 4.493a1 1 0 0 1-.502 1.21l-2.257 1.13a11.042 11.042 0 0 0 5.516 5.516l1.13-2.257a1 1 0 0 1 1.21-.502l4.493 1.498a1 1 0 0 1 .684.949V19a2 2 0 0 1-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-              <div className="flex">
-                <div className="w-18 h-14 pl-12 pr-2 text-gray-700 bg-gray-100 border-0 rounded-l-lg flex items-center justify-center font-medium">
-                  +91
-                </div>
-
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  className="flex-1 h-14 px-4 text-gray-700 bg-gray-100 border-0 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder-gray-500"
-                  maxLength={11}
-                  autoComplete="tel"
-                />
-              </div>
+          {/* Auth Card */}
+          <div className="w-full max-w-sm bg-white/95 backdrop-blur-md rounded-2xl px-6 py-8 shadow-2xl border border-white/20">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-xl font-bold text-gray-900 mb-1.5">Get Started</h1>
+              <p className="text-gray-500 text-xs leading-relaxed">
+                Login to continue where you left off, or sign up to explore the app.
+              </p>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-500 mt-2" role="alert">
-                {error}
-              </p>
-            )}
-
-
-            {/* Sign In Button */}
-            <button
-              onClick={handleSendOTP}
-              disabled={isLoading || !phoneNumber.trim()}
-              className="w-full h-14 text-white font-semibold bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 mt-8"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Signing in...
+            {/* Phone Input */}
+            <div className="space-y-4">
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+                  <Phone className="w-4 h-4" />
                 </div>
-              ) : (
-                "Sign in"
+                <div className="flex">
+                  <div className="w-16 h-11 pl-11 pr-2 text-gray-700 bg-gray-50 border border-gray-300 rounded-l-xl flex items-center justify-center font-semibold text-sm">
+                    +91
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    onKeyPress={handleKeyPress}
+                    className="flex-1 h-11 px-4 text-gray-900 bg-gray-50 border border-l-0 border-gray-300 rounded-r-xl focus:outline-none focus:border-teal-500 focus:bg-white placeholder-gray-400 transition-all text-sm"
+                    maxLength={11}
+                    autoComplete="tel"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-2.5">
+                  <p className="text-xs text-red-600">{error}</p>
+                </div>
               )}
-            </button>
+
+              {/* Sign In Button */}
+              <button
+                onClick={handleSendOTP}
+                disabled={isLoading || !phoneNumber.trim()}
+                className="w-full h-11 text-white font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Sending OTP...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </div>
+
+            {/* Admin Login */}
+            {onSwitchToAdmin && (
+              <div className="text-center mt-6 pt-5 border-t border-gray-200">
+                <p className="text-gray-500 text-xs">
+                  Salon Owner?{" "}
+                  <button
+                    className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
+                    onClick={onSwitchToAdmin}
+                  >
+                    Admin Login
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Admin Login */}
-          <div className="text-center mt-8">
-            <p className="text-gray-600">
-              Salon Owner?{" "}
-              <button
-                className="text-orange-500 font-medium hover:underline"
-                onClick={onSwitchToAdmin}
-              >
-                Admin Login
-              </button>
+          {/* Trust Badge */}
+          <div className="text-center mt-4">
+            <p className="text-white/60 text-xs">
+              🔒 Your data is secure and encrypted
             </p>
           </div>
         </div>
