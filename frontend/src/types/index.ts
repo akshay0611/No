@@ -5,6 +5,9 @@ export interface User {
   email: string;
   phone?: string;
   role: string;
+  location?: string;
+  bio?: string;
+  profileImage?: string;
   loyaltyPoints: number;
   favoriteSalons: string[];
   createdAt: Date;

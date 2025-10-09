@@ -26,6 +26,9 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, unique: true, sparse: true },
   password: { type: String }, // Made optional for phone auth
   role: { type: String, required: true, default: 'customer', enum: ['customer', 'salon_owner'] },
+  location: { type: String },
+  bio: { type: String },
+  profileImage: { type: String },
   loyaltyPoints: { type: Number, default: 0 },
   favoriteSalons: { type: [String], default: [] },
   // Verification fields
