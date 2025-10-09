@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,13 +92,13 @@ export default function Profile() {
         try {
             // Import API dynamically to avoid circular dependencies
             const { api } = await import("../lib/api");
-            
+
             // Update profile via API
             await api.auth.completeProfile(formData.name, formData.email || undefined);
-            
+
             // Save category preference
             setUserCategory(selectedCategory);
-            
+
             // Update user context with new data
             if (user) {
                 const updatedUser = {
@@ -139,43 +139,93 @@ export default function Profile() {
         setIsEditing(false);
     };
 
-    const userStats = [
-        { label: "Queues Joined", value: "47", icon: Clock, color: "purple" },
-        { label: "Favorite Salons", value: "12", icon: Heart, color: "pink" },
-        { label: "Reviews Written", value: "23", icon: Star, color: "yellow" },
-        { label: "Member Since", value: "2024", icon: Calendar, color: "blue" }
-    ];
+    // Fetch user activity data
+    const fetchActivityData = async () => {
+        try {
+            const { api } = await import("../lib/api");
 
-    const recentActivity = [
-        {
-            type: "queue",
-            title: "Joined queue at Glamour Studio",
-            time: "2 hours ago",
-            status: "completed",
-            icon: Clock
-        },
-        {
-            type: "review",
-            title: "Reviewed Hair & Beauty Lounge",
-            time: "1 day ago",
-            status: "completed",
-            icon: Star
-        },
-        {
-            type: "favorite",
-            title: "Added Trendy Cuts to favorites",
-            time: "3 days ago",
-            status: "completed",
-            icon: Heart
-        },
-        {
-            type: "queue",
-            title: "Joined queue at Style Central",
-            time: "1 week ago",
-            status: "cancelled",
-            icon: Clock
+            // Fetch queue history
+            const queues = await api.queue.getMy();
+
+            // Calculate stats
+            const totalQueues = queues.length;
+            const favoritesCount = user?.favoriteSalons?.length || 0;
+
+            // Get member since year
+            const memberSince = user?.createdAt
+                ? new Date(user.createdAt).getFullYear().toString()
+                : new Date().getFullYear().toString();
+
+            // Update stats
+            setUserStats([
+                { label: "Queues Joined", value: totalQueues.toString(), icon: Clock, color: "purple" },
+                { label: "Favorite Salons", value: favoritesCount.toString(), icon: Heart, color: "pink" },
+                { label: "Reviews Written", value: "0", icon: Star, color: "yellow" },
+                { label: "Member Since", value: memberSince, icon: Calendar, color: "blue" }
+            ]);
+
+            // Format activity from queues
+            const activities = queues
+                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 10) // Get last 10 activities
+                .map((queue: any) => {
+                    const timeAgo = getTimeAgo(new Date(queue.createdAt));
+                    const salonName = queue.salon?.name || "Unknown Salon";
+
+                    return {
+                        type: "queue",
+                        title: `Joined queue at ${salonName}`,
+                        time: timeAgo,
+                        status: queue.status === 'completed' ? 'completed' :
+                            queue.status === 'cancelled' ? 'cancelled' :
+                                queue.status === 'in-progress' ? 'completed' : 'completed',
+                        icon: Clock
+                    };
+                });
+
+            setRecentActivity(activities);
+        } catch (error) {
+            console.error('Error fetching activity data:', error);
         }
-    ];
+    };
+
+    // Helper function to calculate time ago
+    const getTimeAgo = (date: Date) => {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        const diffWeeks = Math.floor(diffMs / 604800000);
+
+        if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+        return date.toLocaleDateString();
+    };
+
+    // Fetch activity data on component mount
+    React.useEffect(() => {
+        if (user) {
+            fetchActivityData();
+        }
+    }, [user]);
+
+    const [userStats, setUserStats] = useState([
+        { label: "Queues Joined", value: "0", icon: Clock, color: "purple" },
+        { label: "Favorite Salons", value: "0", icon: Heart, color: "pink" },
+        { label: "Reviews Written", value: "0", icon: Star, color: "yellow" },
+        { label: "Member Since", value: "2024", icon: Calendar, color: "blue" }
+    ]);
+
+    const [recentActivity, setRecentActivity] = useState<Array<{
+        type: string;
+        title: string;
+        time: string;
+        status: string;
+        icon: any;
+    }>>([]);
 
     const achievements = [
         {
@@ -226,37 +276,37 @@ export default function Profile() {
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-500/20 to-teal-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
             </div>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="relative max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 sm:pb-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
+                <div className="mb-6 sm:mb-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">
                                 My Profile
                             </h1>
-                            <p className="text-xl text-gray-600 mt-2">
+                            <p className="text-base sm:text-xl text-gray-600 mt-2">
                                 Manage your account and preferences
                             </p>
                         </div>
-                        <Badge className="bg-gradient-to-r from-teal-100 to-teal-200 text-teal-700 border-0 px-4 py-2">
-                            <Sparkles className="w-4 h-4 mr-2" />
+                        <Badge className="bg-gradient-to-r from-teal-100 to-teal-200 text-teal-700 border-0 px-3 py-1.5 sm:px-4 sm:py-2 self-start sm:self-auto whitespace-nowrap">
+                            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                             Premium Member
                         </Badge>
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="flex space-x-1 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-lg">
+                    <div className="flex overflow-x-auto space-x-1 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-lg scrollbar-hide">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-300 ${activeTab === tab.id
-                                        ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
-                                        : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
+                                className={`flex items-center px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg'
+                                    : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                                     }`}
                             >
-                                <tab.icon className="w-4 h-4 mr-2" />
-                                {tab.label}
+                                <tab.icon className="w-4 h-4 mr-1.5 sm:mr-2" />
+                                <span className="text-sm sm:text-base">{tab.label}</span>
                             </button>
                         ))}
                     </div>
@@ -264,10 +314,10 @@ export default function Profile() {
 
                 {/* Profile Tab */}
                 {activeTab === "profile" && (
-                    <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
                         {/* Profile Card */}
                         <div className="lg:col-span-1">
-                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden">
+                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden mx-1">
                                 <div className="relative">
                                     <div className="h-32 bg-gradient-to-r from-teal-600 to-teal-700"></div>
                                     <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
@@ -292,27 +342,30 @@ export default function Profile() {
                                     </div>
                                 </div>
 
-                                <CardContent className="pt-20 pb-8 text-center">
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                <CardContent className="pt-20 pb-6 sm:pb-8 text-center px-4">
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">
                                         {user?.name || "User Name"}
                                     </h2>
-                                    <p className="text-gray-600 mb-4">
-                                        {user?.email || "user@example.com"}
+                                    <p className="text-sm sm:text-base text-gray-600 mb-4 break-all">
+                                        {user?.phone || "phone-"}
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-gray-500 break-all">
+                                        {user?.email || "+919508212112@placeholder.com"}
                                     </p>
 
                                     {/* User Stats */}
-                                    <div className="grid grid-cols-2 gap-4 mt-6">
+                                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-6">
                                         {userStats.map((stat, index) => (
                                             <div key={index} className="text-center">
-                                                <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-teal-500 to-teal-600' :
-                                                        stat.color === 'pink' ? 'from-pink-500 to-pink-600' :
-                                                            stat.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
-                                                                'from-teal-500 to-teal-600'
+                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 rounded-xl bg-gradient-to-r ${stat.color === 'purple' ? 'from-teal-500 to-teal-600' :
+                                                    stat.color === 'pink' ? 'from-pink-500 to-pink-600' :
+                                                        stat.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
+                                                            'from-teal-500 to-teal-600'
                                                     } flex items-center justify-center`}>
-                                                    <stat.icon className="w-6 h-6 text-white" />
+                                                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                                 </div>
-                                                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                                                <div className="text-sm text-gray-500">{stat.label}</div>
+                                                <div className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</div>
+                                                <div className="text-xs sm:text-sm text-gray-500">{stat.label}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -322,15 +375,15 @@ export default function Profile() {
 
                         {/* Profile Form */}
                         <div className="lg:col-span-2">
-                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle className="text-2xl font-bold text-gray-900">
+                            <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
+                                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
                                         Profile Information
                                     </CardTitle>
                                     {!isEditing ? (
                                         <Button
                                             onClick={() => setIsEditing(true)}
-                                            className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800"
+                                            className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 w-full sm:w-auto"
                                         >
                                             <Edit3 className="w-4 h-4 mr-2" />
                                             Edit Profile
@@ -339,7 +392,7 @@ export default function Profile() {
                                         <div className="flex space-x-2">
                                             <Button
                                                 onClick={handleSave}
-                                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800"
+                                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 flex-1 sm:flex-none"
                                             >
                                                 <Save className="w-4 h-4 mr-2" />
                                                 Save
@@ -347,7 +400,7 @@ export default function Profile() {
                                             <Button
                                                 onClick={handleCancel}
                                                 variant="outline"
-                                                className="border-gray-300"
+                                                className="border-gray-300 flex-1 sm:flex-none"
                                             >
                                                 <X className="w-4 h-4 mr-2" />
                                                 Cancel
@@ -356,8 +409,8 @@ export default function Profile() {
                                     )}
                                 </CardHeader>
 
-                                <CardContent className="space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
+                                <CardContent className="space-y-4 sm:space-y-6">
+                                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-800 mb-2">
                                                 Full Name
@@ -394,7 +447,7 @@ export default function Profile() {
                                         </div>
                                     </div>
 
-                                    <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-800 mb-2">
                                                 Phone Number
@@ -493,32 +546,42 @@ export default function Profile() {
 
                 {/* Activity Tab */}
                 {activeTab === "activity" && (
-                    <div className="space-y-8">
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
+                    <div className="space-y-6 sm:space-y-8">
+                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
                             <CardHeader>
-                                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <TrendingUp className="w-6 h-6 mr-3 text-teal-600" />
+                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
                                     Recent Activity
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    {recentActivity.map((activity, index) => (
-                                        <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activity.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                                }`}>
-                                                <activity.icon className="w-6 h-6" />
+                                {recentActivity.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Clock className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
+                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Activity Yet</h3>
+                                        <p className="text-sm sm:text-base text-gray-500">
+                                            Start joining queues to see your activity here
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 sm:space-y-4">
+                                        {recentActivity.map((activity, index) => (
+                                            <div key={index} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                    }`}>
+                                                    <activity.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-semibold text-sm sm:text-base text-gray-900 truncate">{activity.title}</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-500">{activity.time}</p>
+                                                </div>
+                                                <Badge variant={activity.status === 'completed' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
+                                                    {activity.status}
+                                                </Badge>
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900">{activity.title}</h4>
-                                                <p className="text-sm text-gray-500">{activity.time}</p>
-                                            </div>
-                                            <Badge variant={activity.status === 'completed' ? 'default' : 'destructive'}>
-                                                {activity.status}
-                                            </Badge>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -526,37 +589,37 @@ export default function Profile() {
 
                 {/* Achievements Tab */}
                 {activeTab === "achievements" && (
-                    <div className="space-y-8">
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
+                    <div className="space-y-6 sm:space-y-8">
+                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
                             <CardHeader>
-                                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Award className="w-6 h-6 mr-3 text-teal-600" />
+                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                    <Award className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
                                     Achievements
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid md:grid-cols-2 gap-6">
+                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                                     {achievements.map((achievement, index) => (
-                                        <div key={index} className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${achievement.earned
-                                                ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50'
-                                                : 'border-gray-200 bg-gray-50 hover:border-purple-300'
+                                        <div key={index} className={`relative p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 ${achievement.earned
+                                            ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50'
+                                            : 'border-gray-200 bg-gray-50 hover:border-purple-300'
                                             }`}>
-                                            <div className="flex items-start space-x-4">
-                                                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${achievement.color} flex items-center justify-center ${!achievement.earned ? 'opacity-50' : ''
+                                            <div className="flex items-start space-x-3 sm:space-x-4">
+                                                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${achievement.color} flex items-center justify-center flex-shrink-0 ${!achievement.earned ? 'opacity-50' : ''
                                                     }`}>
-                                                    <achievement.icon className="w-8 h-8 text-white" />
+                                                    <achievement.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                                 </div>
-                                                <div className="flex-1">
+                                                <div className="flex-1 min-w-0">
                                                     <div className="flex items-center space-x-2 mb-2">
-                                                        <h3 className="font-bold text-lg text-gray-900">{achievement.title}</h3>
+                                                        <h3 className="font-bold text-base sm:text-lg text-gray-900">{achievement.title}</h3>
                                                         {achievement.earned && (
-                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
                                                         )}
                                                     </div>
-                                                    <p className="text-gray-600 mb-3">{achievement.description}</p>
+                                                    <p className="text-sm sm:text-base text-gray-600 mb-3">{achievement.description}</p>
                                                     {!achievement.earned && achievement.progress && (
                                                         <div>
-                                                            <div className="flex justify-between text-sm text-gray-500 mb-1">
+                                                            <div className="flex justify-between text-xs sm:text-sm text-gray-500 mb-1">
                                                                 <span>Progress</span>
                                                                 <span>{achievement.progress}%</span>
                                                             </div>
@@ -580,23 +643,23 @@ export default function Profile() {
 
                 {/* Settings Tab */}
                 {activeTab === "settings" && (
-                    <div className="space-y-8">
+                    <div className="space-y-6 sm:space-y-8">
                         {/* Notifications */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
+                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
                             <CardHeader>
-                                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Bell className="w-6 h-6 mr-3 text-teal-600" />
+                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                    <Bell className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-teal-600" />
                                     Notification Preferences
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4 sm:space-y-6">
                                 {Object.entries(notifications).map(([key, value]) => (
-                                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 capitalize">
+                                    <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 capitalize">
                                                 {key.replace(/([A-Z])/g, ' $1').trim()}
                                             </h4>
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
                                                 {key === 'queueUpdates' && 'Get notified about queue status changes'}
                                                 {key === 'promotions' && 'Receive promotional offers and deals'}
                                                 {key === 'reminders' && 'Get reminders about upcoming appointments'}
@@ -608,6 +671,7 @@ export default function Profile() {
                                             onCheckedChange={(checked) =>
                                                 setNotifications({ ...notifications, [key]: checked })
                                             }
+                                            className="flex-shrink-0"
                                         />
                                     </div>
                                 ))}
@@ -615,21 +679,21 @@ export default function Profile() {
                         </Card>
 
                         {/* Privacy Settings */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
+                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
                             <CardHeader>
-                                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Shield className="w-6 h-6 mr-3 text-purple-600" />
+                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-purple-600" />
                                     Privacy Settings
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4 sm:space-y-6">
                                 {Object.entries(privacy).map(([key, value]) => (
-                                    <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 capitalize">
+                                    <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 capitalize">
                                                 {key.replace(/([A-Z])/g, ' $1').trim()}
                                             </h4>
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
                                                 {key === 'profileVisible' && 'Make your profile visible to other users'}
                                                 {key === 'showLocation' && 'Display your location on your profile'}
                                                 {key === 'showPhone' && 'Show your phone number to salons'}
@@ -641,6 +705,7 @@ export default function Profile() {
                                             onCheckedChange={(checked) =>
                                                 setPrivacy({ ...privacy, [key]: checked })
                                             }
+                                            className="flex-shrink-0"
                                         />
                                     </div>
                                 ))}
@@ -648,14 +713,14 @@ export default function Profile() {
                         </Card>
 
                         {/* Password Change */}
-                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
+                        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl mx-1">
                             <CardHeader>
-                                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                    <Lock className="w-6 h-6 mr-3 text-purple-600" />
+                                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+                                    <Lock className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 text-purple-600" />
                                     Change Password
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4 sm:space-y-6">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-800 mb-2">
                                         Current Password
@@ -680,7 +745,7 @@ export default function Profile() {
                                     </div>
                                 </div>
 
-                                <div className="grid md:grid-cols-2 gap-6">
+                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-800 mb-2">
                                             New Password
@@ -710,7 +775,7 @@ export default function Profile() {
                                     </div>
                                 </div>
 
-                                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
+                                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 w-full sm:w-auto">
                                     <Lock className="w-4 h-4 mr-2" />
                                     Update Password
                                 </Button>
