@@ -99,6 +99,11 @@ export class MongoStorage implements IStorage {
     return updatedUser ? updatedUser as unknown as User : undefined;
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await UserModel.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
   // Salons
   async getSalon(id: string): Promise<Salon | undefined> {
     const salon = await SalonModel.findOne({ id }).lean();

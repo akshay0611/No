@@ -444,6 +444,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete account endpoint
+  app.delete('/api/user/account', authenticateToken, async (req, res) => {
+    try {
+      const { password } = req.body;
+
+      // Get current user
+      const user = await storage.getUser(req.user!.userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify password if user has one (email/password auth)
+      if (user.password) {
+        if (!password) {
+          return res.status(400).json({ message: 'Password is required to delete your account' });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          return res.status(400).json({ message: 'Incorrect password' });
+        }
+      }
+
+      // Delete user's profile image from Cloudinary if exists
+      if (user.profileImage) {
+        try {
+          const urlParts = user.profileImage.split('/');
+          const uploadIndex = urlParts.indexOf('upload');
+          if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+            const pathAfterUpload = urlParts.slice(uploadIndex + 2).join('/');
+            const publicId = pathAfterUpload.replace(/\.[^/.]+$/, '');
+            await deleteImageFromCloudinary(publicId);
+          }
+        } catch (error) {
+          console.error('Error deleting profile image:', error);
+        }
+      }
+
+      // Delete the user account (cascade deletes will handle related data)
+      const deleted = await storage.deleteUser(req.user!.userId);
+      
+      if (!deleted) {
+        return res.status(500).json({ message: 'Failed to delete account' });
+      }
+
+      res.json({
+        message: 'Account deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('Delete account error:', error);
+      res.status(500).json({ message: 'Failed to delete account', error });
+    }
+  });
+
   // ====================
   // FAVORITES ROUTES
   // ====================
