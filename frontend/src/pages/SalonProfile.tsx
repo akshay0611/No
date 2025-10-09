@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap, ArrowLeft } from "lucide-react";
+import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap } from "lucide-react";
 import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -29,6 +29,14 @@ const getServiceIcon = (serviceName: string) => {
 const isPopularService = (_serviceId: string, index: number) => {
   // For demo purposes, mark first service as popular
   return index === 0;
+};
+
+// Helper function to capitalize each word
+const capitalizeWords = (text: string) => {
+  return text
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 export default function SalonProfile() {
@@ -237,8 +245,8 @@ export default function SalonProfile() {
                 <div className="flex flex-wrap items-center gap-4 text-gray-600">
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-5 w-5 text-teal-600" />
-                    <span data-testid="text-salon-location" className="font-medium capitalize">
-                      {salon.manualLocation || salon.location}
+                    <span data-testid="text-salon-location" className="font-medium">
+                      {capitalizeWords(salon.manualLocation || salon.location || '')}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 bg-teal-50 px-3 py-1 rounded-full">
