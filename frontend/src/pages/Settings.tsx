@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,14 +10,30 @@ import {
     Lock,
     Eye,
     EyeOff,
+    Trash2,
+    AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Settings() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const { toast } = useToast();
+    const [, setLocation] = useLocation();
     const [showPassword, setShowPassword] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [formData, setFormData] = useState({
         currentPassword: "",
@@ -113,6 +130,58 @@ export default function Settings() {
                 description: error.message || "Failed to update password",
                 variant: "destructive",
             });
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            const token = localStorage.getItem('smartq_token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app'}/api/user/account`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    password: deletePassword || undefined
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to delete account');
+            }
+
+            toast({
+                title: "Account deleted",
+                description: "Your account has been permanently deleted.",
+            });
+
+            // Clear local storage and logout
+            localStorage.removeItem('smartq_token');
+            localStorage.removeItem('smartq_user');
+            logout();
+
+            // Redirect to home page
+            setTimeout(() => {
+                setLocation('/');
+            }, 1000);
+
+        } catch (error: any) {
+            toast({
+                title: "Deletion failed",
+                description: error.message || "Failed to delete account",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteDialog(false);
+            setDeletePassword("");
         }
     };
 
@@ -276,8 +345,86 @@ export default function Settings() {
                             </Button>
                         </CardContent>
                     </Card>
+
+                    {/* Delete Account Section */}
+                    <Card className="border-2 border-red-200 bg-gradient-to-br from-white to-red-50 mx-1">
+                        <CardHeader>
+                            <CardTitle className="text-xl sm:text-2xl font-bold text-red-600 flex items-center">
+                                <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+                                Danger Zone
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                                <div className="flex items-start space-x-3 mb-4">
+                                    <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                                    <div>
+                                        <h3 className="font-semibold text-red-900 mb-2">Delete Your Account</h3>
+                                        <p className="text-sm text-red-700 mb-2">
+                                            Once you delete your account, there is no going back. This action will:
+                                        </p>
+                                        <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                                            <li>Permanently delete your profile and data</li>
+                                            <li>Remove all your reviews and ratings</li>
+                                            <li>Cancel any active queue bookings</li>
+                                            <li>Delete your profile picture</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <Button
+                                    onClick={() => setShowDeleteDialog(true)}
+                                    variant="destructive"
+                                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete My Account
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
+
+            {/* Delete Account Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center text-red-600">
+                            <AlertTriangle className="w-6 h-6 mr-2" />
+                            Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                            <p>
+                                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                            </p>
+                            {(user as any)?.password && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                                        Enter your password to confirm
+                                    </label>
+                                    <Input
+                                        type="password"
+                                        value={deletePassword}
+                                        onChange={(e) => setDeletePassword(e.target.value)}
+                                        placeholder="Enter your password"
+                                        className="border-2 border-gray-300"
+                                    />
+                                </div>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteAccount}
+                            disabled={isDeleting || ((user as any)?.password && !deletePassword)}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete Account'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
