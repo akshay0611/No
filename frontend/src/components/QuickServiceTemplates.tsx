@@ -319,9 +319,61 @@ export default function QuickServiceTemplates({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-1 block">
-                Description
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-sm font-medium text-gray-900">
+                  Description
+                </label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs flex items-center gap-1 h-7 px-2 text-teal-600 border-teal-300 hover:bg-teal-50"
+                  onClick={async () => {
+                    if (!editForm.name) {
+                      toast({
+                        title: "Service name required",
+                        description: "Please enter a service name first",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    try {
+                      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/generate-description`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ serviceName: editForm.name }),
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error("Failed to generate description");
+                      }
+                      
+                      const data = await response.json();
+                      setEditForm({ ...editForm, description: data.description });
+                      
+                      toast({
+                        title: "Description generated",
+                        description: "AI has created a description for your service",
+                        variant: "default",
+                      });
+                    } catch (error) {
+                      console.error("Error generating description:", error);
+                      toast({
+                        title: "Generation failed",
+                        description: "Could not generate description. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={!editForm.name}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Generate with AI
+                </Button>
+              </div>
               <Textarea
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
