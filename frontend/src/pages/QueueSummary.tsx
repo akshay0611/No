@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, Tag, ShoppingCart, Clock, CheckCircle2, Sparkles, Receipt } from "lucide-react";
+import { ArrowLeft, Trash2, Tag, ShoppingCart, Clock, CheckCircle2, Sparkles, Receipt, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -41,7 +41,14 @@ export default function QueueSummary() {
 
   const subtotal = getTotalPrice();
   const discountAmount = selectedOffer ? (subtotal * selectedOffer.discount) / 100 : 0;
-  const finalTotal = subtotal - discountAmount;
+  
+  // Calculate loyalty discount
+  const salonId = items[0]?.salonId;
+  const salonPoints = user?.salonLoyaltyPoints?.[salonId] || 0;
+  const loyaltyDiscount = salonPoints >= 100 ? 20 : salonPoints >= 50 ? 10 : 0;
+  const loyaltyDiscountAmount = loyaltyDiscount > 0 ? (subtotal * loyaltyDiscount) / 100 : 0;
+  
+  const finalTotal = subtotal - discountAmount - loyaltyDiscountAmount;
 
   const joinQueueMutation = useMutation({
     mutationFn: async () => {
@@ -377,7 +384,7 @@ export default function QueueSummary() {
                   <span className="text-lg font-semibold">₹{subtotal.toFixed(2)}</span>
                 </div>
 
-                {/* Discount */}
+                {/* Offer Discount */}
                 {selectedOffer && (
                   <div className="flex justify-between items-center p-3 bg-green-50 border-2 border-green-200 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -393,6 +400,26 @@ export default function QueueSummary() {
                     </div>
                     <span className="text-lg font-bold text-green-600">
                       -₹{discountAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Loyalty Discount */}
+                {loyaltyDiscount > 0 && (
+                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                      <div>
+                        <span className="font-semibold text-amber-700 block">
+                          Loyalty Rewards
+                        </span>
+                        <span className="text-xs text-amber-600">
+                          {loyaltyDiscount}% OFF • {salonPoints} points
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-lg font-bold text-amber-600">
+                      -₹{loyaltyDiscountAmount.toFixed(2)}
                     </span>
                   </div>
                 )}
