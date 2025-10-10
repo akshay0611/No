@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get current user to delete old image if exists
       const currentUser = await storage.getUser(req.user!.userId);
-      
+
       // Delete old profile image from Cloudinary if exists
       if (currentUser?.profileImage) {
         try {
@@ -484,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete the user account (cascade deletes will handle related data)
       const deleted = await storage.deleteUser(req.user!.userId);
-      
+
       if (!deleted) {
         return res.status(500).json({ message: 'Failed to delete account' });
       }
@@ -956,6 +956,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const queue = await storage.createQueue(queueData);
 
+      // Check if loyalty discount was applied and deduct points
+      const user = await storage.getUser(req.user!.userId);
+      if (user && user.salonLoyaltyPoints) {
+        const salonPoints = user.salonLoyaltyPoints[queueData.salonId] || 0;
+
+        // Determine if discount was applied based on points
+        let pointsToDeduct = 0;
+        if (salonPoints >= 100) {
+          // 20% discount was applied, deduct 100 points
+          pointsToDeduct = 100;
+        } else if (salonPoints >= 50) {
+          // 10% discount was applied, deduct 50 points
+          pointsToDeduct = 50;
+        }
+
+        if (pointsToDeduct > 0) {
+          const updatedSalonPoints = { ...user.salonLoyaltyPoints };
+          updatedSalonPoints[queueData.salonId] = salonPoints - pointsToDeduct;
+
+          await storage.updateUser(req.user!.userId, {
+            loyaltyPoints: (user.loyaltyPoints || 0) - pointsToDeduct,
+            salonLoyaltyPoints: updatedSalonPoints
+          });
+
+          console.log(`Deducted ${pointsToDeduct} loyalty points from user ${req.user!.userId} for salon ${queueData.salonId}`);
+        }
+      }
+
       // Broadcast queue update
       const salonQueues = await storage.getQueuesBySalon(queueData.salonId);
       broadcastQueueUpdate(queueData.salonId, { queues: salonQueues });
@@ -994,13 +1022,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const salonLoyaltyPoints = user.salonLoyaltyPoints || {};
           const currentPoints = salonLoyaltyPoints[queue.salonId] || 0;
           const newPoints = currentPoints + 25;
-          
+
           // Update salon-specific loyalty points
           salonLoyaltyPoints[queue.salonId] = newPoints;
-          
+
           // Update total loyalty points
           const totalLoyaltyPoints = (user.loyaltyPoints || 0) + 25;
-          
+
           await storage.updateUser(queue.userId, {
             loyaltyPoints: totalLoyaltyPoints,
             salonLoyaltyPoints: salonLoyaltyPoints
