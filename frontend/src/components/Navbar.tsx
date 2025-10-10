@@ -32,52 +32,22 @@ export default function Navbar() {
                   <Clock className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-lg font-bold bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent md:text-2xl">
-                  SmartQ
+                  AltQ
                 </span>
               </Link>
             </div>
 
-            {/* Mobile Right Section */}
+            {/* Right Section - Sign In Button (Desktop Only) */}
             <div className="flex items-center space-x-2">
-              {user ? (
-                <>
-                  {/* Mobile Notifications */}
-                  <button
-                    className="relative p-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200"
-                    data-testid="button-notifications"
+              {!user && (
+                <Link href="/auth" data-testid="link-auth">
+                  <Button
+                    className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium px-4 py-2 text-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                    data-testid="button-signin"
                   >
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
-
-                  {/* Profile Icon */}
-                  <Link href="/profile">
-                    <div className="w-8 h-8 rounded-full shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden bg-white">
-                      {user.profileImage ? (
-                        <img
-                          src={user.profileImage}
-                          alt="Profile"
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white font-medium">
-                          <User className="h-4 w-4" />
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                </>
-              ) : (
-                <div className="hidden md:block">
-                  <Link href="/auth" data-testid="link-auth">
-                    <Button
-                      className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium px-4 py-2 text-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-                      data-testid="button-signin"
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                </div>
+                    Sign In
+                  </Button>
+                </Link>
               )}
             </div>
           </div>

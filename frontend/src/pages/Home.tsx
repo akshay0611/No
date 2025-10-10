@@ -448,31 +448,14 @@ export default function Home() {
         /* Logged In User - Clean Header */
         <section className="bg-white px-4 py-6 relative overflow-hidden shadow-md">
           <div className="max-w-7xl mx-auto">
-            {/* Header with Profile and Logo */}
+            {/* Header with Greeting */}
             <div className="flex items-center justify-between mb-6">
-              {/* Left: Profile */}
-              <div className="flex items-center space-x-3">
-                <Link href="/profile">
-                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white">
-                    {user.profileImage ? (
-                      <img
-                        src={user.profileImage}
-                        alt={user.name || 'User'}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                        <UserIcon className="w-8 h-8 text-blue-400" />
-                      </div>
-                    )}
-                  </div>
-                </Link>
-                <div>
-                  <p className="text-gray-500 text-sm">Hello</p>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {user.name?.split(' ')[1] || user.name || 'User'}
-                  </h1>
-                </div>
+              {/* Left: Greeting */}
+              <div>
+                <p className="text-gray-500 text-sm">Hello, {user.name?.split(' ')[0] || 'User'}! 👋</p>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Discover Your Perfect Salon
+                </h1>
               </div>
 
               {/* Right: Animation - Peeking from edge */}
