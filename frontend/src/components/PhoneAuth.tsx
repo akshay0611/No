@@ -33,6 +33,9 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
       const { api } = await import("../lib/api");
       const response = await api.auth.googleAuth(credentialResponse.credential);
 
+      console.log('Google auth response:', response);
+      console.log('User profileImage:', response.user.profileImage);
+
       // Store token and user data
       localStorage.setItem('smartq_token', response.token);
       localStorage.setItem('smartq_user', JSON.stringify(response.user));
