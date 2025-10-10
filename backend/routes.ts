@@ -22,12 +22,14 @@ import otpService from "./otpService";
 import { wsManager } from "./websocket";
 import dotenv from "dotenv";
 import { OAuth2Client } from 'google-auth-library';
+import { generateServiceDescription } from "./geminiService";
 
 // Load environment variables
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "smartq-secret-key";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const storage = new MongoStorage();
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -843,7 +845,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/services', authenticateToken, async (req, res) => {
+  app.post('/api/generate-description', async (req, res) => {
+  try {
+    const { serviceName } = req.body;
+    
+    if (!serviceName) {
+      return res.status(400).json({ error: 'Service name is required' });
+    }
+    
+    const description = await generateServiceDescription(serviceName);
+    return res.json({ description });
+  } catch (error: any) {
+    console.error('Error generating description:', error);
+    return res.status(500).json({ error: 'Failed to generate description' });
+  }
+});
+
+app.post('/api/services', authenticateToken, async (req, res) => {
     try {
       console.log('Service creation request received:', req.body);
       console.log('User:', req.user);

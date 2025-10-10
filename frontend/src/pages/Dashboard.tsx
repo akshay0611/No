@@ -28,6 +28,7 @@ import {
   UserX,
   PlayCircle,
   Phone,
+  Sparkles,
   MessageCircle,
   Camera,
   ChevronDown,
@@ -1265,7 +1266,60 @@ export default function Dashboard() {
                                     name="description"
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel className="text-sm font-medium text-teal-900">Description</FormLabel>
+                                        <div className="flex justify-between items-center">
+                                          <FormLabel className="text-sm font-medium text-teal-900">Description</FormLabel>
+                                          <Button 
+                                            type="button" 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="text-xs flex items-center gap-1 h-7 px-2 text-teal-600 border-teal-300 hover:bg-teal-50"
+                                            onClick={async () => {
+                                              const serviceName = serviceForm.getValues("name");
+                                              if (!serviceName) {
+                                                toast({
+                                                  title: "Service name required",
+                                                  description: "Please enter a service name first",
+                                                  variant: "destructive",
+                                                });
+                                                return;
+                                              }
+                                              
+                                              try {
+                                                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/generate-description`, {
+                                                  method: "POST",
+                                                  headers: {
+                                                    "Content-Type": "application/json",
+                                                  },
+                                                  body: JSON.stringify({ serviceName }),
+                                                });
+                                                
+                                                if (!response.ok) {
+                                                  throw new Error("Failed to generate description");
+                                                }
+                                                
+                                                const data = await response.json();
+                                                field.onChange(data.description);
+                                                
+                                                toast({
+                                                  title: "Description generated",
+                                                  description: "AI has created a description for your service",
+                                                  variant: "default",
+                                                });
+                                              } catch (error) {
+                                                console.error("Error generating description:", error);
+                                                toast({
+                                                  title: "Generation failed",
+                                                  description: "Could not generate description. Please try again.",
+                                                  variant: "destructive",
+                                                });
+                                              }
+                                            }}
+                                            disabled={!serviceForm.getValues("name")}
+                                          >
+                                            <Sparkles className="h-3 w-3" />
+                                            Generate with AI
+                                          </Button>
+                                        </div>
                                         <FormControl>
                                           <Textarea
                                             placeholder="Service description..."
