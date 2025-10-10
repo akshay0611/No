@@ -190,7 +190,7 @@ export default function AdminLoginFlow({
           className="w-full h-full object-cover"
         />
 
-      </div>
+      </div> 
 
       {/* Content */}
       <div className="relative flex flex-col h-full overflow-y-auto">
