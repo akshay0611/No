@@ -200,7 +200,7 @@ export default function AdminLoginFlow({
           <div className="flex justify-center mb-6">
             <img
               src="/loadlogo.png"
-              alt="SmartQ Logo"
+              alt="SmartQ Logo" 
               className="h-16 w-auto drop-shadow-2xl"
             />
           </div>
