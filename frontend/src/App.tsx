@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { CartProvider } from "./context/CartContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import NewAuthPage from "./pages/NewAuthPage";
@@ -26,6 +27,8 @@ import IntroScreen from "./components/IntroScreen";
 import PhoneAuthFlow from "./components/PhoneAuthFlow";
 import CategorySelection from "./components/CategorySelection";
 import { UserCategory, getUserCategory, setUserCategory, clearUserCategory } from "./utils/categoryUtils";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 
 function Router() {
@@ -155,7 +158,7 @@ function App() {
   console.log('App render, currentPhase:', currentPhase);
 
   return (
-    <>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       {currentPhase === 'auth' ? (
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
@@ -202,7 +205,7 @@ function App() {
           </TooltipProvider>
         </QueryClientProvider>
       )}
-    </>
+    </GoogleOAuthProvider>
   );
 }
 

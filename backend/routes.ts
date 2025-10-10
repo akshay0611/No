@@ -21,12 +21,15 @@ import { uploadImageToCloudinary, deleteImageFromCloudinary } from "./cloudinary
 import otpService from "./otpService";
 import { wsManager } from "./websocket";
 import dotenv from "dotenv";
+import { OAuth2Client } from 'google-auth-library';
 
 // Load environment variables
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "smartq-secret-key";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const storage = new MongoStorage();
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Configure multer for file uploads
 const upload = multer({
@@ -168,6 +171,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ...user, password: undefined });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error });
+    }
+  });
+
+  // ====================
+  // GOOGLE AUTHENTICATION ROUTES
+  // ====================
+  app.post('/api/auth/google', async (req, res) => {
+    try {
+      const { credential } = req.body;
+
+      if (!credential) {
+        return res.status(400).json({ message: 'Google credential is required' });
+      }
+
+      // Verify the Google token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ message: 'Invalid Google token' });
+      }
+
+      const { email, name, picture, sub: googleId } = payload;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email not provided by Google' });
+      }
+
+      // Check if user already exists
+      let user = await storage.getUserByEmail(email);
+      let isNewUser = false;
+
+      if (!user) {
+        // Create new user with Google data
+        isNewUser = true;
+        user = await storage.createUser({
+          name: name || '',
+          email: email,
+          phone: null,
+          password: null, // No password for Google auth
+          role: 'customer',
+          profileImage: picture,
+          emailVerified: true, // Google emails are verified
+          phoneVerified: false,
+          isVerified: true, // Consider Google auth as verified
+        });
+      } else {
+        // Update existing user's profile image if they don't have one
+        if (!user.profileImage && picture) {
+          await storage.updateUser(user.id, {
+            profileImage: picture,
+            emailVerified: true,
+            isVerified: true,
+          });
+          user = await storage.getUser(user.id);
+        }
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: user!.id,
+          email: user!.email,
+          role: user!.role || 'customer'
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // Return user data without sensitive fields
+      const { password, phoneOTP, emailOTP, otpExpiry, ...userWithoutSensitiveData } = user!;
+
+      res.json({
+        user: userWithoutSensitiveData,
+        token,
+        isNewUser,
+        message: isNewUser ? 'Account created successfully' : 'Logged in successfully'
+      });
+
+    } catch (error) {
+      console.error('Google auth error:', error);
+      res.status(500).json({ message: 'Failed to authenticate with Google', error });
     }
   });
 

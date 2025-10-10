@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, ArrowLeft } from "lucide-react";
+import { Phone } from "lucide-react";
+import { GoogleLogin } from '@react-oauth/google';
 
 interface PhoneAuthProps {
   onOTPSent: (phoneNumber: string) => void;
@@ -8,13 +9,62 @@ interface PhoneAuthProps {
   onSwitchToAdmin?: () => void;
 }
 
-export default function PhoneAuth({ onOTPSent, onBack, onSwitchToAdmin }: PhoneAuthProps) {
+export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const countryCode = "+91";
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) {
+      toast({
+        title: "Error",
+        description: "Failed to get Google credentials",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const { api } = await import("../lib/api");
+      const response = await api.auth.googleAuth(credentialResponse.credential);
+
+      // Store token and user data
+      localStorage.setItem('smartq_token', response.token);
+      localStorage.setItem('smartq_user', JSON.stringify(response.user));
+
+      toast({
+        title: response.isNewUser ? "Welcome!" : "Welcome back!",
+        description: response.isNewUser 
+          ? "Your account has been created successfully" 
+          : "You've been logged in successfully",
+      });
+
+      // Reload page to trigger auth context update
+      window.location.reload();
+    } catch (err: any) {
+      const errorMessage = err.message || "Failed to sign in with Google";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google sign-in failed. Please try again.");
+    toast({
+      title: "Error",
+      description: "Failed to sign in with Google",
+      variant: "destructive",
+    });
+  };
 
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digits
@@ -184,6 +234,30 @@ export default function PhoneAuth({ onOTPSent, onBack, onSwitchToAdmin }: PhoneA
                   "Sign In"
                 )}
               </button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-white text-gray-500">OR</span>
+                </div>
+              </div>
+
+              {/* Google Sign In Button */}
+              <div className="w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  theme="outline"
+                  size="large"
+                  text="continue_with"
+                  shape="rectangular"
+                  width="100%"
+                />
+              </div>
             </div>
 
             {/* Admin Login */}

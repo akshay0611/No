@@ -34,6 +34,12 @@ export const api = {
       const response = await apiRequest('PUT', '/api/user/complete', { name, email });
       return response.json();
     },
+
+    // Google authentication
+    googleAuth: async (credential: string): Promise<AuthResponse> => {
+      const response = await apiRequest('POST', '/api/auth/google', { credential });
+      return response.json();
+    },
   },
 
   salons: {

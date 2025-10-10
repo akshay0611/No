@@ -117,6 +117,8 @@ export interface QueueWithDetails extends Queue {
 export interface AuthResponse {
   user: User;
   token: string;
+  isNewUser?: boolean;
+  message?: string;
 }
 
 export interface Analytics {
