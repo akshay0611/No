@@ -106,9 +106,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'User already exists with this email' });
       }
 
-      // Create user with verification fields
-      const user = await storage.createUser({
-        ...userData,
+      // Create user
+      const user = await storage.createUser(userData);
+      
+      // Update with verification fields after creation
+      await storage.updateUser(user.id, {
         emailVerified: false,
         phoneVerified: false,
         isVerified: false,
@@ -198,6 +200,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { email, name, picture, sub: googleId } = payload;
 
+      console.log('=== GOOGLE AUTH PAYLOAD ===');
+      console.log('Email:', email);
+      console.log('Name:', name);
+      console.log('Picture:', picture);
+      console.log('===========================');
+
       if (!email) {
         return res.status(400).json({ message: 'Email not provided by Google' });
       }
@@ -209,6 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         // Create new user with Google data
         isNewUser = true;
+        console.log('Creating new user with Google data');
+        console.log('Profile picture:', picture);
         user = await storage.createUser({
           name: name || '',
           email: email,
@@ -216,20 +226,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: null, // No password for Google auth
           role: 'customer',
           profileImage: picture,
+        });
+        
+        // Update with verification fields after creation
+        const updatedUser = await storage.updateUser(user.id, {
           emailVerified: true, // Google emails are verified
           phoneVerified: false,
           isVerified: true, // Consider Google auth as verified
         });
+        user = updatedUser || user;
+        console.log('Created user profileImage:', user?.profileImage);
       } else {
-        // Update existing user's profile image if they don't have one
-        if (!user.profileImage && picture) {
-          await storage.updateUser(user.id, {
-            profileImage: picture,
-            emailVerified: true,
-            isVerified: true,
-          });
-          user = await storage.getUser(user.id);
+        // Update existing user's profile image and verification status
+        console.log('Existing user found:', email);
+        console.log('Google profile picture URL:', picture);
+        
+        const updates: any = {
+          emailVerified: true,
+          isVerified: true,
+        };
+        
+        // Always update profile image from Google if available
+        if (picture) {
+          updates.profileImage = picture;
+          console.log('Updating profile image to:', picture);
         }
+        
+        await storage.updateUser(user.id, updates);
+        const updatedUser = await storage.getUser(user.id);
+        user = updatedUser || user;
+        console.log('Updated user profileImage:', user.profileImage);
       }
 
       // Generate JWT token
@@ -314,19 +340,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create minimal user with just phone number
         isNewUser = true;
         user = await storage.createUser({
-
-
-
           name: '', // Will be filled later
           email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
-
           phone: phoneNumber,
           password: null, // No password for phone auth - use null instead of empty string
           role: 'customer',
+        });
+        
+        // Update with verification fields after creation
+        const updatedUser = await storage.updateUser(user.id, {
           emailVerified: false,
           phoneVerified: false,
           isVerified: false,
         });
+        user = updatedUser || user;
       }
 
       // Generate and send OTP
