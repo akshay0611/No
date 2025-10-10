@@ -81,6 +81,8 @@ export default function Dashboard() {
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
+  const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
 
   // Redirect to auth if no user (e.g., after logout)
   useEffect(() => {
@@ -1176,7 +1178,7 @@ export default function Dashboard() {
                             manualLocation: currentSalon?.manualLocation,
                             hasManualLocation: !!currentSalon?.manualLocation && currentSalon.manualLocation.trim() !== ''
                           });
-                          
+
                           if (!currentSalon?.manualLocation || currentSalon.manualLocation.trim() === '') {
                             console.log('Opening location modal - no manual location set');
                             setIsLocationModalOpen(true);
@@ -1313,7 +1315,7 @@ export default function Dashboard() {
                       ) : services.length > 0 ? (
                         services.map((service: any) => (
                           <div key={service.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`service-item-${service.id}`}>
-                            <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
                                 <h4 className="font-medium text-black" data-testid={`text-service-name-${service.id}`}>
                                   {service.name}
@@ -1326,53 +1328,74 @@ export default function Dashboard() {
                                     ₹{service.price}
                                   </span>
                                 </div>
-                                {service.description && (
-                                  <p className="text-sm text-gray-500 mt-2" data-testid={`text-service-description-${service.id}`}>
-                                    {service.description}
-                                  </p>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="border-gray-300 text-gray-600"
+                                data-testid={`badge-bookings-${service.id}`}
+                              >
+                                {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
+                              </Badge>
+                            </div>
+                            {service.description && (
+                              <div className="mb-3">
+                                <p className="text-gray-600 leading-relaxed" data-testid={`text-service-description-${service.id}`}>
+                                  {expandedServices.has(service.id)
+                                    ? service.description
+                                    : service.description.length > 80
+                                      ? `${service.description.slice(0, 80)}...`
+                                      : service.description
+                                  }
+                                </p>
+                                {service.description.length > 80 && (
+                                  <button
+                                    onClick={() => {
+                                      const newExpanded = new Set(expandedServices);
+                                      if (expandedServices.has(service.id)) {
+                                        newExpanded.delete(service.id);
+                                      } else {
+                                        newExpanded.add(service.id);
+                                      }
+                                      setExpandedServices(newExpanded);
+                                    }}
+                                    className="text-teal-600 hover:text-teal-700 font-semibold text-base mt-2 transition-colors inline-block"
+                                  >
+                                    {expandedServices.has(service.id) ? 'Read Less' : 'Read More'}
+                                  </button>
                                 )}
                               </div>
-                              <div className="flex flex-col items-end space-y-2">
-                                <Badge
-                                  variant="outline"
-                                  className="border-gray-300 text-gray-600"
-                                  data-testid={`badge-bookings-${service.id}`}
-                                >
-                                  {analytics?.popularServices?.find(s => s.id === service.id)?.bookings || 0} bookings
-                                </Badge>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => updateServiceMutation.mutate({
-                                      id: service.id,
-                                      updates: { isActive: !service.isActive }
-                                    })}
-                                    disabled={updateServiceMutation.isPending}
-                                    className={`rounded-xl text-xs ${service.isActive
-                                      ? 'border-orange-300 text-orange-600 hover:bg-orange-50'
-                                      : 'border-green-300 text-green-600 hover:bg-green-50'
-                                      }`}
-                                    data-testid={`button-toggle-service-${service.id}`}
-                                  >
-                                    {service.isActive ? 'Deactivate' : 'Activate'}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      if (confirm('Are you sure you want to delete this service?')) {
-                                        deleteServiceMutation.mutate(service.id);
-                                      }
-                                    }}
-                                    disabled={deleteServiceMutation.isPending}
-                                    className="border-red-300 text-red-600 hover:bg-red-50 rounded-xl text-xs"
-                                    data-testid={`button-delete-service-${service.id}`}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
+                            )}
+                            <div className="flex space-x-2 pt-2 border-t border-gray-100">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateServiceMutation.mutate({
+                                  id: service.id,
+                                  updates: { isActive: !service.isActive }
+                                })}
+                                disabled={updateServiceMutation.isPending}
+                                className={`flex-1 rounded-xl ${service.isActive
+                                  ? 'border-orange-300 text-orange-600 hover:bg-orange-50'
+                                  : 'border-green-300 text-green-600 hover:bg-green-50'
+                                  }`}
+                                data-testid={`button-toggle-service-${service.id}`}
+                              >
+                                {service.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this service?')) {
+                                    deleteServiceMutation.mutate(service.id);
+                                  }
+                                }}
+                                disabled={deleteServiceMutation.isPending}
+                                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 rounded-xl"
+                                data-testid={`button-delete-service-${service.id}`}
+                              >
+                                Delete
+                              </Button>
                             </div>
                           </div>
                         ))
@@ -1541,7 +1564,32 @@ export default function Dashboard() {
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
                                 <h3 className="font-medium text-black">{offer.title}</h3>
-                                <p className="text-sm text-gray-600 mt-1">{offer.description}</p>
+                                <div className="mt-1">
+                                  <p className="text-sm text-gray-600">
+                                    {expandedOffers.has(offer.id)
+                                      ? offer.description
+                                      : offer.description.length > 80
+                                        ? `${offer.description.slice(0, 80)}...`
+                                        : offer.description
+                                    }
+                                  </p>
+                                  {offer.description.length > 80 && (
+                                    <button
+                                      onClick={() => {
+                                        const newExpanded = new Set(expandedOffers);
+                                        if (expandedOffers.has(offer.id)) {
+                                          newExpanded.delete(offer.id);
+                                        } else {
+                                          newExpanded.add(offer.id);
+                                        }
+                                        setExpandedOffers(newExpanded);
+                                      }}
+                                      className="text-teal-600 hover:text-teal-700 font-semibold text-sm mt-1 transition-colors inline-block"
+                                    >
+                                      {expandedOffers.has(offer.id) ? 'Read Less' : 'Read More'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Badge

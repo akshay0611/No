@@ -163,29 +163,27 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
 
   return (
     <Link href={`/salon/${salon.id}`}>
-      <Card
-        className="overflow-hidden bg-white border-0 shadow-md"
-      >
+     <Card className="group overflow-hidden bg-white border-2 border-gray-100 hover:border-teal-300 shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl h-full flex flex-col">
         <div className="relative overflow-hidden">
           {/* Image with gradient overlay */}
           <div className="relative h-48 overflow-hidden">
             <img
               src={getCurrentImageUrl()}
               alt={salon.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
             {/* Image counter dots */}
             {hasMultipleImages && (
-              <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1.5">
+              <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1.5 z-10">
                 {salon.photos!.map((_, index) => (
                   <div
                     key={index}
                     className={`h-1.5 rounded-full transition-all duration-300 ${index === currentImageIndex
-                        ? 'w-6 bg-white'
-                        : 'w-1.5 bg-white/60'
+                      ? 'w-6 bg-white shadow-lg'
+                      : 'w-1.5 bg-white/50'
                       }`}
                   />
                 ))}
@@ -193,37 +191,40 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
             )}
           </div>
 
-          {/* Navigation button with glassmorphism */}
+          {/* Navigation button */}
           <Button
             size="sm"
             variant="secondary"
-            className="absolute top-3 right-3 h-10 w-10 p-0 bg-white/95 backdrop-blur-sm shadow-lg border border-white/20"
+            className="absolute top-3 right-3 h-9 w-9 p-0 bg-white hover:bg-teal-50 shadow-lg border-0 rounded-xl transition-all duration-200"
             onClick={openInGoogleMaps}
             title="Open in Google Maps"
           >
-            <Navigation className="h-4 w-4 text-blue-600" />
+            <Navigation className="h-4 w-4 text-teal-600" />
           </Button>
 
-          {/* Offers badge with animation */}
+          {/* Offers badge */}
           {salon.offers && salon.offers.length > 0 && (
-            <Badge className="absolute top-3 left-3 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-4 py-2 text-sm font-bold shadow-xl border-2 border-white/30 backdrop-blur-sm rounded-xl">
-              <Sparkles className="w-4 h-4 inline mr-1.5" />
-              {Math.max(...salon.offers.map(offer => offer.discount))}% OFF
-            </Badge>
+            <div className="absolute top-3 left-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-xl blur opacity-40"></div>
+                <Badge className="relative bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-3 py-1.5 text-sm font-bold shadow-lg border-0 rounded-xl">
+                  <Sparkles className="w-4 h-4 inline mr-1.5" />
+                  {Math.max(...salon.offers.map(offer => offer.discount))}% OFF
+                </Badge>
+              </div>
+            </div>
           )}
         </div>
 
-        <CardContent className="p-5 relative">
-          {/* Decorative element */}
-          <div className="absolute top-0 left-0 w-16 h-1 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full" />
-
-          <div className="mt-2">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-bold text-lg text-gray-900 leading-tight">
+        <CardContent className="p-5">
+          <div className="space-y-3">
+            {/* Title and Rating */}
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-bold text-lg text-gray-900 leading-tight flex-1 line-clamp-1">
                 {salon.name}
               </h3>
-              <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-50 to-amber-50 px-2.5 py-1 rounded-full border border-yellow-200/50">
-                <Star className="w-4 h-4 text-amber-500 fill-current" />
+              <div className="flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-xl border-2 border-amber-200 shadow-sm flex-shrink-0">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                 <span className="text-sm font-bold text-gray-900">{salon.rating}</span>
                 <span className="text-xs text-gray-500">
                   ({salon.reviewCount ?? salon.reviews?.length ?? 0})
@@ -231,38 +232,42 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
               </div>
             </div>
 
-            <div className="text-sm text-gray-600 mb-3 flex items-start gap-1.5">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-              <span className={`flex-1 leading-5 break-words hyphens-auto ${getDisplayLocation() === 'Loading location...'
-                  ? 'text-gray-400 animate-pulse'
-                  : ''
+            {/* Location */}
+            <div className="flex items-start gap-2">
+              <MapPin className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
+              <span className={`text-sm text-gray-600 leading-5 line-clamp-2 ${getDisplayLocation() === 'Loading location...'
+                ? 'text-gray-400 animate-pulse'
+                : ''
                 }`}>
                 {getDisplayLocation()}
               </span>
             </div>
 
-            {/* Bottom info bar with gradient background */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            {/* Bottom info bar */}
+            <div className="flex items-center justify-between pt-3 border-t-2 border-gray-100">
               {showDistance && distance !== undefined && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                  <span className="font-medium text-gray-700">{distance.toFixed(1)} km</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-blue-700">{distance.toFixed(1)} km</span>
                 </div>
               )}
 
               {showWaitTime && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-full border border-emerald-200/50">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 ${(salon.queueCount || 0) > 0
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200'
+                  }`}>
                   <div className="relative">
-                    <Clock className="w-4 h-4 text-emerald-600" />
+                    <Clock className={`w-4 h-4 ${(salon.queueCount || 0) > 0 ? 'text-amber-600' : 'text-teal-600'}`} />
                     {(salon.queueCount || 0) > 0 && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">
                         <span className="text-[8px] font-bold text-white leading-none">
                           {salon.queueCount > 9 ? '9+' : salon.queueCount}
                         </span>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm font-semibold text-emerald-700">
+                  <span className={`text-sm font-bold ${(salon.queueCount || 0) > 0 ? 'text-amber-700' : 'text-teal-700'}`}>
                     {(salon.queueCount || 0) > 0 ? `${salon.queueCount} in queue` : 'Available now'}
                   </span>
                 </div>
@@ -270,8 +275,6 @@ export default function SalonCard({ salon, showWaitTime = true, showDistance = f
             </div>
           </div>
         </CardContent>
-
-
       </Card>
     </Link>
   );
