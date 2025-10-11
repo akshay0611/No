@@ -40,30 +40,48 @@ export class MongoStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    // Only hash password if it exists and is not empty
-    const hashedPassword = insertUser.password && insertUser.password.trim() !== ''
-      ? await bcrypt.hash(insertUser.password, 10)
-      : undefined;
+    try {
+      console.log('=== CREATE USER DEBUG ===');
+      console.log('Insert user data:', JSON.stringify(insertUser, null, 2));
+      
+      const id = randomUUID();
+      // Only hash password if it exists and is not empty
+      const hashedPassword = insertUser.password && insertUser.password.trim() !== ''
+        ? await bcrypt.hash(insertUser.password, 10)
+        : undefined;
 
-    const userObject = {
-      id,
-      name: insertUser.name,
-      email: insertUser.email,
-      phone: insertUser.phone, // Explicitly set the phone number
-      password: hashedPassword,
-      role: insertUser.role || 'customer',
-      loyaltyPoints: 0,
-      createdAt: new Date(),
-    };
+      const userObject = {
+        id,
+        name: insertUser.name,
+        email: insertUser.email,
+        phone: insertUser.phone, // Explicitly set the phone number
+        password: hashedPassword,
+        role: insertUser.role || 'customer',
+        profileImage: insertUser.profileImage, // Include profile image
+        loyaltyPoints: 0,
+        createdAt: new Date(),
+      };
 
-    const createdUserDoc = await UserModel.create(userObject);
+      console.log('User object to create:', JSON.stringify(userObject, null, 2));
+      const createdUserDoc = await UserModel.create(userObject);
+      console.log('User created in MongoDB:', createdUserDoc._id);
 
-    // Mongoose's .create() can return a Mongoose document, not a plain object.
-    // We convert it to a plain object to match the return type.
-    const user = createdUserDoc.toObject() as User;
+      // Mongoose's .create() can return a Mongoose document, not a plain object.
+      // We convert it to a plain object to match the return type.
+      const user = createdUserDoc.toObject() as User;
+      console.log('User converted to object:', user.id);
 
-    return user;
+      return user;
+    } catch (error: any) {
+      console.error('Error in createUser:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        name: error?.name,
+        stack: error?.stack
+      });
+      throw error;
+    }
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {

@@ -31,7 +31,7 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
 
     try {
       const { api } = await import("../lib/api");
-      const response = await api.auth.googleAuth(credentialResponse.credential);
+      const response = await api.auth.googleAuth(credentialResponse.credential, 'customer');
 
       console.log('Google auth response:', response);
       console.log('User profileImage:', response.user.profileImage);

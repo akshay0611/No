@@ -35,9 +35,14 @@ export const api = {
       return response.json();
     },
 
+    updateProfile: async (profileData: { name?: string; phone?: string; email?: string }) => {
+      const response = await apiRequest('PUT', '/api/user/profile', profileData);
+      return response.json();
+    },
+
     // Google authentication
-    googleAuth: async (credential: string): Promise<AuthResponse> => {
-      const response = await apiRequest('POST', '/api/auth/google', { credential });
+    googleAuth: async (credential: string, role?: 'customer' | 'salon_owner'): Promise<AuthResponse> => {
+      const response = await apiRequest('POST', '/api/auth/google', { credential, role });
       return response.json();
     },
   },

@@ -9,7 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "../lib/api";
 import { loginSchema, insertUserSchema } from "../lib/schemas";
 import OTPVerification from "./OTPVerification";
+import AdminProfileCompletion from "./AdminProfileCompletion";
 import type { User as UserType } from "../types";
+import { GoogleLogin } from "@react-oauth/google";
 
 type AdminLoginForm = z.infer<typeof loginSchema>;
 type AdminRegisterForm = z.infer<typeof insertUserSchema>;
@@ -26,8 +28,73 @@ export default function AdminLoginFlow({
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<(UserType & { password?: string }) | null>(null);
+  const [googleAuthUser, setGoogleAuthUser] = useState<UserType | null>(null);
   const { toast } = useToast();
+
+  // Google authentication handlers
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) {
+      toast({
+        title: "Error",
+        description: "Failed to get Google credentials",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.auth.googleAuth(credentialResponse.credential, 'salon_owner');
+
+      // Store token and user data
+      localStorage.setItem('smartq_token', response.token);
+      localStorage.setItem('smartq_user', JSON.stringify(response.user));
+
+      // Check if user has required fields for admin access
+      const hasRequiredFields = response.user.name && response.user.phone;
+      
+      if (!hasRequiredFields) {
+        // Show profile completion form
+        setGoogleAuthUser(response.user);
+        setShowProfileCompletion(true);
+        toast({
+          title: "Profile Completion Required",
+          description: "Please complete your profile to access admin features.",
+        });
+      } else {
+        // Complete profile, proceed to dashboard
+        toast({
+          title: response.isNewUser ? "Welcome to SmartQ Admin!" : "Welcome back!",
+          description: response.isNewUser 
+            ? "Your admin account has been created successfully" 
+            : "You've been logged in successfully as salon owner",
+        });
+        onAuthSuccess(response.user, response.token);
+      }
+    } catch (err: any) {
+      let errorMessage = err.message || "Failed to sign in with Google";
+      
+      // Handle role conflict error
+      if (err.existingRole && err.requestedRole) {
+        errorMessage = `Account already exists as ${err.existingRole}. Please use the customer login instead.`;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast({
+      title: "Error",
+      description: "Failed to sign in with Google",
+      variant: "destructive",
+    });
+  };
 
   const loginForm = useForm<AdminLoginForm>({
     resolver: zodResolver(loginSchema),
@@ -180,6 +247,33 @@ export default function AdminLoginFlow({
     }
   };
 
+  const handleProfileCompletion = (completedUser: any, token: string) => {
+    // Update stored user data
+    localStorage.setItem('smartq_user', JSON.stringify(completedUser));
+    
+    toast({
+      title: "Welcome to SmartQ Admin!",
+      description: "Your profile has been completed successfully.",
+    });
+    
+    setShowProfileCompletion(false);
+    setGoogleAuthUser(null);
+    onAuthSuccess(completedUser, token);
+  };
+
+  const handleProfileCompletionSkip = () => {
+    if (googleAuthUser) {
+      toast({
+        title: "Profile Incomplete",
+        description: "You can complete your profile later from settings.",
+      });
+      
+      setShowProfileCompletion(false);
+      onAuthSuccess(googleAuthUser, localStorage.getItem('smartq_token') || '');
+      setGoogleAuthUser(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black overflow-hidden">
       {/* Background Image */}
@@ -205,8 +299,16 @@ export default function AdminLoginFlow({
             />
           </div>
 
-          {/* Show OTP Verification or Auth Form */}
-          {showOTPVerification && registeredUser ? (
+          {/* Show Profile Completion, OTP Verification, or Auth Form */}
+          {showProfileCompletion && googleAuthUser ? (
+            <div className="w-full max-w-sm">
+              <AdminProfileCompletion
+                user={googleAuthUser}
+                onCompletion={handleProfileCompletion}
+                onSkip={handleProfileCompletionSkip}
+              />
+            </div>
+          ) : showOTPVerification && registeredUser ? (
             <div className="w-full max-w-sm">
               <OTPVerification
                 userId={registeredUser.id}
@@ -329,6 +431,31 @@ export default function AdminLoginFlow({
                         "Sign In"
                       )}
                     </button>
+
+                    {/* Divider */}
+                    <div className="relative mt-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                      </div>
+                    </div>
+
+                    {/* Google Login Button */}
+                    <div className="mt-4">
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        useOneTap={false}
+                        theme="outline"
+                        size="large"
+                        width="100%"
+                        shape="rectangular"
+                        text="signin_with"
+                        logo_alignment="left"
+                      />
+                    </div>
                   </form>
                 ) : (
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
@@ -429,6 +556,31 @@ export default function AdminLoginFlow({
                         "Create Account"
                       )}
                     </button>
+
+                    {/* Divider */}
+                    <div className="relative mt-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                      </div>
+                    </div>
+
+                    {/* Google Login Button */}
+                    <div className="mt-4">
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        useOneTap={false}
+                        theme="outline"
+                        size="large"
+                        width="100%"
+                        shape="rectangular"
+                        text="signin_with"
+                        logo_alignment="left"
+                      />
+                    </div>
                   </form>
                 )}
 
