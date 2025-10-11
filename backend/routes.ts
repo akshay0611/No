@@ -1403,25 +1403,50 @@ app.post('/api/services', authenticateToken, async (req, res) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const todayQueues = queues.filter(q => q.timestamp >= today);
+      // Get today's completed customers (not all queues from today)
+      const todayCompletedQueues = queues.filter(q => 
+        q.status === 'completed' && 
+        new Date(q.timestamp).setHours(0, 0, 0, 0) >= today.getTime()
+      );
+      
       const completedQueues = queues.filter(q => q.status === 'completed');
+      
+      // Calculate revenue from completed queues using totalPrice
       const totalRevenue = completedQueues.reduce((sum, queue) => {
-        const service = services.find(s => s.id === queue.serviceId);
-        return sum + (service ? parseFloat(service.price) : 0);
+        const price = typeof queue.totalPrice === 'number' ? queue.totalPrice : parseFloat(queue.totalPrice || '0');
+        return sum + (isNaN(price) ? 0 : price);
       }, 0);
 
+      // Calculate popular services by counting serviceIds in completed queues
+      const serviceBookingCounts: Record<string, number> = {};
+      completedQueues.forEach(queue => {
+        if (queue.serviceIds && Array.isArray(queue.serviceIds)) {
+          queue.serviceIds.forEach(serviceId => {
+            serviceBookingCounts[serviceId] = (serviceBookingCounts[serviceId] || 0) + 1;
+          });
+        }
+      });
+
       const analytics = {
-        customersToday: todayQueues.length,
-        totalCustomers: queues.length,
+        customersToday: todayCompletedQueues.length, // Only completed customers from today
+        totalCustomers: completedQueues.length, // Total completed customers (not all queues)
         avgWaitTime: queues.length > 0 ? queues.reduce((sum, q) => sum + (q.estimatedWaitTime || 15), 0) / queues.length : 0,
         rating: reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0,
         showRate: queues.length > 0 ? (completedQueues.length / queues.length) * 100 : 100,
         revenue: totalRevenue,
         popularServices: services.map(service => ({
           ...service,
-          bookings: queues.filter(q => q.serviceId === service.id).length,
+          bookings: serviceBookingCounts[service.id] || 0,
         })).sort((a, b) => b.bookings - a.bookings),
       };
+
+      // Debug logging
+      console.log('Analytics calculation for salon:', req.params.salonId);
+      console.log('Total queues:', queues.length);
+      console.log('Completed queues:', completedQueues.length);
+      console.log('Today completed queues:', todayCompletedQueues.length);
+      console.log('Total revenue:', totalRevenue);
+      console.log('Analytics result:', analytics);
 
       res.json(analytics);
     } catch (error) {
