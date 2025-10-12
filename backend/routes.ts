@@ -178,16 +178,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/user/profile', authenticateToken, async (req, res) => {
+    try {
+      const { name, phone, email } = req.body;
+      const userId = req.user!.userId;
+
+      const updates: any = {};
+      if (name) updates.name = name;
+      if (phone) updates.phone = phone;
+      if (email) updates.email = email;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: 'No valid fields to update' });
+      }
+
+      const updatedUser = await storage.updateUser(userId, updates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Return updated user without sensitive data
+      const { password, phoneOTP, emailOTP, otpExpiry, ...userWithoutSensitiveData } = updatedUser;
+      res.json(userWithoutSensitiveData);
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(500).json({ message: 'Failed to update profile', error });
+    }
+  });
+
   // ====================
   // GOOGLE AUTHENTICATION ROUTES
   // ====================
   app.post('/api/auth/google', async (req, res) => {
     try {
-      const { credential } = req.body;
+      console.log('=== GOOGLE AUTH REQUEST ===');
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      
+      const { credential, role } = req.body;
 
       if (!credential) {
+        console.log('No credential provided');
         return res.status(400).json({ message: 'Google credential is required' });
       }
+
+      // Validate role if provided
+      const userRole = role === 'salon_owner' ? 'salon_owner' : 'customer';
+      console.log('User role determined:', userRole);
+      console.log('Google Client ID configured:', !!GOOGLE_CLIENT_ID);
 
       // Verify the Google token
       const ticket = await googleClient.verifyIdToken({
@@ -221,14 +258,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isNewUser = true;
         console.log('Creating new user with Google data');
         console.log('Profile picture:', picture);
-        user = await storage.createUser({
+        console.log('User role:', userRole);
+        const userData: any = {
           name: name || '',
           email: email,
-          phone: null,
-          password: null, // No password for Google auth
-          role: 'customer',
-          profileImage: picture,
-        });
+          role: userRole,
+        };
+        
+        // Only add profileImage if it exists
+        if (picture) {
+          userData.profileImage = picture;
+        }
+        
+        console.log('Creating user with data:', JSON.stringify(userData, null, 2));
+        user = await storage.createUser(userData);
+        console.log('User created successfully:', user?.id);
         
         // Update with verification fields after creation
         const updatedUser = await storage.updateUser(user.id, {
@@ -241,7 +285,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Update existing user's profile image and verification status
         console.log('Existing user found:', email);
+        console.log('Existing user role:', user.role);
+        console.log('Requested role:', userRole);
         console.log('Google profile picture URL:', picture);
+        
+        // Check for role mismatch - if existing user has different role than requested
+        if (user.role !== userRole) {
+          return res.status(403).json({ 
+            message: `Account already exists with ${user.role} role. Cannot authenticate as ${userRole}.`,
+            existingRole: user.role,
+            requestedRole: userRole
+          });
+        }
         
         const updates: any = {
           emailVerified: true,
@@ -281,9 +336,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: isNewUser ? 'Account created successfully' : 'Logged in successfully'
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google auth error:', error);
-      res.status(500).json({ message: 'Failed to authenticate with Google', error });
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
+      res.status(500).json({ 
+        message: 'Failed to authenticate with Google', 
+        error: process.env.NODE_ENV === 'development' ? error : undefined 
+      });
     }
   });
 
@@ -1340,25 +1403,50 @@ app.post('/api/services', authenticateToken, async (req, res) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const todayQueues = queues.filter(q => q.timestamp >= today);
+      // Get today's completed customers (not all queues from today)
+      const todayCompletedQueues = queues.filter(q => 
+        q.status === 'completed' && 
+        new Date(q.timestamp).setHours(0, 0, 0, 0) >= today.getTime()
+      );
+      
       const completedQueues = queues.filter(q => q.status === 'completed');
+      
+      // Calculate revenue from completed queues using totalPrice
       const totalRevenue = completedQueues.reduce((sum, queue) => {
-        const service = services.find(s => s.id === queue.serviceId);
-        return sum + (service ? parseFloat(service.price) : 0);
+        const price = typeof queue.totalPrice === 'number' ? queue.totalPrice : parseFloat(queue.totalPrice || '0');
+        return sum + (isNaN(price) ? 0 : price);
       }, 0);
 
+      // Calculate popular services by counting serviceIds in completed queues
+      const serviceBookingCounts: Record<string, number> = {};
+      completedQueues.forEach(queue => {
+        if (queue.serviceIds && Array.isArray(queue.serviceIds)) {
+          queue.serviceIds.forEach(serviceId => {
+            serviceBookingCounts[serviceId] = (serviceBookingCounts[serviceId] || 0) + 1;
+          });
+        }
+      });
+
       const analytics = {
-        customersToday: todayQueues.length,
-        totalCustomers: queues.length,
+        customersToday: todayCompletedQueues.length, // Only completed customers from today
+        totalCustomers: completedQueues.length, // Total completed customers (not all queues)
         avgWaitTime: queues.length > 0 ? queues.reduce((sum, q) => sum + (q.estimatedWaitTime || 15), 0) / queues.length : 0,
         rating: reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0,
         showRate: queues.length > 0 ? (completedQueues.length / queues.length) * 100 : 100,
         revenue: totalRevenue,
         popularServices: services.map(service => ({
           ...service,
-          bookings: queues.filter(q => q.serviceId === service.id).length,
+          bookings: serviceBookingCounts[service.id] || 0,
         })).sort((a, b) => b.bookings - a.bookings),
       };
+
+      // Debug logging
+      console.log('Analytics calculation for salon:', req.params.salonId);
+      console.log('Total queues:', queues.length);
+      console.log('Completed queues:', completedQueues.length);
+      console.log('Today completed queues:', todayCompletedQueues.length);
+      console.log('Total revenue:', totalRevenue);
+      console.log('Analytics result:', analytics);
 
       res.json(analytics);
     } catch (error) {
