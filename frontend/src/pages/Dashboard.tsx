@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { useWebSocket } from "../context/WebSocketContext";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
 import { insertSalonSchema, insertServiceSchema, insertOfferSchema } from "../lib/schemas";
@@ -70,6 +71,7 @@ type SalonForm = z.infer<typeof salonFormSchema>;
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const { connected: wsConnected } = useWebSocket();
   const [, setLocation] = useLocation();
   const [selectedSalonId, setSelectedSalonId] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -104,10 +106,12 @@ export default function Dashboard() {
     setSelectedSalonId(salons[0].id);
   }
 
-  // Get queue data for selected salon
+  // Get queue data for selected salon with real-time updates
   const { data: queues = [], isLoading: queuesLoading } = useQuery<QueueWithDetails[]>({
     queryKey: ['/api/salons', selectedSalonId, 'queues'],
     enabled: !!selectedSalonId,
+    refetchInterval: 5000, // Fallback: refetch every 5 seconds
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   // Get analytics for selected salon
