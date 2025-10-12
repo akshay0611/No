@@ -40,6 +40,11 @@ export const api = {
       return response.json();
     },
 
+    updatePhone: async (phone: string) => {
+      const response = await apiRequest('PUT', '/api/user/phone', { phone });
+      return response.json();
+    },
+
     // Google authentication
     googleAuth: async (credential: string, role?: 'customer' | 'salon_owner'): Promise<AuthResponse> => {
       const response = await apiRequest('POST', '/api/auth/google', { credential, role });

@@ -50,17 +50,21 @@ export class MongoStorage implements IStorage {
         ? await bcrypt.hash(insertUser.password, 10)
         : undefined;
 
-      const userObject = {
+      const userObject: any = {
         id,
         name: insertUser.name,
         email: insertUser.email,
-        phone: insertUser.phone, // Explicitly set the phone number
         password: hashedPassword,
         role: insertUser.role || 'customer',
         profileImage: insertUser.profileImage, // Include profile image
         loyaltyPoints: 0,
         createdAt: new Date(),
       };
+
+      // Only include phone if it's provided (not null/undefined)
+      if (insertUser.phone) {
+        userObject.phone = insertUser.phone;
+      }
 
       console.log('User object to create:', JSON.stringify(userObject, null, 2));
       const createdUserDoc = await UserModel.create(userObject);

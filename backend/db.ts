@@ -12,6 +12,35 @@ export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('MongoDB connected successfully');
+    
+    // Fix phone index to be sparse (allows multiple null values)
+    try {
+      const db = mongoose.connection.db;
+      const collections = await db.listCollections({ name: 'users' }).toArray();
+      
+      if (collections.length > 0) {
+        // Drop the old non-sparse phone index if it exists
+        try {
+          await db.collection('users').dropIndex('phone_1');
+          console.log('Dropped old phone index');
+        } catch (err: any) {
+          // Index might not exist or already dropped
+          if (err.code !== 27) { // 27 = IndexNotFound
+            console.log('Phone index does not exist or already dropped');
+          }
+        }
+        
+        // Create new sparse index
+        await db.collection('users').createIndex(
+          { phone: 1 },
+          { unique: true, sparse: true }
+        );
+        console.log('Created sparse phone index');
+      }
+    } catch (indexError) {
+      console.log('Index management info:', indexError);
+      // Don't fail the connection if index management fails
+    }
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);

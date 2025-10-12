@@ -258,7 +258,6 @@ export default function PhoneAuth({ onOTPSent, onSwitchToAdmin }: PhoneAuthProps
                   size="large"
                   text="continue_with"
                   shape="rectangular"
-                  width="100%"
                 />
               </div>
             </div>
