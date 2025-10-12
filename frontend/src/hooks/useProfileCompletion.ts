@@ -6,13 +6,21 @@ import { useToast } from './use-toast';
 interface ProfileCompletionData {
   name: string;
   email?: string;
+  phone?: string;
 }
 
 export function useProfileCompletion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { user, updateUser, needsProfileCompletion } = useAuth();
   const { toast } = useToast();
+
+  const needsPhoneVerification = (): boolean => {
+    if (!user) return false;
+    // User needs phone verification if they don't have a phone number (Google auth)
+    return !user.phone || user.phone.trim() === '';
+  };
 
   const requireProfileCompletion = (action: () => void) => {
     if (!user) {
@@ -21,14 +29,22 @@ export function useProfileCompletion() {
       return;
     }
 
+    // Check if user needs name/email completion (phone auth users)
     if (needsProfileCompletion()) {
-      // Store the action to execute after profile completion
       setPendingAction(() => action);
       setIsModalOpen(true);
-    } else {
-      // Profile is complete, execute action immediately
-      action();
+      return;
     }
+
+    // Check if user needs phone verification (Google auth users)
+    if (needsPhoneVerification()) {
+      setPendingAction(() => action);
+      setIsPhoneModalOpen(true);
+      return;
+    }
+
+    // Profile is complete, execute action immediately
+    action();
   };
 
   const completeProfile = async (data: ProfileCompletionData) => {
@@ -51,8 +67,11 @@ export function useProfileCompletion() {
       // Close modal
       setIsModalOpen(false);
 
-      // Execute pending action if any
-      if (pendingAction) {
+      // Check if phone verification is needed next
+      if (needsPhoneVerification()) {
+        setIsPhoneModalOpen(true);
+      } else if (pendingAction) {
+        // Execute pending action if profile is fully complete
         pendingAction();
         setPendingAction(null);
       }
@@ -68,16 +87,56 @@ export function useProfileCompletion() {
     }
   };
 
+  const completePhoneVerification = async (phone: string) => {
+    try {
+      // Update user phone in backend
+      await api.auth.updatePhone(phone);
+      
+      // Update user in context
+      const updatedUser = {
+        ...user!,
+        phone: phone,
+      };
+      updateUser(updatedUser);
+
+      toast({
+        title: 'Phone Verified!',
+        description: 'Your phone number has been added to your profile.',
+      });
+
+      // Close phone modal
+      setIsPhoneModalOpen(false);
+
+      // Execute pending action if any
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
+
+      return true;
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update phone number.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const cancelProfileCompletion = () => {
     setIsModalOpen(false);
+    setIsPhoneModalOpen(false);
     setPendingAction(null);
   };
 
   return {
     isModalOpen,
+    isPhoneModalOpen,
     requireProfileCompletion,
     completeProfile,
+    completePhoneVerification,
     cancelProfileCompletion,
-    needsCompletion: needsProfileCompletion(),
+    needsCompletion: needsProfileCompletion() || needsPhoneVerification(),
   };
 }

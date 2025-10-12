@@ -122,7 +122,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return !user.name || user.name.trim() === '' || !user.email || user.email.trim() === '';
   };
 
-  const isProfileComplete = user ? !needsProfileCompletion() : false;
+  const needsPhoneVerification = (): boolean => {
+    if (!user) return false;
+    // User needs phone verification if they don't have a phone (Google auth)
+    return !user.phone || user.phone.trim() === '';
+  };
+
+  const isProfileComplete = user ? (!needsProfileCompletion() && !needsPhoneVerification()) : false;
 
   // Note: Authorization headers are now handled in the apiRequest function
   // which reads the token from localStorage

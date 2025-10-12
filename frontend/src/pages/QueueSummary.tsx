@@ -11,6 +11,7 @@ import { useCart } from "../context/CartContext";
 import { useProfileCompletion } from "../hooks/useProfileCompletion";
 import BookingDetailsModal from "../components/BookingDetailsModal";
 import BookingSuccessAnimation from "../components/BookingSuccessAnimation";
+import { PhoneVerificationModal } from "../components/PhoneVerificationModal";
 import { api } from "../lib/api";
 import type { Offer } from "../types";
 
@@ -24,8 +25,10 @@ export default function QueueSummary() {
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
   const {
     isModalOpen,
+    isPhoneModalOpen,
     requireProfileCompletion,
     completeProfile,
+    completePhoneVerification,
     cancelProfileCompletion
   } = useProfileCompletion();
 
@@ -476,6 +479,13 @@ export default function QueueSummary() {
             onComplete={completeProfile}
             onCancel={cancelProfileCompletion}
             salonName={items[0]?.salonName || "the salon"}
+          />
+
+          {/* Phone Verification Modal */}
+          <PhoneVerificationModal
+            isOpen={isPhoneModalOpen}
+            onClose={cancelProfileCompletion}
+            onVerified={completePhoneVerification}
           />
         </div>
       </div>

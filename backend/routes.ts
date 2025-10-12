@@ -262,6 +262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userData: any = {
           name: name || '',
           email: email,
+          // Don't set phone field at all - let it be undefined to avoid unique constraint issues
+          password: null, // No password for Google auth
           role: userRole,
         };
         
@@ -397,28 +399,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user already exists with this phone number
-      let user = await storage.getUserByPhone(phoneNumber);
+      let user;
       let isNewUser = false;
 
+      // Check if this is an authenticated user trying to add phone (Google auth user)
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+          // Get the authenticated user
+          user = await storage.getUser(decoded.userId);
+          
+          if (user) {
+            // Check if phone is already taken by a DIFFERENT user
+            const existingPhoneUser = await storage.getUserByPhone(phoneNumber);
+            if (existingPhoneUser && existingPhoneUser.id !== user.id) {
+              return res.status(400).json({ 
+                message: 'Phone number is already registered to another account' 
+              });
+            }
+            // This is an existing user adding their phone - don't create new user
+          }
+        } catch (err) {
+          // Invalid token, treat as unauthenticated
+          console.log('Invalid token in send-otp, treating as new user');
+        }
+      }
+
+      // If not authenticated or user not found, check if phone exists
       if (!user) {
-        // Create minimal user with just phone number
-        isNewUser = true;
-        user = await storage.createUser({
-          name: '', // Will be filled later
-          email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
-          phone: phoneNumber,
-          password: null, // No password for phone auth - use null instead of empty string
-          role: 'customer',
-        });
+        user = await storage.getUserByPhone(phoneNumber);
         
-        // Update with verification fields after creation
-        const updatedUser = await storage.updateUser(user.id, {
-          emailVerified: false,
-          phoneVerified: false,
-          isVerified: false,
-        });
-        user = updatedUser || user;
+        if (!user) {
+          // Create minimal user with just phone number (phone-only auth flow)
+          isNewUser = true;
+          user = await storage.createUser({
+            name: '', // Will be filled later
+            email: `phone-${phoneNumber}@placeholder.com`, // Generate unique placeholder email
+            phone: phoneNumber,
+            password: null, // No password for phone auth
+            role: 'customer',
+          });
+          
+          // Update with verification fields after creation
+          const updatedUser = await storage.updateUser(user.id, {
+            emailVerified: false,
+            phoneVerified: false,
+            isVerified: false,
+          });
+          user = updatedUser || user;
+        }
       }
 
       // Generate and send OTP
@@ -456,10 +487,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Phone number and OTP are required' });
       }
 
-      // Find user by phone number
-      const user = await storage.getUserByPhone(phoneNumber);
+      let user;
+      let isAuthenticatedUser = false;
+
+      // Check if this is an authenticated user (Google auth user adding phone)
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+          user = await storage.getUser(decoded.userId);
+          isAuthenticatedUser = true;
+        } catch (err) {
+          // Invalid token, fall through to phone lookup
+          console.log('Invalid token in verify-otp, trying phone lookup');
+        }
+      }
+
+      // If not authenticated or user not found, find by phone number (phone-only auth)
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        user = await storage.getUserByPhone(phoneNumber);
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
       }
 
       // Verify OTP
@@ -475,34 +525,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark phone as verified and clear OTP
       await storage.updateUser(user.id, {
         phoneVerified: true,
-        isVerified: true, // For phone-only auth, consider user verified
+        isVerified: true,
         phoneOTP: null,
         otpExpiry: null,
       });
 
-      // Generate JWT token
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          phone: user.phone,
-          role: user.role || 'customer'
-        },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
+      // Generate JWT token (only for phone-only auth, not for authenticated users)
+      let token = null;
+      if (!isAuthenticatedUser) {
+        token = jwt.sign(
+          {
+            userId: user.id,
+            phone: user.phone,
+            role: user.role || 'customer'
+          },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
+      }
 
       // Return user data without sensitive fields
       const { password, phoneOTP, otpExpiry, ...userWithoutSensitiveData } = user;
 
-      res.json({
+      const response: any = {
         user: {
           ...userWithoutSensitiveData,
           phoneVerified: true,
           isVerified: true,
         },
-        token,
         message: 'Phone verified successfully'
-      });
+      };
+
+      // Only include token for phone-only auth
+      if (token) {
+        response.token = token;
+      }
+
+      res.json(response);
 
     } catch (error) {
       console.error('Verify OTP error:', error);
@@ -568,6 +627,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Profile completion error:', error);
       res.status(500).json({ message: 'Failed to update profile', error });
+    }
+  });
+
+  // Phone number update endpoint
+  app.put('/api/user/phone', authenticateToken, async (req, res) => {
+    try {
+      const { phone } = req.body;
+
+      if (!phone || !phone.trim()) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+
+      // Validate phone format (basic validation)
+      const phoneRegex = /^\+\d{1,3}\d{10}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+
+      // Check if phone is already taken by another user
+      const existingUser = await storage.getUserByPhone(phone);
+      if (existingUser && existingUser.id !== req.user!.userId) {
+        // Check if the existing user is a temporary phone-only user (created during OTP send)
+        const isTemporaryUser = existingUser.email?.includes('@placeholder.com') && 
+                                !existingUser.name && 
+                                existingUser.phone === phone;
+        
+        if (isTemporaryUser) {
+          // Delete the temporary user since we're merging it with the Google auth user
+          console.log(`Deleting temporary phone-only user ${existingUser.id} for phone ${phone}`);
+          await storage.deleteUser(existingUser.id);
+        } else {
+          return res.status(400).json({ message: 'Phone number is already registered to another account' });
+        }
+      }
+
+      // Update user phone
+      const updatedUser = await storage.updateUser(req.user!.userId, {
+        phone: phone.trim(),
+        phoneVerified: true, // Mark as verified since they went through OTP
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Return updated user without sensitive data
+      const { password, phoneOTP, emailOTP, otpExpiry, ...userWithoutSensitiveData } = updatedUser;
+
+      res.json({
+        user: userWithoutSensitiveData,
+        message: 'Phone number updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Phone update error:', error);
+      res.status(500).json({ message: 'Failed to update phone number', error });
     }
   });
 

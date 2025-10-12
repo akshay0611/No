@@ -30,7 +30,6 @@ import { UserCategory, getUserCategory, setUserCategory, clearUserCategory } fro
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-
 function Router() {
   return (
     <Switch>
