@@ -90,7 +90,10 @@ Your turn is coming up at ${salonName}!
 ✂️ Services: ${servicesList}
 ⏰ Please arrive in: ${estimatedMinutes} minutes
 
-We're ready for you! See you soon! 💈`;
+We're ready for you! See you soon! 💈
+
+- ${salonName}
+Powered by AltQ`;
   };
 
   return (
