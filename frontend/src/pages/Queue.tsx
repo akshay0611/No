@@ -466,10 +466,10 @@ export default function Queue() {
                                 </div>
 
                                 {/* Your Turn Message */}
-                                <div className="text-center">
+                                {/* <div className="text-center">
                                   <p className="text-lg font-bold text-teal-700 mb-1">Your turn!</p>
                                   <p className="text-sm text-gray-600">Please proceed to the salon</p>
-                                </div>
+                                </div> */}
                               </div>
                             ) : (
                               <div className="space-y-3">
@@ -590,14 +590,14 @@ export default function Queue() {
                                   {queue.services.map((service) => (
                                     <div key={service.id} className="flex justify-between text-xs">
                                       <span className="text-gray-600">{service.name}</span>
-                                      <span className="text-gray-900 font-medium">₹{service.price}</span>
+                                      <span className="text-gray-900 font-medium">₹{Math.round(Number(service.price))}</span>
                                     </div>
                                   ))}
                                 </div>
                                 <div className="flex justify-between pt-1.5 border-t border-gray-200">
                                   <span className="text-sm font-medium text-gray-900">Total</span>
                                   <span className="text-sm font-semibold text-gray-900" data-testid={`text-total-price-${queue.id}`}>
-                                    ₹{queue.totalPrice}
+                                    ₹{Math.round(Number(queue.totalPrice))}
                                   </span>
                                 </div>
                                 {queue.appliedOffers && queue.appliedOffers.length > 0 && (
@@ -620,26 +620,28 @@ export default function Queue() {
                             )}
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => openDirections(queue.salon)}
-                              className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
-                              data-testid={`button-directions-${queue.id}`}
-                            >
-                              <Navigation className="h-4 w-4" />
-                              Show Map
-                            </button>
-                            <button
-                              disabled={leaveQueueMutation.isPending}
-                              onClick={() => leaveQueueMutation.mutate(queue.id)}
-                              className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:opacity-50 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
-                              data-testid={`button-leave-queue-${queue.id}`}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              {leaveQueueMutation.isPending ? 'Leaving...' : 'Leave'}
-                            </button>
-                          </div>
+                          {/* Action Buttons - Hide when service is in progress */}
+                          {queue.status !== 'in-progress' && (
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={() => openDirections(queue.salon)}
+                                className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                                data-testid={`button-directions-${queue.id}`}
+                              >
+                                <Navigation className="h-4 w-4" />
+                                Show Map
+                              </button>
+                              <button
+                                disabled={leaveQueueMutation.isPending}
+                                onClick={() => leaveQueueMutation.mutate(queue.id)}
+                                className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:opacity-50 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                                data-testid={`button-leave-queue-${queue.id}`}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                {leaveQueueMutation.isPending ? 'Leaving...' : 'Leave'}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

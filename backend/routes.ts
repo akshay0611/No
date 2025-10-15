@@ -809,7 +809,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const waitingQueues = queues.filter(q => q.status === 'waiting');
           const offers = await storage.getOffersBySalon(salon.id);
           const photos = await storage.getSalonPhotosBySalon(salon.id);
-          const reviews = await storage.getReviewsBySalon(salon.id);
+          const allReviews = await storage.getReviewsBySalon(salon.id);
+          
+          // Get only the latest review per user
+          const latestReviewsMap = new Map();
+          allReviews.forEach(review => {
+            const existing = latestReviewsMap.get(review.userId);
+            if (!existing || new Date(review.createdAt) > new Date(existing.createdAt)) {
+              latestReviewsMap.set(review.userId, review);
+            }
+          });
+          const reviews = Array.from(latestReviewsMap.values());
+          
           console.log(`Found ${photos.length} photos for salon ${salon.id}`);
 
           return {
@@ -845,7 +856,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const services = await storage.getServicesBySalon(salon.id);
       const offers = await storage.getOffersBySalon(salon.id);
-      const reviews = await storage.getReviewsBySalon(salon.id);
+      const allReviews = await storage.getReviewsBySalon(salon.id);
+      
+      // Get only the latest review per user
+      const latestReviewsMap = new Map();
+      allReviews.forEach(review => {
+        const existing = latestReviewsMap.get(review.userId);
+        if (!existing || new Date(review.createdAt) > new Date(existing.createdAt)) {
+          latestReviewsMap.set(review.userId, review);
+        }
+      });
+      const reviews = Array.from(latestReviewsMap.values());
+      
       const queues = await storage.getQueuesBySalon(salon.id);
       const photos = await storage.getSalonPhotosBySalon(salon.id);
       const waitingQueues = queues.filter(q => q.status === 'waiting');

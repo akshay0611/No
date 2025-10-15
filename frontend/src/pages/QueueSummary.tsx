@@ -51,7 +51,8 @@ export default function QueueSummary() {
   const loyaltyDiscount = salonPoints >= 100 ? 20 : salonPoints >= 50 ? 10 : 0;
   const loyaltyDiscountAmount = loyaltyDiscount > 0 ? (subtotal * loyaltyDiscount) / 100 : 0;
   
-  const finalTotal = subtotal - discountAmount - loyaltyDiscountAmount;
+  // Round to nearest integer to avoid floating point issues
+  const finalTotal = Math.round(subtotal - discountAmount - loyaltyDiscountAmount);
 
   const joinQueueMutation = useMutation({
     mutationFn: async () => {
@@ -384,7 +385,7 @@ export default function QueueSummary() {
                   <span className="font-medium">
                     Subtotal ({items.length} service{items.length > 1 ? 's' : ''})
                   </span>
-                  <span className="text-lg font-semibold">₹{subtotal.toFixed(2)}</span>
+                  <span className="text-lg font-semibold">₹{Math.round(subtotal)}</span>
                 </div>
 
                 {/* Offer Discount */}
@@ -402,7 +403,7 @@ export default function QueueSummary() {
                       </div>
                     </div>
                     <span className="text-lg font-bold text-green-600">
-                      -₹{discountAmount.toFixed(2)}
+                      -₹{Math.round(discountAmount)}
                     </span>
                   </div>
                 )}
@@ -422,7 +423,7 @@ export default function QueueSummary() {
                       </div>
                     </div>
                     <span className="text-lg font-bold text-amber-600">
-                      -₹{loyaltyDiscountAmount.toFixed(2)}
+                      -₹{Math.round(loyaltyDiscountAmount)}
                     </span>
                   </div>
                 )}
@@ -434,7 +435,7 @@ export default function QueueSummary() {
                 <div className="flex justify-between items-center p-4 bg-gradient-to-r from-teal-100 to-cyan-100 rounded-xl">
                   <span className="text-xl font-bold text-gray-900">Total Amount</span>
                   <span className="text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                    ₹{finalTotal.toFixed(2)}
+                    ₹{Math.round(finalTotal)}
                   </span>
                 </div>
               </div>

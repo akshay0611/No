@@ -64,11 +64,13 @@ function App() {
     const storedToken = localStorage.getItem('smartq_token');
     const storedUser = localStorage.getItem('smartq_user');
     const storedCategory = getUserCategory();
+    const currentPath = window.location.pathname;
     
     if (storedToken && storedUser) {
       try {
         const user = JSON.parse(storedUser);
         console.log('Found existing auth, user:', user);
+        console.log('Current path on mount:', currentPath);
         setAuthenticatedUser(user);
         
         // If user is admin (salon_owner), skip category selection
@@ -132,16 +134,33 @@ function App() {
     setCurrentPhase('app');
   };
 
-  // Navigate to appropriate page when entering app phase
+  // Navigate to appropriate page when entering app phase (only if needed)
   useEffect(() => {
     if (currentPhase === 'app' && authenticatedUser) {
       console.log('App phase reached with user:', authenticatedUser);
-      if (authenticatedUser.role === 'salon_owner') {
-        console.log('Navigating admin to dashboard');
-        setLocation('/dashboard');
+      
+      // Get current path
+      const currentPath = window.location.pathname;
+      console.log('Current path:', currentPath);
+      
+      // Only redirect if:
+      // 1. User just completed auth flow (on /auth page)
+      // 2. User is on root and needs initial routing
+      const isOnAuthPage = currentPath === '/auth';
+      const isOnRoot = currentPath === '/' || currentPath === '';
+      const needsInitialRouting = isOnAuthPage || (isOnRoot && !localStorage.getItem('has_been_routed'));
+      
+      if (needsInitialRouting) {
+        if (authenticatedUser.role === 'salon_owner') {
+          console.log('Navigating admin to dashboard');
+          setLocation('/dashboard');
+        } else {
+          console.log('Navigating customer to home');
+          setLocation('/');
+        }
+        localStorage.setItem('has_been_routed', 'true');
       } else {
-        console.log('Navigating customer to home');
-        setLocation('/');
+        console.log('User already on a valid page, staying at:', currentPath);
       }
     }
   }, [currentPhase, authenticatedUser, setLocation]);
