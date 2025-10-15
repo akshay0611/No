@@ -48,6 +48,7 @@ import { insertSalonSchema, insertServiceSchema, insertOfferSchema } from "../li
 import type { QueueWithDetails, Analytics } from "../types";
 import GalleryManager from "../components/GalleryManager";
 import LocationPicker from "../components/LocationPicker";
+import VoiceNotificationSettings from "../components/VoiceNotificationSettings";
 import LocationInputModal from "../components/LocationInputModal";
 import QuickServiceTemplates from "../components/QuickServiceTemplates";
 
@@ -664,20 +665,30 @@ export default function Dashboard() {
                 <User className="h-20 text-black" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="flex flex-col h-full">
               <SheetHeader>
                 <SheetTitle>My Account</SheetTitle>
                 <SheetDescription>
                   Manage your account settings and preferences.
                 </SheetDescription>
               </SheetHeader>
-              <div className="py-4">
+              
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto py-4">
+                {/* Voice Notification Settings */}
+                <div className="border-b pb-4 mb-4">
+                  <VoiceNotificationSettings />
+                </div>
+              </div>
+              
+              {/* Fixed Logout Button at Bottom */}
+              <div className="border-t pt-4 pb-4 bg-white">
                 <Button
                   variant="ghost"
                   onClick={() => logout()}
-                  className="w-full justify-start p-2 text-left font-normal"
+                  className="w-full justify-start p-3 text-left font-medium text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-5 w-5" />
                   Logout
                 </Button>
               </div>
