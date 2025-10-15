@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PushSubscription } from '../models/PushSubscription';
 import { authenticateToken } from '../middleware/auth';
+import { pushNotificationService } from '../services/pushNotificationService';
 
 const router = Router();
 
@@ -56,6 +57,12 @@ router.post('/subscribe', authenticateToken, async (req, res) => {
       expirationTime: subscription.expirationTime || null,
       createdAt: new Date(),
       lastUsed: new Date()
+    });
+
+    // Also save to push notification service for quick access
+    pushNotificationService.saveSubscription(userId, {
+      endpoint: subscription.endpoint,
+      keys: subscription.keys
     });
 
     console.log(`✅ Created push subscription for user ${userId}`);

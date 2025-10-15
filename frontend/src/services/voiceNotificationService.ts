@@ -29,20 +29,20 @@ class VoiceNotificationService {
     private setupSpeechUnlock() {
         const unlockSpeech = () => {
             if (!this.synthesis) return;
-            
+
             // Speak an empty utterance to unlock the API
             const utterance = new SpeechSynthesisUtterance('');
             utterance.volume = 0;
             this.synthesis.speak(utterance);
-            
+
             console.log('🔓 Speech synthesis unlocked on user interaction');
-            
+
             // Remove listeners after first interaction
             document.removeEventListener('click', unlockSpeech);
             document.removeEventListener('touchstart', unlockSpeech);
             document.removeEventListener('keydown', unlockSpeech);
         };
-        
+
         // Listen for any user interaction
         document.addEventListener('click', unlockSpeech, { once: true });
         document.addEventListener('touchstart', unlockSpeech, { once: true });

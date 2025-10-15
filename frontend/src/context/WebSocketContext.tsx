@@ -212,6 +212,30 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     };
   }, [user?.id]); // Only reconnect when user ID changes
 
+  // Listen for service worker messages (push notifications)
+  useEffect(() => {
+    if (!user || user.role !== 'salon_owner') return;
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'PUSH_NOTIFICATION_RECEIVED') {
+        console.log('📬 Push notification received from service worker:', event.data.data);
+        
+        // Trigger voice notification if it's a queue_join event
+        if (event.data.data?.type === 'queue_join') {
+          const { customerName, serviceName } = event.data.data;
+          console.log('🔊 Triggering voice from push notification');
+          voiceNotificationService.speakQueueJoin(customerName, serviceName);
+        }
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, [user]);
+
   const send = (message: any) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));

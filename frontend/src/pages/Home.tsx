@@ -492,7 +492,7 @@ export default function Home() {
 
               {/* 2. Main Headline */}
               <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-6 tracking-tighter">
-                SmartQ – Unisex Salon Queue System
+                AltQ – Unisex Salon Queue System
               </h1>
 
               {/* 3. CTA Button */}

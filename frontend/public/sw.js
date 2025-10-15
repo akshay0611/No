@@ -139,7 +139,8 @@ self.addEventListener('push', (event) => {
     body: 'You have a new notification',
     icon: '/loadlogo.png',
     badge: '/loadlogo.png',
-    data: {}
+    data: {},
+    silent: false
   };
 
   if (event.data) {
@@ -154,7 +155,8 @@ self.addEventListener('push', (event) => {
         data: data.data || {},
         tag: data.tag || 'smartq-notification',
         requireInteraction: data.requireInteraction || false,
-        actions: data.actions || []
+        actions: data.actions || [],
+        silent: false // Ensure sound plays
       };
     } catch (error) {
       console.error('[SW] Error parsing push data:', error);
@@ -162,7 +164,20 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, notificationData)
+    Promise.all([
+      // Show notification
+      self.registration.showNotification(notificationData.title, notificationData),
+      
+      // Send message to all clients to trigger voice if app is open
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'PUSH_NOTIFICATION_RECEIVED',
+            data: notificationData.data
+          });
+        });
+      })
+    ])
   );
 });
 
