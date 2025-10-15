@@ -27,6 +27,7 @@ import IntroScreen from "./components/IntroScreen";
 import PhoneAuthFlow from "./components/PhoneAuthFlow";
 import CategorySelection from "./components/CategorySelection";
 import { UserCategory, getUserCategory, setUserCategory, clearUserCategory } from "./utils/categoryUtils";
+import { usePWA } from "./hooks/usePWA";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -54,6 +55,9 @@ function App() {
   const [currentPhase, setCurrentPhase] = useState<'auth' | 'intro' | 'phone-auth' | 'skeleton' | 'category' | 'app'>('auth');
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [, setLocation] = useLocation();
+  
+  // Initialize PWA features
+  usePWA(authenticatedUser?.id);
 
   // Check for existing authentication on mount
   useEffect(() => {

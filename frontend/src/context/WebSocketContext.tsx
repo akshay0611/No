@@ -36,7 +36,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
     const wsUrl = baseURL.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
     
-    console.log('Attempting WebSocket connection to:', wsUrl);
+    console.log('🔌 WebSocket Configuration:');
+    console.log('  - Base URL:', baseURL);
+    console.log('  - WebSocket URL:', wsUrl);
+    console.log('  - User ID:', user.id);
+    console.log('Attempting WebSocket connection...');
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -58,6 +62,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         
         switch (message.type) {
           case 'queue_update':
+          case 'queue_position_update':
             // Invalidate queue-related queries to trigger refetch
             queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
             queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
@@ -67,6 +72,39 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
                 queryKey: ['/api/salons', message.salonId, 'queues'] 
               });
             }
+            break;
+            
+          case 'queue_notification':
+            // Store notification for NotificationOverlay to display
+            window.dispatchEvent(new CustomEvent('queue_notification', { detail: message }));
+            break;
+            
+          case 'service_starting':
+            // Invalidate queries and show toast
+            queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+            toast({
+              title: "Service Starting",
+              description: `Your service at ${message.salonName} is about to begin!`,
+            });
+            break;
+            
+          case 'service_completed':
+            // Invalidate queries and show toast
+            queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+            toast({
+              title: "Service Completed",
+              description: `Your service at ${message.salonName} is complete. Thank you!`,
+            });
+            break;
+            
+          case 'no_show':
+            // Invalidate queries and show toast
+            queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+            toast({
+              title: "Marked as No-Show",
+              description: message.data?.reason || "You were marked as no-show.",
+              variant: "destructive",
+            });
             break;
             
           case 'notification':
@@ -103,7 +141,16 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     ws.onerror = (error) => {
       console.error('❌ WebSocket error:', error);
       console.error('Failed to connect to:', wsUrl);
+      console.error('WebSocket readyState:', ws.readyState);
+      console.error('Make sure backend server is running on:', baseURL);
       setConnected(false);
+      
+      // Show user-friendly error
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to server. Please check if backend is running.",
+        variant: "destructive",
+      });
     };
 
     setSocket(ws);

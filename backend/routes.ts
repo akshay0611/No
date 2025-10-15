@@ -23,9 +23,17 @@ import { wsManager } from "./websocket";
 import dotenv from "dotenv";
 import { OAuth2Client } from 'google-auth-library';
 import { generateServiceDescription } from "./geminiService";
+import pushRoutes from "./routes/pushRoutes";
+import auditRoutes from "./routes/auditRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
+import healthRoutes from "./routes/healthRoutes";
+import { authenticateToken } from "./middleware/auth";
 
 // Load environment variables
 dotenv.config();
+
+// Re-export authenticateToken for backward compatibility
+export { authenticateToken };
 
 const JWT_SECRET = process.env.JWT_SECRET || "smartq-secret-key";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -48,44 +56,7 @@ const upload = multer({
   },
 });
 
-// Extend Express Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
 
-// Updated Middleware for JWT authentication
-const authenticateToken = (req: Express.Request, res: Express.Response, next: Function) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(' ')[1];
-
-  if (!token) return res.status(401).json({ message: 'Access token required' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      userId: string;
-      email: string;
-      role?: 'customer' | 'salon_owner';
-    };
-
-    // Set default role if missing
-    if (!decoded.role) {
-      decoded.role = 'customer';
-    }
-
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Invalid token', error: err });
-  }
-};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -1135,18 +1106,30 @@ app.post('/api/services', authenticateToken, async (req, res) => {
           // For backward compatibility
           const service = queue.serviceId ? await storage.getService(queue.serviceId) : null;
 
+          // Get all active queues for this salon (not completed or no-show)
           const salonQueues = await storage.getQueuesBySalon(queue.salonId);
-          // Waiting list should be sorted by position ascending, which getQueuesBySalon does.
-          const waitingQueues = salonQueues.filter(q => q.status === 'waiting');
+          const activeQueues = salonQueues.filter(q => 
+            q.status === 'waiting' || 
+            q.status === 'notified' || 
+            q.status === 'pending_verification' || 
+            q.status === 'nearby' || 
+            q.status === 'in-progress'
+          );
 
+          // Calculate real-time position based on timestamp
           let userPosition = queue.position;
-          if (queue.status === 'waiting') {
-            const userInWaitingList = waitingQueues.findIndex(q => q.id === queue.id);
-            if (userInWaitingList !== -1) {
-              userPosition = userInWaitingList + 1;
-            }
-          } else if (queue.status === 'in-progress') {
-            userPosition = 0; // Indicates "in progress"
+          
+          if (queue.status === 'in-progress') {
+            userPosition = 0; // Currently being served
+          } else if (queue.status === 'completed' || queue.status === 'no-show') {
+            userPosition = 0; // No position for completed/no-show
+          } else {
+            // Sort active queues by timestamp to get real position
+            const sortedQueues = activeQueues.sort((a, b) => 
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+            const userIndex = sortedQueues.findIndex(q => q.id === queue.id);
+            userPosition = userIndex !== -1 ? userIndex + 1 : queue.position;
           }
 
           // Ensure we have a valid services array
@@ -1156,11 +1139,8 @@ app.post('/api/services', authenticateToken, async (req, res) => {
             salon,
             service, // Keep for backward compatibility
             services: services.length > 0 ? services : undefined, // Add all services if available
-            totalInQueue: waitingQueues.length,
+            totalInQueue: activeQueues.length,
           };
-
-          // For debugging
-          console.log(`Queue ${queue.id} services:`, services);
 
           return queueWithDetails;
         })
@@ -1905,6 +1885,32 @@ app.post('/api/services', authenticateToken, async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+  // ====================
+  // QUEUE MANAGEMENT ROUTES
+  // ====================
+  const { registerQueueManagementRoutes } = await import('./routes/queueManagement');
+  registerQueueManagementRoutes(app, authenticateToken);
+
+  // ====================
+  // PUSH NOTIFICATION ROUTES
+  // ====================
+  app.use('/api/push', pushRoutes);
+
+  // ====================
+  // AUDIT ROUTES
+  // ====================
+  app.use('/api', auditRoutes);
+
+  // ====================
+  // ANALYTICS ROUTES
+  // ====================
+  app.use('/api/analytics', analyticsRoutes);
+
+  // ====================
+  // HEALTH CHECK ROUTES
+  // ====================
+  app.use('/api/health', healthRoutes);
 
   return httpServer;
 }

@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes";
 import { connectDB } from "./db";
 import { errorHandler } from "./errorHandler";
 import { wsManager } from "./websocket";
+import { initializeBackgroundJobs } from "./jobs/backgroundJobs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -150,6 +151,9 @@ app.use((req, res, next) => {
 
   // Initialize WebSocket server
   wsManager.initialize(server);
+
+  // Initialize background jobs
+  initializeBackgroundJobs();
 
   // Listen on Render’s port
   const port = parseInt(process.env.PORT || "5001", 10);

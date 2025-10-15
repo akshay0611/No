@@ -26,6 +26,9 @@ export interface Salon {
   rating: string;
   images: string[];
   createdAt: Date;
+  latitude?: number;
+  longitude?: number;
+  fullAddress?: string;
 }
 
 export interface Service {
@@ -45,10 +48,26 @@ export interface Queue {
   serviceIds: string[];
   totalPrice: number;
   appliedOffers: string[];
-  status: "waiting" | "in-progress" | "completed" | "no-show";
+  status: "waiting" | "notified" | "pending_verification" | "nearby" | "in-progress" | "completed" | "no-show";
   position: number;
   timestamp: Date;
   estimatedWaitTime?: number;
+  notifiedAt?: Date;
+  notificationMinutes?: number;
+  checkInAttemptedAt?: Date;
+  checkInLocation?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  };
+  checkInDistance?: number;
+  verifiedAt?: Date;
+  verificationMethod?: 'gps_auto' | 'manual' | 'admin_override';
+  verifiedBy?: string;
+  serviceStartedAt?: Date;
+  serviceCompletedAt?: Date;
+  noShowMarkedAt?: Date;
+  noShowReason?: string;
 }
 
 export interface Offer {
@@ -132,7 +151,28 @@ export interface Analytics {
 }
 
 export interface WebSocketMessage {
-  type: 'queue_update' | 'notification';
+  type: 'queue_update' | 'notification' | 'queue_notification' | 'customer_arrived' | 'queue_position_update' | 'service_starting' | 'service_completed' | 'no_show';
   salonId?: string;
+  userId?: string;
+  queueId?: string;
   data?: any;
+  // Queue notification specific fields
+  salonName?: string;
+  salonAddress?: string;
+  estimatedMinutes?: number;
+  services?: any[];
+  salonLocation?: {
+    latitude: number;
+    longitude: number;
+  };
+  timestamp?: string;
+}
+
+export interface PendingVerification {
+  queueId: string;
+  userName: string;
+  userPhone: string;
+  distance?: number;
+  checkInTime: Date;
+  reason: 'no_location' | 'too_far' | 'suspicious';
 }

@@ -78,6 +78,41 @@ class TwilioService {
     }
   }
 
+  async makeCall(phoneNumber: string, salonName: string): Promise<boolean> {
+    try {
+      const formatted = this.formatPhoneNumber(phoneNumber);
+
+      if (!this.client) {
+        this.client = twilio(this.accountSid, this.authToken);
+      }
+
+      // Get Twilio phone number from environment
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+      if (!fromNumber) {
+        throw new Error('TWILIO_PHONE_NUMBER not configured');
+      }
+
+      // Make call with TwiML to say a message
+      const call = await this.client.calls.create({
+        to: formatted,
+        from: fromNumber,
+        twiml: `<Response><Say>Hello, this is ${salonName}. Your turn is coming up. Please check your phone for details.</Say></Response>`
+      });
+
+      console.log('Twilio call initiated:', {
+        sid: call.sid,
+        status: call.status,
+        to: call.to,
+        from: call.from
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Twilio call failed:', error?.message || error);
+      throw error;
+    }
+  }
+
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove all non-digit characters
     let cleaned = phoneNumber.replace(/\D/g, '');
