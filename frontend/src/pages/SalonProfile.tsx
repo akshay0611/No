@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Clock, Heart, ShoppingCart, Zap } from "lucide-react";
-import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -111,10 +111,7 @@ export default function SalonProfile() {
   };
   const { toast } = useToast();
 
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
-    libraries: ["places"],
-  });
+
 
   const { data: salon, isLoading } = useQuery<SalonDetails>({
     queryKey: ['/api/salons', id],
@@ -259,48 +256,27 @@ export default function SalonProfile() {
                       {salon.rating}
                     </span>
                   </div>
-
+                  {salon.latitude && salon.longitude && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-600 hover:text-teal-700 font-medium text-sm transition-colors"
+                    >
+                      Open in Google Maps
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {isLoaded && salon.latitude && salon.longitude && (
-          <Card className="mb-8">
-            <div className="h-64 md:h-80">
-              <GoogleMap
-                mapContainerStyle={{ width: "100%", height: "100%" }}
-                center={{ lat: salon.latitude, lng: salon.longitude }}
-                zoom={15}
-                options={{
-                  mapTypeControl: false,
-                  streetViewControl: false,
-                  fullscreenControl: true,
-                }}
-              >
-                <MarkerF position={{ lat: salon.latitude, lng: salon.longitude }} />
-              </GoogleMap>
-            </div>
-          </Card>
-        )}
-
         {/* Services Section - Card Layout with Teal Theme */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Services</h2>
-              <p className="text-gray-600">Choose from our range of professional services</p>
-            </div>
-            {getItemCount() > 0 && (
-              <Button
-                onClick={() => setLocation('/queue-summary')}
-                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                View Cart ({getItemCount()})
-              </Button>
-            )}
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Services</h2>
+            <p className="text-gray-600">Choose from our range of professional services</p>
           </div>
 
           {/* Services Grid */}
