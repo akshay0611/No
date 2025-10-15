@@ -151,7 +151,7 @@ export interface Analytics {
 }
 
 export interface WebSocketMessage {
-  type: 'queue_update' | 'notification' | 'queue_notification' | 'customer_arrived' | 'queue_position_update' | 'service_starting' | 'service_completed' | 'no_show';
+  type: 'queue_join' | 'queue_update' | 'notification' | 'queue_notification' | 'customer_arrived' | 'queue_position_update' | 'service_starting' | 'service_completed' | 'no_show';
   salonId?: string;
   userId?: string;
   queueId?: string;

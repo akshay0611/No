@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useAuth } from "./AuthContext";
 import { queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { voiceNotificationService } from "../services/voiceNotificationService";
 import type { WebSocketMessage } from "../types";
 
 interface WebSocketContextType {
@@ -34,8 +35,15 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Create WebSocket connection
     const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
-    const wsUrl = baseURL.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
-    
+
+
+    // Use VITE_WS_URL if available, otherwise construct from baseURL
+    let wsUrl = import.meta.env.VITE_WS_URL;
+    if (!wsUrl) {
+      wsUrl = baseURL.replace('http://', 'ws://').replace('https://', 'wss://');
+    }
+    wsUrl = wsUrl + '/ws';
+
     console.log('🔌 WebSocket Configuration:');
     console.log('  - Base URL:', baseURL);
     console.log('  - WebSocket URL:', wsUrl);
@@ -46,7 +54,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     ws.onopen = () => {
       console.log('✅ WebSocket connected successfully to:', wsUrl);
       setConnected(true);
-      
+
       // Authenticate with user ID
       const authMessage = {
         type: 'authenticate',
@@ -59,26 +67,67 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
-        
+        console.log('📨 WebSocket message received:', message.type, message);
+
         switch (message.type) {
+          case 'queue_join':
+            // Voice notification for admin when new customer joins
+            if (user?.role === 'salon_owner' && message.data) {
+              console.log('🔔 Queue join event received:', message.data);
+
+              const { customerName, serviceName } = message.data;
+
+              console.log('✅ Triggering voice notification');
+              console.log('Customer:', customerName, 'Service:', serviceName);
+
+              voiceNotificationService.speakQueueJoin(customerName, serviceName);
+            }
+
+            // Invalidate queries to refresh queue data
+            queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
+            if (message.salonId) {
+              queryClient.invalidateQueries({
+                queryKey: ['/api/salons', message.salonId, 'queues']
+              });
+            }
+            break;
+
           case 'queue_update':
           case 'queue_position_update':
             // Invalidate queue-related queries to trigger refetch
             queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
             queryClient.invalidateQueries({ queryKey: ['/api/salons'] });
-            
+
             if (message.salonId) {
-              queryClient.invalidateQueries({ 
-                queryKey: ['/api/salons', message.salonId, 'queues'] 
+              queryClient.invalidateQueries({
+                queryKey: ['/api/salons', message.salonId, 'queues']
               });
             }
             break;
-            
+
           case 'queue_notification':
             // Store notification for NotificationOverlay to display
             window.dispatchEvent(new CustomEvent('queue_notification', { detail: message }));
             break;
-            
+
+          case 'customer_arrived':
+            // Voice notification for admin when customer arrives
+            if (user?.role === 'salon_owner' && message.data) {
+              const customerName = message.data.userName || 'A customer';
+              const verified = message.data.verified ? 'verified' : 'pending verification';
+              voiceNotificationService.speakCustomerArrival(customerName, verified);
+            }
+
+            // Invalidate queries
+            queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+            if (message.salonId) {
+              queryClient.invalidateQueries({
+                queryKey: ['/api/salons', message.salonId, 'queues']
+              });
+            }
+            break;
+
           case 'service_starting':
             // Invalidate queries and show toast
             queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
@@ -87,7 +136,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               description: `Your service at ${message.salonName} is about to begin!`,
             });
             break;
-            
+
           case 'service_completed':
             // Invalidate queries and show toast
             queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
@@ -96,7 +145,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               description: `Your service at ${message.salonName} is complete. Thank you!`,
             });
             break;
-            
+
           case 'no_show':
             // Invalidate queries and show toast
             queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
@@ -106,7 +155,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               variant: "destructive",
             });
             break;
-            
+
           case 'notification':
             // Show toast notification
             if (message.data?.title && message.data?.description) {
@@ -116,7 +165,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               });
             }
             break;
-            
+
           default:
             console.log('Unknown WebSocket message type:', message.type);
         }
@@ -128,7 +177,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     ws.onclose = (event) => {
       console.log('WebSocket disconnected:', event.code, event.reason);
       setConnected(false);
-      
+
       // Attempt to reconnect after a delay if it wasn't a clean close
       if (!event.wasClean && user) {
         setTimeout(() => {
@@ -144,7 +193,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       console.error('WebSocket readyState:', ws.readyState);
       console.error('Make sure backend server is running on:', baseURL);
       setConnected(false);
-      
+
       // Show user-friendly error
       toast({
         title: "Connection Error",

@@ -124,6 +124,30 @@ class WebSocketManager {
     console.log(`📢 Broadcasted queue update for salon: ${salonId}`);
   }
 
+  // Broadcast when a new customer joins the queue
+  broadcastQueueJoin(salonId: string, queueData: any) {
+    const message = JSON.stringify({
+      type: 'queue_join',
+      salonId,
+      data: queueData,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`📡 Broadcasting queue_join to ${this.clients.size} connected clients`);
+    
+    let sentCount = 0;
+    this.clients.forEach((client, userId) => {
+      console.log(`  Client ${userId}: readyState=${client.readyState}, authenticated=${client.isAuthenticated}`);
+      if (client.readyState === WebSocket.OPEN && client.isAuthenticated) {
+        client.send(message);
+        sentCount++;
+        console.log(`  ✅ Sent to ${userId}`);
+      }
+    });
+
+    console.log(`🔔 Broadcasted queue_join event to ${sentCount} clients for salon: ${salonId}`, queueData);
+  }
+
   // Send notification to specific user
   sendNotificationToUser(userId: string, title: string, description: string) {
     const client = this.clients.get(userId);
