@@ -24,6 +24,7 @@ import dotenv from "dotenv";
 import { OAuth2Client } from 'google-auth-library';
 import { generateServiceDescription } from "./geminiService";
 import pushRoutes from "./routes/pushRoutes";
+import { pushNotificationService } from "./services/pushNotificationService";
 import auditRoutes from "./routes/auditRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import healthRoutes from "./routes/healthRoutes";
@@ -1327,6 +1328,17 @@ app.post('/api/services', authenticateToken, async (req, res) => {
       });
       
       console.log('✅ broadcastQueueJoin called successfully');
+      
+      // Send push notification to salon owner
+      const salon = await storage.getSalon(queueData.salonId);
+      if (salon && salon.ownerId) {
+        await pushNotificationService.sendQueueJoinNotification(
+          salon.ownerId,
+          queueUser?.name || 'A customer',
+          validServices.length > 0 ? validServices[0].name : 'a service',
+          salon.name
+        );
+      }
       
       // Broadcast general queue update with customer details
       const salonQueues = await storage.getQueuesBySalon(queueData.salonId);
