@@ -127,6 +127,46 @@ export const api = {
       const response = await apiRequest('DELETE', `/api/queues/${id}`);
       return response.json();
     },
+
+    // Queue management endpoints
+    notify: async (id: string, estimatedMinutes: number, message?: string) => {
+      const response = await apiRequest('POST', `/api/queues/${id}/notify`, {
+        estimatedMinutes,
+        message,
+      });
+      return response.json();
+    },
+
+    checkIn: async (id: string, location?: { latitude: number; longitude: number; accuracy?: number }) => {
+      const response = await apiRequest('POST', `/api/queues/${id}/checkin`, location || {});
+      return response.json();
+    },
+
+    verifyArrival: async (id: string, confirmed: boolean, notes?: string) => {
+      const response = await apiRequest('POST', `/api/queues/${id}/verify-arrival`, {
+        confirmed,
+        notes,
+      });
+      return response.json();
+    },
+
+    updateStatus: async (id: string, status: string, notes?: string) => {
+      const response = await apiRequest('PUT', `/api/queues/${id}/status`, {
+        status,
+        notes,
+      });
+      return response.json();
+    },
+
+    call: async (id: string) => {
+      const response = await apiRequest('POST', `/api/queues/${id}/call`, {});
+      return response.json();
+    },
+
+    getPendingVerifications: async (salonId: string) => {
+      const response = await apiRequest('GET', `/api/salons/${salonId}/pending-verifications`);
+      return response.json();
+    },
   },
 
   offers: {

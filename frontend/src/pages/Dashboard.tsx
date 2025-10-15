@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -10,8 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import QueueStatusBadge from "../components/QueueStatusBadge";
+import QueueActionButtons from "../components/QueueActionButtons";
+import ArrivalVerificationPanel from "../components/ArrivalVerificationPanel";
 
 import {
   User,
@@ -24,19 +27,8 @@ import {
   BarChart3,
   Settings,
   TrendingUp,
-  UserCheck,
-  UserX,
-  PlayCircle,
-  Phone,
   Sparkles,
-  MessageCircle,
   Camera,
-  ChevronDown,
-  Menu,
-  Bell,
-  Search,
-  Home,
-  Calendar,
   TrendingDown,
   LogOut,
 } from "lucide-react";
@@ -50,7 +42,6 @@ import {
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
-import { useWebSocket } from "../context/WebSocketContext";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
 import { insertSalonSchema, insertServiceSchema, insertOfferSchema } from "../lib/schemas";
@@ -71,7 +62,6 @@ type SalonForm = z.infer<typeof salonFormSchema>;
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const { connected: wsConnected } = useWebSocket();
   const [, setLocation] = useLocation();
   const [selectedSalonId, setSelectedSalonId] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -80,12 +70,12 @@ export default function Dashboard() {
     address: string;
   } | null>(null);
   const [activeTab, setActiveTab] = useState("queue");
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
+  const [showCompletedQueues, setShowCompletedQueues] = useState(false);
 
   // Redirect to auth if no user (e.g., after logout)
   useEffect(() => {
@@ -113,6 +103,46 @@ export default function Dashboard() {
     refetchInterval: 5000, // Fallback: refetch every 5 seconds
     refetchOnWindowFocus: true, // Refetch when window regains focus
   });
+
+  // Listen for WebSocket events to update queue list in real-time
+  useEffect(() => {
+    const handleQueueUpdate = () => {
+      if (selectedSalonId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/salons', selectedSalonId, 'queues'] 
+        });
+      }
+    };
+
+    // Listen for various queue-related WebSocket events
+    window.addEventListener('queue_update', handleQueueUpdate);
+    window.addEventListener('queue_position_update', handleQueueUpdate);
+    window.addEventListener('customer_arrived', handleQueueUpdate);
+
+    return () => {
+      window.removeEventListener('queue_update', handleQueueUpdate);
+      window.removeEventListener('queue_position_update', handleQueueUpdate);
+      window.removeEventListener('customer_arrived', handleQueueUpdate);
+    };
+  }, [selectedSalonId]);
+
+  // Filter and sort queues
+  const filteredQueues = useMemo(() => {
+    let filtered = queues;
+
+    // Filter out completed and no-show queues unless showCompletedQueues is true
+    if (!showCompletedQueues) {
+      filtered = filtered.filter(q => q.status !== 'completed' && q.status !== 'no-show');
+    }
+
+    // Sort by position (ascending)
+    return filtered.sort((a, b) => a.position - b.position);
+  }, [queues, showCompletedQueues]);
+
+  // Check if there are pending verifications
+  const hasPendingVerifications = useMemo(() => {
+    return queues.some(q => q.status === 'pending_verification');
+  }, [queues]);
 
   // Get analytics for selected salon
   const { data: analytics, isLoading: analyticsLoading } = useQuery<Analytics>({
@@ -539,27 +569,6 @@ export default function Dashboard() {
 
     console.log('Sending offer data:', offerData);
     createOfferMutation.mutate(offerData);
-  };
-
-  const startService = (queueId: string) => {
-    updateQueueMutation.mutate({
-      id: queueId,
-      updates: { status: 'in-progress' },
-    });
-  };
-
-  const completeService = (queueId: string) => {
-    updateQueueMutation.mutate({
-      id: queueId,
-      updates: { status: 'completed' },
-    });
-  };
-
-  const markNoShow = (queueId: string) => {
-    updateQueueMutation.mutate({
-      id: queueId,
-      updates: { status: 'no-show' },
-    });
   };
 
   // Show access denied only for authenticated users who are not salon owners
@@ -1015,11 +1024,33 @@ export default function Dashboard() {
                 {/* Tab Content */}
                 {activeTab === 'queue' && (
                   <div className="space-y-4">
+                    {/* Arrival Verification Panel - Show when there are pending verifications */}
+                    {hasPendingVerifications && selectedSalonId && (
+                      <ArrivalVerificationPanel
+                        salonId={selectedSalonId}
+                        onVerificationComplete={() => {
+                          queryClient.invalidateQueries({ 
+                            queryKey: ['/api/salons', selectedSalonId, 'queues'] 
+                          });
+                        }}
+                      />
+                    )}
+
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-bold text-black">Current Queue</h2>
-                      <Badge variant="outline" className="border-gray-300 text-gray-600">
-                        {queues.filter(q => q.status === 'waiting' || q.status === 'in-progress').length} active
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCompletedQueues(!showCompletedQueues)}
+                          className="text-xs"
+                        >
+                          {showCompletedQueues ? 'Hide' : 'Show'} Completed
+                        </Button>
+                        <Badge variant="outline" className="border-gray-300 text-gray-600">
+                          {filteredQueues.length} {showCompletedQueues ? 'total' : 'active'}
+                        </Badge>
+                      </div>
                     </div>
 
                     {queuesLoading ? (
@@ -1028,7 +1059,7 @@ export default function Dashboard() {
                           <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse"></div>
                         ))}
                       </div>
-                    ) : queues.filter(q => q.status === 'waiting' || q.status === 'in-progress').length === 0 ? (
+                    ) : filteredQueues.length === 0 ? (
                       <div className="text-center py-12">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Users className="h-8 w-8 text-gray-400" />
@@ -1038,9 +1069,7 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {queues
-                          .filter(q => q.status === 'waiting' || q.status === 'in-progress')
-                          .map((queue) => (
+                        {filteredQueues.map((queue) => (
                             <div key={queue.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`queue-item-${queue.id}`}>
                               <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center space-x-3">
@@ -1054,16 +1083,14 @@ export default function Dashboard() {
                                     <div className="font-medium text-black text-sm" data-testid={`text-customer-name-${queue.id}`}>
                                       {queue.user?.name || 'Customer'}
                                     </div>
-                                    <Badge
-                                      variant={queue.status === 'in-progress' ? 'default' : 'secondary'}
-                                      className={`mt-1 text-xs ${queue.status === 'in-progress'
-                                        ? 'bg-black text-white'
-                                        : 'bg-gray-100 text-gray-600'
-                                        }`}
-                                      data-testid={`badge-status-${queue.id}`}
-                                    >
-                                      {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
-                                    </Badge>
+                                    {queue.user?.phone && (
+                                      <div className="text-xs text-gray-500 mt-0.5">
+                                        {queue.user.phone}
+                                      </div>
+                                    )}
+                                    <div className="mt-1">
+                                      <QueueStatusBadge status={queue.status} />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -1092,75 +1119,14 @@ export default function Dashboard() {
                               </div>
 
                               {/* Action Buttons */}
-                              <div className="space-y-2">
-                                {queue.user && queue.user.phone && (
-                                  <div className="flex space-x-2">
-                                    <a
-                                      href={`tel:${queue.user.phone}`}
-                                      className="flex-1"
-                                    >
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full border-gray-300 text-black hover:bg-gray-50 rounded-xl"
-                                        data-testid={`button-call-${queue.id}`}
-                                      >
-                                        <Phone className="h-4 w-4 mr-2" />
-                                        Call
-                                      </Button>
-                                    </a>
-                                    <a
-                                      href={`https://wa.me/${queue.user.phone.replace(/\D/g, '')}?text=Hello%20Your%20turn%20has%20come%20at%20SmartQ%20Salon`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex-1"
-                                    >
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full border-gray-300 text-black hover:bg-gray-50 rounded-xl"
-                                        data-testid={`button-whatsapp-${queue.id}`}
-                                      >
-                                        <MessageCircle className="h-4 w-4 mr-2" />
-                                        WhatsApp
-                                      </Button>
-                                    </a>
-                                  </div>
-                                )}
-
-                                <div className="flex space-x-2">
-                                  {queue.status === 'waiting' ? (
-                                    <Button
-                                      onClick={() => startService(queue.id)}
-                                      disabled={updateQueueMutation.isPending}
-                                      className="flex-1 bg-black text-white hover:bg-gray-800 rounded-xl"
-                                      data-testid={`button-start-${queue.id}`}
-                                    >
-                                      <PlayCircle className="h-4 w-4 mr-2" />
-                                      Start Service
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      onClick={() => completeService(queue.id)}
-                                      disabled={updateQueueMutation.isPending}
-                                      className="flex-1 bg-black text-white hover:bg-gray-800 rounded-xl"
-                                      data-testid={`button-complete-${queue.id}`}
-                                    >
-                                      <UserCheck className="h-4 w-4 mr-2" />
-                                      Complete
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => markNoShow(queue.id)}
-                                    disabled={updateQueueMutation.isPending}
-                                    className="px-3 border-red-300 text-red-600 hover:bg-red-50 rounded-xl"
-                                    data-testid={`button-no-show-${queue.id}`}
-                                  >
-                                    <UserX className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
+                              <QueueActionButtons
+                                queue={queue}
+                                onActionComplete={() => {
+                                  queryClient.invalidateQueries({ 
+                                    queryKey: ['/api/salons', selectedSalonId, 'queues'] 
+                                  });
+                                }}
+                              />
                             </div>
                           ))}
                       </div>

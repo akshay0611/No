@@ -2,23 +2,27 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Star, AlertCircle, Navigation, CheckCircle, XCircle } from "lucide-react";
+import { MapPin, Clock, Star, AlertCircle, Navigation, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { api } from "../lib/api";
 import { queryClient } from "../lib/queryClient";
 import ReviewModal from "../components/ReviewModal";
+import NotificationOverlay from "../components/NotificationOverlay";
+import CheckInButton from "../components/CheckInButton";
+import QueueStatusBadge from "../components/QueueStatusBadge";
+import ServiceTimer from "../components/ServiceTimer";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import type { QueueWithDetails } from "../types";
+import type { QueueWithDetails, WebSocketMessage } from "../types";
 
 export default function Queue() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { connected } = useWebSocket();
   const [, setLocation] = useLocation();
-  const [loadingDirections, setLoadingDirections] = useState<string | null>(null);
   const [reviewQueue, setReviewQueue] = useState<QueueWithDetails | null>(null);
+  const [notificationData, setNotificationData] = useState<WebSocketMessage | null>(null);
 
   // Load reviewed queues from localStorage
   const [reviewedQueues, setReviewedQueues] = useState<Set<string>>(() => {
@@ -29,6 +33,20 @@ export default function Queue() {
       return new Set();
     }
   });
+
+  // Listen for queue notification events from WebSocket
+  useEffect(() => {
+    const handleQueueNotification = (event: CustomEvent<WebSocketMessage>) => {
+      setNotificationData(event.detail);
+    };
+
+    window.addEventListener('queue_notification', handleQueueNotification as EventListener);
+    return () => {
+      window.removeEventListener('queue_notification', handleQueueNotification as EventListener);
+    };
+  }, []);
+
+
 
   // Helper function to mark queue as reviewed and persist to localStorage
   const markQueueAsReviewed = (queueId: string) => {
@@ -55,14 +73,20 @@ export default function Queue() {
   useEffect(() => {
     if (!queues || queues.length === 0) return;
 
-    const activeQueues = queues.filter(q => q.status === 'waiting' || q.status === 'in-progress');
-    
+    const activeQueues = queues.filter(q =>
+      q.status === 'waiting' ||
+      q.status === 'notified' ||
+      q.status === 'pending_verification' ||
+      q.status === 'nearby' ||
+      q.status === 'in-progress'
+    );
+
     activeQueues.forEach(queue => {
       // Check if status changed to in-progress
       if (queue.status === 'in-progress') {
         const notifiedKey = `notified-in-progress-${queue.id}`;
         const hasNotified = sessionStorage.getItem(notifiedKey);
-        
+
         if (!hasNotified) {
           toast({
             title: "Your turn!",
@@ -149,10 +173,8 @@ export default function Queue() {
     }
   };
 
-  // Get user's current location with high accuracy and open directions
-  const openDirections = (salon: any, queueId: string) => {
-    setLoadingDirections(queueId);
-
+  // Open Google Maps directions
+  const openDirections = (salon: any) => {
     console.log('Opening directions for salon:', {
       name: salon.name,
       latitude: salon.latitude,
@@ -181,7 +203,6 @@ export default function Queue() {
         console.log('Opening Google Maps with address search:', url);
         window.open(url, '_blank');
       }
-      setLoadingDirections(null);
     };
 
     // Try to get user location quickly, but don't wait too long
@@ -259,7 +280,13 @@ export default function Queue() {
     );
   }
 
-  const activeQueues = queues.filter(q => q.status === 'waiting' || q.status === 'in-progress');
+  const activeQueues = queues.filter(q =>
+    q.status === 'waiting' ||
+    q.status === 'notified' ||
+    q.status === 'pending_verification' ||
+    q.status === 'nearby' ||
+    q.status === 'in-progress'
+  );
 
   const getServiceName = (queue: QueueWithDetails) => {
     if (queue.services && queue.services.length > 0) {
@@ -272,6 +299,43 @@ export default function Queue() {
 
   return (
     <>
+      {/* Notification Overlay */}
+      {notificationData && notificationData.queueId && (
+        <NotificationOverlay
+          isOpen={true}
+          notification={{
+            queueId: notificationData.queueId,
+            salonName: notificationData.salonName || '',
+            salonAddress: notificationData.salonAddress || '',
+            estimatedMinutes: notificationData.estimatedMinutes || 10,
+            services: notificationData.services || [],
+            salonLocation: notificationData.salonLocation || { latitude: 0, longitude: 0 },
+          }}
+
+          onAccept={() => {
+            // I'm On My Way - scroll to queue card
+            if (notificationData.queueId) {
+              // Dismiss notification first
+              setNotificationData(null);
+
+              // Wait a bit for animation, then scroll
+              setTimeout(() => {
+                const queueElement = document.querySelector(`[data-testid="queue-${notificationData.queueId}"]`);
+                if (queueElement) {
+                  queueElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                  // Add a subtle highlight effect
+                  queueElement.classList.add('ring-2', 'ring-teal-500', 'ring-offset-2');
+                  setTimeout(() => {
+                    queueElement.classList.remove('ring-2', 'ring-teal-500', 'ring-offset-2');
+                  }, 2000);
+                }
+              }, 300);
+            }
+          }}
+        />
+      )}
+
       {/* Review Modal */}
       {reviewQueue && (
         <ReviewModal
@@ -344,18 +408,13 @@ export default function Queue() {
                         <div className="p-4 bg-gray-50">
                           {/* Status Badge */}
                           <div className="flex items-center justify-between mb-4">
-                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium shadow-sm ${queue.status === 'in-progress'
-                              ? 'bg-teal-100 text-teal-700 border border-teal-200'
-                              : 'bg-white text-gray-700 border border-gray-200'
-                              }`} data-testid={`badge-status-${queue.id}`}>
-                              {queue.status === 'waiting' ? 'Waiting' : 'In Progress'}
-                            </div>
+                            <QueueStatusBadge status={queue.status} />
                             <span className="text-xs text-gray-500" data-testid={`text-joined-time-${queue.id}`}>
                               {new Date(queue.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
 
-                          {/* Position & Wait Time */}
+                          {/* Position & Wait Time / Status Info */}
                           <div className="bg-white rounded-xl p-4 mb-4 shadow-md border-2 border-teal-200">
                             {queue.status === 'waiting' ? (
                               <div className="space-y-3">
@@ -393,7 +452,7 @@ export default function Queue() {
                                   </div>
                                 </div>
                               </div>
-                            ) : (
+                            ) : queue.status === 'in-progress' ? (
                               <div className="space-y-3 py-2">
                                 {/* Your Turn Animation */}
                                 <div className="flex justify-center">
@@ -405,15 +464,119 @@ export default function Queue() {
                                     />
                                   </div>
                                 </div>
-                                
+
                                 {/* Your Turn Message */}
                                 <div className="text-center">
                                   <p className="text-lg font-bold text-teal-700 mb-1">Your turn!</p>
                                   <p className="text-sm text-gray-600">Please proceed to the salon</p>
                                 </div>
                               </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {/* Position & Time Info for other statuses */}
+                                <div className="flex items-center justify-between">
+                                  <div className="text-center flex-1">
+                                    <div className="text-3xl font-bold text-teal-600" data-testid={`text-queue-position-${queue.id}`}>
+                                      {queue.position === 1 ? "You're next!" : `#${queue.position}`}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1 font-medium">Position</div>
+                                  </div>
+                                  {queue.estimatedWaitTime && (
+                                    <>
+                                      <div className="w-px h-12 bg-teal-200"></div>
+                                      <div className="text-center flex-1">
+                                        <div className="text-3xl font-bold text-gray-900" data-testid={`text-estimated-wait-${queue.id}`}>
+                                          {queue.estimatedWaitTime}
+                                        </div>
+                                        <div className="text-xs text-gray-600 mt-1 font-medium">Minutes</div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
+
+                          {/* Service Timer for in-progress status */}
+                          {queue.status === 'in-progress' && queue.serviceStartedAt && (
+                            <ServiceTimer
+                              startTime={new Date(queue.serviceStartedAt)}
+                              estimatedDuration={queue.services?.reduce((sum, s) => sum + (s.duration || 0), 0)}
+                              className="mb-4"
+                            />
+                          )}
+
+                          {/* Check-in Button for notified status */}
+                          {queue.status === 'notified' && queue.salon?.latitude && queue.salon?.longitude && (
+                            <div className="mb-4 space-y-3">
+                              <CheckInButton
+                                queueId={queue.id}
+                                salonLocation={{
+                                  latitude: queue.salon.latitude,
+                                  longitude: queue.salon.longitude,
+                                }}
+                                onCheckInSuccess={() => {
+                                  queryClient.invalidateQueries({ queryKey: ['/api/queues/my'] });
+                                }}
+                                onCheckInError={(error) => {
+                                  console.error('Check-in error:', error);
+                                }}
+                              />
+
+                              {/* Verification Disclaimer */}
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-medium text-amber-900 mb-1">
+                                      Verification Required
+                                    </p>
+                                    <p className="text-xs text-amber-700 leading-relaxed">
+                                      Your arrival will be verified by the salon. Please ensure you're actually at or near the location. Fake check-ins may result in account suspension.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Pending Verification Message */}
+                          {queue.status === 'pending_verification' && (
+                            <div className="mb-4">
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <Clock className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-medium text-blue-900 mb-1">
+                                      Verifying Your Arrival
+                                    </p>
+                                    <p className="text-xs text-blue-700 leading-relaxed">
+                                      The salon is reviewing your check-in. This usually takes a few moments. Please wait nearby.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Nearby Confirmed Message */}
+                          {queue.status === 'nearby' && (
+                            <div className="mb-4">
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-medium text-green-900 mb-1">
+                                      Arrival Confirmed
+                                    </p>
+                                    <p className="text-xs text-green-700 leading-relaxed">
+                                      Great! The salon has confirmed your arrival. Please wait for your turn to be called.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Service Details */}
                           <div className="space-y-2 mb-4 bg-white rounded-lg p-3 shadow-sm">
@@ -460,13 +623,12 @@ export default function Queue() {
                           {/* Action Buttons */}
                           <div className="flex gap-2 pt-2">
                             <button
-                              onClick={() => openDirections(queue.salon, queue.id)}
-                              disabled={loadingDirections === queue.id}
-                              className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:opacity-50 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                              onClick={() => openDirections(queue.salon)}
+                              className="flex-1 h-11 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
                               data-testid={`button-directions-${queue.id}`}
                             >
                               <Navigation className="h-4 w-4" />
-                              {loadingDirections === queue.id ? 'Loading...' : 'Directions'}
+                              Show Map
                             </button>
                             <button
                               disabled={leaveQueueMutation.isPending}

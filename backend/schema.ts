@@ -72,10 +72,29 @@ export const queues = pgTable("queues", {
   serviceIds: jsonb("service_ids").$type<string[]>().notNull(), // Multiple services
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(), // Total price for all services
   appliedOffers: jsonb("applied_offers").$type<string[]>().default([]), // Applied offer IDs
-  status: text("status", { enum: ["waiting", "in-progress", "completed", "no-show"] }).notNull().default("waiting"),
+  status: text("status", { 
+    enum: ["waiting", "notified", "pending_verification", "nearby", "in-progress", "completed", "no-show"] 
+  }).notNull().default("waiting"),
   position: integer("position").notNull(),
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
   estimatedWaitTime: integer("estimated_wait_time"), // in minutes
+  // New fields for queue management
+  notifiedAt: timestamp("notified_at"),
+  notificationMinutes: integer("notification_minutes"),
+  checkInAttemptedAt: timestamp("check_in_attempted_at"),
+  checkInLocation: jsonb("check_in_location").$type<{
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  }>(),
+  checkInDistance: integer("check_in_distance"), // meters
+  verifiedAt: timestamp("verified_at"),
+  verificationMethod: text("verification_method", { enum: ["gps_auto", "manual", "admin_override"] }),
+  verifiedBy: varchar("verified_by"),
+  serviceStartedAt: timestamp("service_started_at"),
+  serviceCompletedAt: timestamp("service_completed_at"),
+  noShowMarkedAt: timestamp("no_show_marked_at"),
+  noShowReason: text("no_show_reason"),
 });
 
 // ---------------- OFFERS ----------------
@@ -213,3 +232,95 @@ export const insertSalonPhotoSchema = createInsertSchema(salonPhotos).omit({
 
 export type InsertSalonPhoto = z.infer<typeof insertSalonPhotoSchema>;
 export type SalonPhoto = typeof salonPhotos.$inferSelect;
+
+// ---------------- QUEUE MANAGEMENT TYPES ----------------
+
+// Trust levels for reputation system
+export type TrustLevel = 'new' | 'regular' | 'trusted' | 'suspicious' | 'banned';
+
+// Queue status type
+export type QueueStatus = 'waiting' | 'notified' | 'pending_verification' | 'nearby' | 'in-progress' | 'completed' | 'no-show';
+
+// Verification method type
+export type VerificationMethod = 'gps_auto' | 'manual' | 'admin_override';
+
+// Notification type
+export type NotificationType = 'queue_notification' | 'arrival_verified' | 'service_starting' | 'service_completed' | 'no_show' | 'position_update';
+
+// User Reputation (MongoDB)
+export type UserReputation = {
+  id: string;
+  userId: string;
+  totalCheckIns: number;
+  successfulCheckIns: number;
+  falseCheckIns: number;
+  noShows: number;
+  completedServices: number;
+  reputationScore: number; // 0-100
+  trustLevel: TrustLevel;
+  lastCheckInAt?: Date;
+  lastNoShowAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// Check-In Log (MongoDB)
+export type CheckInLog = {
+  id: string;
+  userId: string;
+  queueId: string;
+  salonId: string;
+  timestamp: Date;
+  userLocation?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  };
+  salonLocation: {
+    latitude: number;
+    longitude: number;
+  };
+  distance?: number; // meters
+  method: VerificationMethod;
+  autoApproved: boolean;
+  requiresConfirmation: boolean;
+  verifiedBy?: string; // admin user ID
+  success: boolean;
+  reason?: string;
+  suspicious: boolean;
+  suspiciousReasons?: string[];
+  timeSinceNotification?: number; // milliseconds
+};
+
+// Notification Log (MongoDB)
+export type NotificationLog = {
+  id: string;
+  userId: string;
+  queueId: string;
+  salonId: string;
+  timestamp: Date;
+  type: NotificationType;
+  title: string;
+  body: string;
+  channels: {
+    whatsapp: {
+      sent: boolean;
+      sentAt?: Date;
+      error?: string;
+    };
+    websocket: {
+      sent: boolean;
+      sentAt?: Date;
+      delivered: boolean;
+    };
+    push?: {
+      sent: boolean;
+      sentAt?: Date;
+      error?: string;
+    };
+  };
+  viewed: boolean;
+  viewedAt?: Date;
+  actionTaken?: string;
+  actionTakenAt?: Date;
+};

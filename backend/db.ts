@@ -107,9 +107,30 @@ const queueSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true }, 
   appliedOffers: { type: [String], default: [] }, 
   position: { type: Number, required: true },
-  status: { type: String, enum: ['waiting', 'in-progress', 'completed', 'no-show'], default: 'waiting' },
+  status: { 
+    type: String, 
+    enum: ['waiting', 'notified', 'pending_verification', 'nearby', 'in-progress', 'completed', 'no-show'], 
+    default: 'waiting' 
+  },
   estimatedWaitTime: { type: Number }, // in minutes, matches schema.ts
   timestamp: { type: Date, default: Date.now }, // matches schema.ts field name
+  // New fields for queue management
+  notifiedAt: { type: Date },
+  notificationMinutes: { type: Number }, // How many minutes user was given (5, 10, 15, 20)
+  checkInAttemptedAt: { type: Date },
+  checkInLocation: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    accuracy: { type: Number }
+  },
+  checkInDistance: { type: Number }, // meters from salon
+  verifiedAt: { type: Date },
+  verificationMethod: { type: String, enum: ['gps_auto', 'manual', 'admin_override'] },
+  verifiedBy: { type: String }, // admin user ID if manual
+  serviceStartedAt: { type: Date },
+  serviceCompletedAt: { type: Date },
+  noShowMarkedAt: { type: Date },
+  noShowReason: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -142,6 +163,131 @@ const salonPhotoSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// User Reputation Schema
+const userReputationSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, unique: true },
+  totalCheckIns: { type: Number, default: 0 },
+  successfulCheckIns: { type: Number, default: 0 },
+  falseCheckIns: { type: Number, default: 0 }, // Admin rejected
+  noShows: { type: Number, default: 0 },
+  completedServices: { type: Number, default: 0 },
+  reputationScore: { type: Number, default: 50, min: 0, max: 100 }, // 0-100
+  trustLevel: { 
+    type: String, 
+    enum: ['new', 'regular', 'trusted', 'suspicious', 'banned'], 
+    default: 'new' 
+  },
+  lastCheckInAt: { type: Date },
+  lastNoShowAt: { type: Date },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Check-In Log Schema
+const checkInLogSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  queueId: { type: String, required: true },
+  salonId: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  // Location data
+  userLocation: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    accuracy: { type: Number }
+  },
+  salonLocation: {
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true }
+  },
+  distance: { type: Number }, // meters
+  // Verification details
+  method: { 
+    type: String, 
+    enum: ['gps_auto', 'manual', 'admin_override'], 
+    required: true 
+  },
+  autoApproved: { type: Boolean, required: true },
+  requiresConfirmation: { type: Boolean, required: true },
+  verifiedBy: { type: String }, // admin user ID
+  // Result
+  success: { type: Boolean, required: true },
+  reason: { type: String }, // If failed or flagged
+  // Pattern detection flags
+  suspicious: { type: Boolean, default: false },
+  suspiciousReasons: { type: [String], default: [] },
+  // Timing
+  timeSinceNotification: { type: Number } // milliseconds
+});
+
+// Notification Log Schema
+const notificationLogSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  queueId: { type: String, required: true },
+  salonId: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  // Notification details
+  type: { 
+    type: String, 
+    enum: [
+      'queue_notification', 
+      'arrival_verified', 
+      'service_starting', 
+      'service_completed', 
+      'no_show',
+      'position_update'
+    ], 
+    required: true 
+  },
+  title: { type: String, required: true },
+  body: { type: String, required: true },
+  // Delivery channels
+  channels: {
+    whatsapp: {
+      sent: { type: Boolean, default: false },
+      sentAt: { type: Date },
+      error: { type: String }
+    },
+    websocket: {
+      sent: { type: Boolean, default: false },
+      sentAt: { type: Date },
+      delivered: { type: Boolean, default: false } // User was connected
+    },
+    push: {
+      sent: { type: Boolean, default: false },
+      sentAt: { type: Date },
+      error: { type: String }
+    }
+  },
+  // User interaction
+  viewed: { type: Boolean, default: false },
+  viewedAt: { type: Date },
+  actionTaken: { type: String }, // e.g., "accepted", "dismissed"
+  actionTakenAt: { type: Date }
+});
+
+// Create indexes for optimal query performance
+queueSchema.index({ salonId: 1, status: 1 });
+queueSchema.index({ userId: 1, status: 1 });
+queueSchema.index({ status: 1, notifiedAt: 1 });
+queueSchema.index({ salonId: 1, position: 1 });
+
+userReputationSchema.index({ userId: 1 }, { unique: true });
+userReputationSchema.index({ trustLevel: 1 });
+userReputationSchema.index({ reputationScore: 1 });
+
+checkInLogSchema.index({ userId: 1, timestamp: -1 });
+checkInLogSchema.index({ queueId: 1 });
+checkInLogSchema.index({ salonId: 1, timestamp: -1 });
+checkInLogSchema.index({ suspicious: 1 });
+
+notificationLogSchema.index({ userId: 1, timestamp: -1 });
+notificationLogSchema.index({ queueId: 1 });
+notificationLogSchema.index({ salonId: 1, timestamp: -1 });
+notificationLogSchema.index({ type: 1 });
+
 // Create models
 export const UserModel = mongoose.model('User', userSchema);
 export const SalonModel = mongoose.model('Salon', salonSchema);
@@ -150,3 +296,6 @@ export const QueueModel = mongoose.model('Queue', queueSchema);
 export const OfferModel = mongoose.model('Offer', offerSchema);
 export const ReviewModel = mongoose.model('Review', reviewSchema);
 export const SalonPhotoModel = mongoose.model('SalonPhoto', salonPhotoSchema);
+export const UserReputationModel = mongoose.model('UserReputation', userReputationSchema);
+export const CheckInLogModel = mongoose.model('CheckInLog', checkInLogSchema);
+export const NotificationLogModel = mongoose.model('NotificationLog', notificationLogSchema);

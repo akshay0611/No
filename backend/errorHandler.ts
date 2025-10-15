@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { QueueError } from './errors/QueueError';
 
 // Custom error class with status code
 export class AppError extends Error {
@@ -14,6 +15,28 @@ export class AppError extends Error {
 // Global error handling middleware
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
+  
+  // Handle QueueError (queue management specific errors)
+  if (err instanceof QueueError) {
+    const response: any = {
+      status: 'error',
+      error: err.code,
+      message: err.userMessage,
+      retryable: err.retryable
+    };
+    
+    // Include details in development mode
+    if (process.env.NODE_ENV === 'development' && err.details) {
+      response.details = err.details;
+    }
+    
+    // Add retry-after header for rate limit errors
+    if (err.statusCode === 429) {
+      res.setHeader('Retry-After', '300'); // 5 minutes in seconds
+    }
+    
+    return res.status(err.statusCode).json(response);
+  }
   
   // Default error values
   const statusCode = err.statusCode || 500;

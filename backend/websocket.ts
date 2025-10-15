@@ -167,6 +167,183 @@ class WebSocketManager {
     const client = this.clients.get(userId);
     return client ? client.readyState === WebSocket.OPEN : false;
   }
+
+  // Send queue_notification event to specific user
+  sendQueueNotification(
+    userId: string,
+    data: {
+      queueId: string;
+      salonId: string;
+      salonName: string;
+      salonAddress: string;
+      estimatedMinutes: number;
+      services: Array<{ id: string; name: string; price: number; duration: number }>;
+      salonLocation: { latitude: number; longitude: number };
+    }
+  ): boolean {
+    const client = this.clients.get(userId);
+    
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'queue_notification',
+        userId,
+        ...data,
+        timestamp: new Date().toISOString()
+      }));
+      
+      console.log(`🔔 Sent queue_notification to user: ${userId}`);
+      return true;
+    }
+    
+    console.log(`⚠️ User ${userId} not connected for queue_notification`);
+    return false;
+  }
+
+  // Send customer_arrived event to all admin connections for a salon
+  sendCustomerArrivedToSalon(
+    salonId: string,
+    data: {
+      queueId: string;
+      userId: string;
+      userName: string;
+      userPhone: string;
+      verified: boolean;
+      distance?: number;
+      requiresConfirmation: boolean;
+    }
+  ): void {
+    const message = JSON.stringify({
+      type: 'customer_arrived',
+      salonId,
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+
+    // Broadcast to all connected clients (admins will filter by salon)
+    this.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN && client.isAuthenticated) {
+        client.send(message);
+      }
+    });
+
+    console.log(`📢 Sent customer_arrived event for salon: ${salonId}`);
+  }
+
+  // Send queue_position_update event to all users in a salon's queue
+  sendQueuePositionUpdate(
+    salonId: string,
+    queues: Array<{
+      id: string;
+      userId: string;
+      position: number;
+      status: string;
+      estimatedWaitTime: number;
+    }>
+  ): void {
+    const message = JSON.stringify({
+      type: 'queue_position_update',
+      salonId,
+      queues,
+      timestamp: new Date().toISOString()
+    });
+
+    // Broadcast to all connected clients
+    this.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN && client.isAuthenticated) {
+        client.send(message);
+      }
+    });
+
+    console.log(`📢 Sent queue_position_update for salon: ${salonId}`);
+  }
+
+  // Send service_starting event to specific user
+  sendServiceStarting(
+    userId: string,
+    data: {
+      queueId: string;
+      salonName: string;
+      services: Array<{ id: string; name: string; duration: number }>;
+      estimatedTime: number;
+    }
+  ): boolean {
+    const client = this.clients.get(userId);
+    
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'service_starting',
+        userId,
+        ...data,
+        timestamp: new Date().toISOString()
+      }));
+      
+      console.log(`🔔 Sent service_starting to user: ${userId}`);
+      return true;
+    }
+    
+    console.log(`⚠️ User ${userId} not connected for service_starting`);
+    return false;
+  }
+
+  // Send service_completed event to specific user
+  sendServiceCompleted(
+    userId: string,
+    data: {
+      queueId: string;
+      salonName: string;
+      services: Array<{ id: string; name: string; price: number }>;
+      totalPrice: number;
+    }
+  ): boolean {
+    const client = this.clients.get(userId);
+    
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'service_completed',
+        userId,
+        ...data,
+        timestamp: new Date().toISOString()
+      }));
+      
+      console.log(`🔔 Sent service_completed to user: ${userId}`);
+      return true;
+    }
+    
+    console.log(`⚠️ User ${userId} not connected for service_completed`);
+    return false;
+  }
+
+  // Send no_show event to specific user
+  sendNoShow(
+    userId: string,
+    data: {
+      queueId: string;
+      salonName: string;
+      reason: string;
+    }
+  ): boolean {
+    const client = this.clients.get(userId);
+    
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'no_show',
+        userId,
+        ...data,
+        timestamp: new Date().toISOString()
+      }));
+      
+      console.log(`🔔 Sent no_show to user: ${userId}`);
+      return true;
+    }
+    
+    console.log(`⚠️ User ${userId} not connected for no_show`);
+    return false;
+  }
+
+  // Get the number of active WebSocket connections
+  getConnectionCount(): number {
+    return this.clients.size;
+  }
 }
 
 // Export singleton instance

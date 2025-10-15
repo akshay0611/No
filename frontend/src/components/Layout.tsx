@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import { InstallPrompt } from "./InstallPrompt";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
       {!isAuthPage && <Footer />}
+      <InstallPrompt />
     </div>
   );
 }
