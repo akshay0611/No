@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ import type { Offer } from "../types";
 
 export default function QueueSummary() {
   const [, setLocation] = useLocation();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { user } = useAuth();
   const { items, removeItem, clearCart, getTotalPrice } = useCart();
   const { toast } = useToast();
@@ -44,13 +49,13 @@ export default function QueueSummary() {
 
   const subtotal = getTotalPrice();
   const discountAmount = selectedOffer ? (subtotal * selectedOffer.discount) / 100 : 0;
-  
+
   // Calculate loyalty discount
   const salonId = items[0]?.salonId;
   const salonPoints = user?.salonLoyaltyPoints?.[salonId] || 0;
   const loyaltyDiscount = salonPoints >= 100 ? 20 : salonPoints >= 50 ? 10 : 0;
   const loyaltyDiscountAmount = loyaltyDiscount > 0 ? (subtotal * loyaltyDiscount) / 100 : 0;
-  
+
   // Round to nearest integer to avoid floating point issues
   const finalTotal = Math.round(subtotal - discountAmount - loyaltyDiscountAmount);
 
