@@ -1,29 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Tag, Heart, ShoppingCart, Percent, Sparkles, Scissors, Palette, TrendingUp, Zap } from "lucide-react";
+import { Star, MapPin, Clock, Heart, ShoppingCart, Zap } from "lucide-react";
 import { GoogleMap, useLoadScript, MarkerF } from "@react-google-maps/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { api } from "../lib/api";
-import type { SalonDetails, Offer } from "../types";
-
-// Helper function to get service icon
-const getServiceIcon = (serviceName: string) => {
-  const name = serviceName.toLowerCase();
-  if (name.includes('cut') || name.includes('trim') || name.includes('shave')) {
-    return Scissors;
-  } else if (name.includes('color') || name.includes('dye') || name.includes('highlight')) {
-    return Palette;
-  } else if (name.includes('style') || name.includes('blow')) {
-    return Sparkles;
-  }
-  return Scissors; // Default icon
-};
+import type { SalonDetails } from "../types";
 
 // Helper function to determine if service is popular (mock logic - can be replaced with real data)
 const isPopularService = (_serviceId: string, index: number) => {
@@ -44,9 +31,8 @@ export default function SalonProfile() {
   const [, setLocation] = useLocation();
   const { user, updateUser } = useAuth();
   const { addItem, items, getItemCount } = useCart();
-  const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
+  const reviewsScrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -135,14 +121,32 @@ export default function SalonProfile() {
     enabled: !!id,
   });
 
-  // Fetch salon offers
-  const { data: offers = [], isLoading: offersLoading } = useQuery<Offer[]>({
-    queryKey: ['salon-offers', id],
-    queryFn: () => api.offers.getBySalon(id!),
-    enabled: !!id,
-  });
+  // Auto-scroll reviews horizontally after 4 seconds on mobile
+  useEffect(() => {
+    const scrollContainer = reviewsScrollRef.current;
+    if (!scrollContainer || !salon?.reviews || salon.reviews.length === 0) return;
 
+    const timer = setTimeout(() => {
+      let scrollPosition = 0;
+      const cardWidth = 320; // Approximate width of each review card
+      const scrollInterval = setInterval(() => {
+        if (scrollContainer) {
+          scrollPosition += cardWidth;
+          if (scrollPosition >= scrollContainer.scrollWidth - scrollContainer.clientWidth) {
+            scrollPosition = 0; // Reset to start
+          }
+          scrollContainer.scrollTo({
+            left: scrollPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 4000); // Scroll every 3 seconds
 
+      return () => clearInterval(scrollInterval);
+    }, 5000); // Start after 4 seconds
+
+    return () => clearTimeout(timer);
+  }, [salon?.reviews]);
 
   if (isLoading) {
     return (
@@ -269,6 +273,11 @@ export default function SalonProfile() {
                 mapContainerStyle={{ width: "100%", height: "100%" }}
                 center={{ lat: salon.latitude, lng: salon.longitude }}
                 zoom={15}
+                options={{
+                  mapTypeControl: false,
+                  streetViewControl: false,
+                  fullscreenControl: true,
+                }}
               >
                 <MarkerF position={{ lat: salon.latitude, lng: salon.longitude }} />
               </GoogleMap>
@@ -297,132 +306,86 @@ export default function SalonProfile() {
           {/* Services Grid */}
           <div className="grid md:grid-cols-2 gap-6">
             {salon.services.map((service, index) => {
-              const ServiceIcon = getServiceIcon(service.name);
               const isPopular = isPopularService(service.id, index);
-              const isExpanded = expandedServices.has(service.id);
-              const hasLongDescription = service.description && service.description.length > 100;
 
               return (
                 <Card
                   key={service.id}
-                  className="group hover:shadow-2xl transition-all duration-300 border-2 border-gray-100 hover:border-teal-300 bg-gradient-to-br from-white to-teal-50/30 overflow-hidden relative flex flex-col"
+                  className="flex-shrink-0 w-[85vw] md:w-full snap-start group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-teal-300 bg-white overflow-hidden relative"
                   data-testid={`service-${service.id}`}
                 >
                   {/* Popular Badge */}
                   {isPopular && (
-                    <div className="absolute top-4 right-4 z-10">
-                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-3 py-1 shadow-lg flex items-center space-x-1">
-                        <TrendingUp className="w-3 h-3" />
-                        <span>Most Popular</span>
+                    <div className="absolute top-3 right-3 z-10">
+                      <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold px-2 py-0.5 shadow-md">
+                        Popular
                       </Badge>
                     </div>
                   )}
 
-                  <CardHeader className="pb-3 pt-6">
-                    <div className="flex items-start space-x-4">
-                      {/* Service Icon */}
-                      <div className="flex-shrink-0 bg-gradient-to-br from-teal-500 to-cyan-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                        <ServiceIcon className="w-6 h-6 text-white" />
-                      </div>
+                  <CardContent className="p-4">
+                    {/* Service Name */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 capitalize" data-testid={`text-service-name-${service.id}`}>
+                      {service.name}
+                    </h3>
 
-                      <div className="flex-1 min-w-0">
-                        {/* Service Name - Better Typography */}
-                        <CardTitle className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-teal-600 transition-colors capitalize" data-testid={`text-service-name-${service.id}`}>
-                          {service.name}
-                        </CardTitle>
+                    {/* Service Description */}
+                    {service.description ? (
+                      <p className="text-gray-600 text-xs mb-3 line-clamp-2">
+                        {service.description}
+                      </p>
+                    ) : (
+                      <p className="text-gray-500 text-xs mb-3 italic">
+                        Professional {service.name.toLowerCase()} service
+                      </p>
+                    )}
 
-                        {/* Service Description with Truncation */}
-                        {service.description ? (
-                          <div className="space-y-1">
-                            <CardDescription className={`text-gray-600 text-sm leading-relaxed ${!isExpanded && hasLongDescription ? 'line-clamp-3' : ''}`}>
-                              {service.description}
-                            </CardDescription>
-                            {hasLongDescription && (
-                              <button
-                                onClick={() => {
-                                  const newExpanded = new Set(expandedServices);
-                                  if (isExpanded) {
-                                    newExpanded.delete(service.id);
-                                  } else {
-                                    newExpanded.add(service.id);
-                                  }
-                                  setExpandedServices(newExpanded);
-                                }}
-                                className="text-teal-600 hover:text-teal-700 text-xs font-semibold inline-flex items-center"
-                              >
-                                {isExpanded ? 'Show less' : 'Read more'}
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <CardDescription className="text-gray-500 text-sm italic">
-                            Professional {service.name.toLowerCase()} service
-                          </CardDescription>
-                        )}
+                    {/* Duration and Price Row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        <span className="text-xs text-gray-600" data-testid={`text-service-duration-${service.id}`}>
+                          {service.duration} min
+                        </span>
                       </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4 pb-6 flex-1 flex flex-col">
-                    {/* Service Details */}
-                    <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-teal-100 flex-shrink-0">
-                      <div className="flex items-center space-x-2">
-                        <div className="bg-teal-100 p-2 rounded-lg">
-                          <Clock className="w-4 h-4 text-teal-600" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 font-medium">Duration</p>
-                          <p className="text-sm font-bold text-gray-900" data-testid={`text-service-duration-${service.id}`}>
-                            {service.duration} minutes
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 font-medium mb-1">Price</p>
-                        <div className="flex items-baseline space-x-1">
-                          <span className="text-3xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" data-testid={`text-service-price-${service.id}`}>
-                            ₹{service.price}
-                          </span>
-                        </div>
-                      </div>
+                      <span className="text-xl font-bold text-teal-600" data-testid={`text-service-price-${service.id}`}>
+                        ₹{service.price}
+                      </span>
                     </div>
 
-                    {/* Action Buttons - Larger touch targets for mobile */}
-                    <div className="space-y-2 mt-auto">
+                    {/* Action Buttons - Compact */}
+                    <div className="flex gap-2">
                       <Button
                         onClick={() => handleAddToCart(service)}
                         disabled={isServiceInCart(service.id)}
-                        className={`w-full min-h-[48px] ${isServiceInCart(service.id)
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
-                          : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
-                          } text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]`}
+                        size="sm"
+                        className={`flex-1 h-8 text-xs ${isServiceInCart(service.id)
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-teal-600 hover:bg-teal-700'
+                          } text-white`}
                         data-testid={`button-add-service-${service.id}`}
                       >
                         {isServiceInCart(service.id) ? (
-                          <>
-                            <span className="mr-2">✓</span>
-                            Added to Cart
-                          </>
+                          <>✓ Added</>
                         ) : (
                           <>
-                            <ShoppingCart className="w-5 h-5 mr-2" />
-                            Add to Cart
+                            <ShoppingCart className="w-3 h-3 mr-1" />
+                            Add
                           </>
                         )}
                       </Button>
 
-                      {/* Quick Book Option */}
                       {!isServiceInCart(service.id) && (
                         <Button
                           onClick={() => {
                             handleAddToCart(service);
                             setTimeout(() => setLocation('/queue-summary'), 300);
                           }}
+                          size="sm"
                           variant="outline"
-                          className="w-full min-h-[44px] border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold rounded-xl transition-all"
+                          className="flex-1 h-8 text-xs border-teal-600 text-teal-600 hover:bg-teal-50"
                         >
-                          <Zap className="w-4 h-4 mr-2" />
+                          <Zap className="w-3 h-3 mr-1" />
                           Quick Book
                         </Button>
                       )}
@@ -454,136 +417,50 @@ export default function SalonProfile() {
           )}
         </div>
 
-        {/* Offers Section */}
-        <Card className="mt-8 mb-8 border-2 border-teal-100 bg-gradient-to-br from-white to-teal-50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-2xl">
-              <Tag className="h-6 w-6 text-teal-600" />
-              <span className="text-gray-900">Exclusive Offers</span>
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Save more with our special promotions and limited-time deals
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {offersLoading ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500">Loading offers...</p>
-              </div>
-            ) : offers.length > 0 ? (
-              <div className="space-y-4">
-                {offers.map((offer: Offer) => (
-                  <div key={offer.id} className="p-5 bg-white border-2 border-teal-100 rounded-xl hover:border-teal-300 hover:shadow-md transition-all">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <Badge className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-bold px-3 py-1">
-                        {offer.discount}% OFF
-                      </Badge>
-                      <h4 className="font-bold text-gray-900 text-lg">{offer.title}</h4>
-                    </div>
-                    <div className="mb-3">
-                      <p className="text-gray-600 text-sm">
-                        {expandedOffers.has(offer.id)
-                          ? offer.description
-                          : offer.description.length > 100
-                            ? `${offer.description.slice(0, 100)}...`
-                            : offer.description
-                        }
-                      </p>
-                      {offer.description.length > 100 && (
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedOffers);
-                            if (expandedOffers.has(offer.id)) {
-                              newExpanded.delete(offer.id);
-                            } else {
-                              newExpanded.add(offer.id);
-                            }
-                            setExpandedOffers(newExpanded);
-                          }}
-                          className="text-teal-600 hover:text-teal-700 font-medium text-xs mt-1 transition-colors"
-                        >
-                          {expandedOffers.has(offer.id) ? 'Read Less' : 'Read More'}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-                      <Clock className="w-4 h-4" />
-                      <span>
-                        Valid until {new Date(offer.validityPeriod).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        if (getItemCount() > 0) {
-                          setLocation('/queue-summary');
-                        } else {
-                          toast({
-                            title: "Add services first",
-                            description: "Please add services to your cart before applying an offer.",
-                          });
-                        }
-                      }}
-                      className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold"
-                      data-testid={`button-apply-offer-${offer.id}`}
-                    >
-                      Apply Offer
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Percent className="w-10 h-10 text-teal-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Offers</h3>
-                <p className="text-gray-600">Check back soon for exciting deals and promotions</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Reviews Section */}
-        <Card className="mt-8 border-2 border-teal-100">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center space-x-2 text-2xl mb-2">
-                  <Star className="h-6 w-6 text-teal-600" />
-                  <span className="text-gray-900">Customer Reviews</span>
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  {salon.reviews.length > 0
-                    ? `See what ${salon.reviews.length} ${salon.reviews.length === 1 ? 'customer has' : 'customers have'} to say about their experience`
-                    : 'Be the first to share your experience with us'
-                  }
-                </CardDescription>
-              </div>
+        <div className="mt-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+              Customer Reviews
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {salon.reviews.length > 0
+                ? `${salon.reviews.length} ${salon.reviews.length === 1 ? 'review' : 'reviews'}`
+                : 'Be the first to share your experience'
+              }
+            </p>
+          </div>
 
+          {salon.reviews.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-teal-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Reviews Yet</h3>
+              <p className="text-gray-600 text-sm" data-testid="text-no-reviews">
+                Be the first to share your experience
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {salon.reviews.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-10 h-10 text-teal-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Reviews Yet</h3>
-                  <p className="text-gray-600" data-testid="text-no-reviews">
-                    Be the first to share your experience and help others make informed decisions
-                  </p>
-                </div>
-              ) : (
-                salon.reviews.map((review) => (
-                  <div key={review.id} className="p-5 bg-white border-2 border-gray-100 rounded-xl hover:border-teal-200 transition-colors" data-testid={`review-${review.id}`}>
-                    {/* User Info Header */}
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-teal-100 bg-gray-100 flex-shrink-0">
+          ) : (
+            <div
+              ref={reviewsScrollRef}
+              className="flex md:flex-col gap-4 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory scrollbar-hide pb-2"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              {salon.reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="flex-shrink-0 w-[85vw] md:w-full snap-start p-5 bg-white border border-teal-100 rounded-lg hover:border-teal-300 hover:shadow-md transition-all"
+                  data-testid={`review-${review.id}`}
+                >
+                  {/* User Info and Rating Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-teal-100 bg-teal-50 flex-shrink-0">
                         {review.userProfileImage ? (
                           <img
                             src={review.userProfileImage}
@@ -591,50 +468,43 @@ export default function SalonProfile() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-teal-100 flex items-center justify-center">
-                            <span className="text-teal-600 font-bold text-lg">
+                          <div className="w-full h-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+                            <span className="text-white font-semibold text-base">
                               {(review.userName || 'A').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{review.userName || 'Anonymous'}</p>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-base">{review.userName || 'Anonymous'}</p>
                         <span className="text-xs text-gray-500" data-testid={`text-review-date-${review.id}`}>
                           {new Date(review.createdAt).toLocaleDateString('en-US', {
-                            month: 'long',
+                            month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                           })}
                         </span>
                       </div>
                     </div>
-                    
-                    {/* Rating */}
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-5 w-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="font-semibold text-gray-900">{review.rating}.0</span>
+
+                    {/* Rating Badge */}
+                    <div className="flex items-center space-x-1 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200">
+                      <Star className="h-4 w-4 text-teal-600 fill-teal-600" />
+                      <span className="font-semibold text-teal-700 text-sm">{review.rating}.0</span>
                     </div>
-                    
-                    {/* Comment */}
-                    {review.comment && (
-                      <p className="text-gray-700 leading-relaxed" data-testid={`text-review-comment-${review.id}`}>
-                        {review.comment}
-                      </p>
-                    )}
                   </div>
-                ))
-              )}
+
+                  {/* Comment */}
+                  {review.comment && (
+                    <p className="text-gray-700 leading-relaxed text-sm" data-testid={`text-review-comment-${review.id}`}>
+                      {review.comment}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );
