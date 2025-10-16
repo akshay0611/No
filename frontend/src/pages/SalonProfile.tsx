@@ -204,7 +204,7 @@ export default function SalonProfile() {
 
             {/* Category Thumbnails - Premium Style */}
             <div className="absolute bottom-4 left-4 right-4 flex gap-3 overflow-x-auto scrollbar-hide z-10 pb-1">
-              {['Interior', 'Reception', 'Services', 'Exterior'].map((category) => {
+              {['Interior', 'Services', 'Exterior'].map((category) => {
                 const categoryPhotos = (salon as any).photos.filter((p: any) => p.category === category.toLowerCase());
 
                 // Skip categories with no photos

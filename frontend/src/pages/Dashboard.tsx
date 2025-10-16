@@ -31,6 +31,7 @@ import {
   Camera,
   TrendingDown,
   LogOut,
+  ImageIcon,
 } from "lucide-react";
 import {
   Sheet,
@@ -677,12 +678,12 @@ export default function Dashboard() {
                   </SheetDescription>
                 </SheetHeader>
               </div>
-              
+
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto px-6 py-6 bg-white">
                 <VoiceNotificationSettings />
               </div>
-              
+
               {/* Fixed Logout Button at Bottom */}
               <div className="border-t bg-gray-50 px-6 py-4">
                 <Button
@@ -1694,6 +1695,47 @@ export default function Dashboard() {
                 {activeTab === 'gallery' && (
                   <div className="space-y-4">
                     <h2 className="text-lg font-bold text-black">Gallery</h2>
+
+                    {/* Info Banner - Mobile Optimized */}
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-3 sm:p-4">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs sm:text-sm font-semibold text-blue-900 mb-1">
+                            Upload Categorized Photos
+                          </h3>
+                          <p className="text-[11px] sm:text-xs text-blue-700 leading-relaxed mb-2">
+                            Add photos in 3 categories to showcase your salon professionally:
+                          </p>
+                          <div className="space-y-1.5 text-[11px] sm:text-xs">
+                            <div className="flex items-start gap-1">
+                              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></div>
+                              <div className="flex flex-wrap items-baseline gap-1">
+                                <span className="text-blue-800 font-medium">Interior</span>
+                                <span className="text-blue-600">- Main salon area & ambiance</span>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></div>
+                              <div className="flex flex-wrap items-baseline gap-1">
+                                <span className="text-blue-800 font-medium">Services</span>
+                                <span className="text-blue-600">- Work stations & equipment</span>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500 mt-1 flex-shrink-0"></div>
+                              <div className="flex flex-wrap items-baseline gap-1">
+                                <span className="text-blue-800 font-medium">Exterior</span>
+                                <span className="text-blue-600">- Building facade & entrance</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <GalleryManager salonId={selectedSalonId} />
                   </div>
                 )}
