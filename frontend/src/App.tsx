@@ -137,31 +137,33 @@ function App() {
   // Navigate to appropriate page when entering app phase (only if needed)
   useEffect(() => {
     if (currentPhase === 'app' && authenticatedUser) {
+      console.log('=== APP ROUTING DEBUG ===');
       console.log('App phase reached with user:', authenticatedUser);
+      console.log('User role:', authenticatedUser.role);
+      console.log('Role type:', typeof authenticatedUser.role);
+      console.log('Is salon_owner?', authenticatedUser.role === 'salon_owner');
       
       // Get current path
       const currentPath = window.location.pathname;
       console.log('Current path:', currentPath);
       
-      // Only redirect if:
-      // 1. User just completed auth flow (on /auth page)
-      // 2. User is on root and needs initial routing
+      // Check if user just logged in (coming from auth page)
       const isOnAuthPage = currentPath === '/auth';
       const isOnRoot = currentPath === '/' || currentPath === '';
-      const needsInitialRouting = isOnAuthPage || (isOnRoot && !localStorage.getItem('has_been_routed'));
       
-      if (needsInitialRouting) {
+      // Always redirect if on auth page or root
+      if (isOnAuthPage || isOnRoot) {
         if (authenticatedUser.role === 'salon_owner') {
-          console.log('Navigating admin to dashboard');
+          console.log('✅ Navigating ADMIN to /dashboard');
           setLocation('/dashboard');
         } else {
-          console.log('Navigating customer to home');
+          console.log('✅ Navigating CUSTOMER to /');
           setLocation('/');
         }
-        localStorage.setItem('has_been_routed', 'true');
       } else {
         console.log('User already on a valid page, staying at:', currentPath);
       }
+      console.log('=== END ROUTING DEBUG ===');
     }
   }, [currentPhase, authenticatedUser, setLocation]);
 

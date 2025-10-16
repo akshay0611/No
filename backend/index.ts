@@ -152,6 +152,10 @@ app.use((req, res, next) => {
   // Initialize WebSocket server
   wsManager.initialize(server);
 
+  // Initialize push notification service
+  const { pushNotificationService } = await import('./services/pushNotificationService');
+  await pushNotificationService.initialize();
+
   // Initialize background jobs
   initializeBackgroundJobs();
 
