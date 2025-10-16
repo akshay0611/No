@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-### Backend (server/)
+### Backend (server/) 
 
 This project is organized as a monorepo with separate frontend and backend applications:
 
