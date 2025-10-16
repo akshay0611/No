@@ -16,6 +16,14 @@ import ServiceTimer from "../components/ServiceTimer";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import type { QueueWithDetails, WebSocketMessage } from "../types";
 
+// Helper function to capitalize each word
+const capitalizeWords = (text: string) => {
+  return text
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function Queue() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -292,9 +300,9 @@ export default function Queue() {
     if (queue.services && queue.services.length > 0) {
       return queue.services.length > 1
         ? `${queue.services.length} services`
-        : queue.services[0].name;
+        : capitalizeWords(queue.services[0].name);
     }
-    return queue.service?.name || 'Service';
+    return capitalizeWords(queue.service?.name || 'Service');
   };
 
   return (
@@ -401,7 +409,9 @@ export default function Queue() {
                           </h3>
                           <p className="text-xs text-teal-50 flex items-center gap-1 mt-0.5">
                             <MapPin className="h-3 w-3" />
-                            <span data-testid={`text-salon-location-${queue.id}`}>{queue.salon?.location}</span>
+                            <span data-testid={`text-salon-location-${queue.id}`}>
+                              {capitalizeWords(queue.salon?.manualLocation || queue.salon?.fullAddress || queue.salon?.location || 'Location not available')}
+                            </span>
                           </p>
                         </div>
 
@@ -589,7 +599,7 @@ export default function Queue() {
                                 <div className="space-y-1" data-testid={`text-services-list-${queue.id}`}>
                                   {queue.services.map((service) => (
                                     <div key={service.id} className="flex justify-between text-xs">
-                                      <span className="text-gray-600">{service.name}</span>
+                                      <span className="text-gray-600">{capitalizeWords(service.name)}</span>
                                       <span className="text-gray-900 font-medium">₹{Math.round(Number(service.price))}</span>
                                     </div>
                                   ))}
@@ -610,7 +620,7 @@ export default function Queue() {
                             ) : (
                               <div className="space-y-1">
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600" data-testid={`text-service-name-${queue.id}`}>{queue.service?.name}</span>
+                                  <span className="text-gray-600" data-testid={`text-service-name-${queue.id}`}>{capitalizeWords(queue.service?.name || '')}</span>
                                   <span className="text-gray-900 font-medium" data-testid={`text-service-price-${queue.id}`}>₹{queue.service?.price}</span>
                                 </div>
                                 <p className="text-xs text-gray-500" data-testid={`text-service-duration-${queue.id}`}>

@@ -20,7 +20,7 @@ interface GalleryManagerProps {
   salonId: string;
 }
 
-const PHOTO_CATEGORIES = ['interior', 'reception', 'services', 'exterior'] as const;
+const PHOTO_CATEGORIES = ['interior', 'services', 'exterior'] as const;
 type PhotoCategory = typeof PHOTO_CATEGORIES[number];
 
 export default function GalleryManager({ salonId }: GalleryManagerProps) {
@@ -147,17 +147,19 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <CardTitle className="flex items-center space-x-2">
               <ImageIcon className="h-5 w-5" />
               <span>Photo Gallery</span>
             </CardTitle>
-            <CardDescription>Manage your salon photos</CardDescription>
+            <CardDescription className="text-xs sm:text-sm break-words">
+              Upload photos in categories: Interior, Services & Exterior
+            </CardDescription>
           </div>
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto flex-shrink-0">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Photos
               </Button>
@@ -266,9 +268,18 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
             ))}
           </div>
         ) : photos.length === 0 ? (
-          <div className="text-center py-8">
-            <ImageIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No photos uploaded yet</p>
+          <div className="text-center py-12 px-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+              <ImageIcon className="h-10 w-10 text-teal-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Photos Yet</h3>
+            <p className="text-muted-foreground text-sm mb-4 max-w-md mx-auto">
+              Start by uploading photos in different categories to showcase your salon to customers
+            </p>
+            <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+              <span className="font-medium">💡 Tip:</span>
+              <span>Upload at least one photo in each category for best results</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -314,18 +325,21 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
               );
             })}
             
-            {/* Uncategorized photos */}
+            {/* Banner/Cover Images (uncategorized photos) */}
             {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-foreground">
-                  Other ({photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length})
+                  Banner Image ({photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length})
                 </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Main cover image displayed on salon listings and search results
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).map((photo) => (
                     <div key={photo.id} className="relative group">
                       <img
                         src={photo.url}
-                        alt="Salon photo"
+                        alt="Banner image"
                         className="w-full aspect-square object-cover rounded-lg border"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">

@@ -6,7 +6,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Clock, Bell, User, Settings } from "lucide-react";
+import { Clock, Bell, User, Settings, Home } from "lucide-react";
 import { useState } from "react";
 import ProfileSheet from "./ProfileSheet";
 
@@ -67,7 +67,7 @@ export default function Navbar() {
                     }`}
                   data-testid="link-discover"
                 >
-                  Discover
+                  Home
                 </Link>
                 {user && (
                   <>
@@ -137,8 +137,8 @@ export default function Navbar() {
               className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${location === '/' ? 'text-teal-600 bg-teal-50' : 'text-gray-600'
                 }`}
             >
-              <Clock className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">Discover</span>
+              <Home className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Home</span>
             </Link>
 
             <Link
@@ -147,7 +147,7 @@ export default function Navbar() {
                 }`}
             >
               <Bell className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">Queue</span>
+              <span className="text-xs font-medium">My Queue</span>
               <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </Link>
 
