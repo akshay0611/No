@@ -12,12 +12,12 @@ export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('MongoDB connected successfully');
-    
+
     // Fix phone index to be sparse (allows multiple null values)
     try {
       const db = mongoose.connection.db;
       const collections = await db.listCollections({ name: 'users' }).toArray();
-      
+
       if (collections.length > 0) {
         // Drop the old non-sparse phone index if it exists
         try {
@@ -29,7 +29,7 @@ export const connectDB = async (): Promise<void> => {
             console.log('Phone index does not exist or already dropped');
           }
         }
-        
+
         // Create new sparse index
         await db.collection('users').createIndex(
           { phone: 1 },
@@ -103,14 +103,14 @@ const queueSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   salonId: { type: String, required: true },
   userId: { type: String, required: true },
-  serviceIds: { type: [String], required: true }, 
-  totalPrice: { type: Number, required: true }, 
-  appliedOffers: { type: [String], default: [] }, 
+  serviceIds: { type: [String], required: true },
+  totalPrice: { type: Number, required: true },
+  appliedOffers: { type: [String], default: [] },
   position: { type: Number, required: true },
-  status: { 
-    type: String, 
-    enum: ['waiting', 'notified', 'pending_verification', 'nearby', 'in-progress', 'completed', 'no-show'], 
-    default: 'waiting' 
+  status: {
+    type: String,
+    enum: ['waiting', 'notified', 'pending_verification', 'nearby', 'in-progress', 'completed', 'no-show'],
+    default: 'waiting'
   },
   estimatedWaitTime: { type: Number }, // in minutes, matches schema.ts
   timestamp: { type: Date, default: Date.now }, // matches schema.ts field name
@@ -160,6 +160,7 @@ const salonPhotoSchema = new mongoose.Schema({
   salonId: { type: String, required: true },
   url: { type: String, required: true },
   publicId: { type: String, required: true }, // Cloudinary public_id for deletion
+  category: { type: String, enum: ['interior', 'services', 'exterior'], default: 'interior' },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -173,10 +174,10 @@ const userReputationSchema = new mongoose.Schema({
   noShows: { type: Number, default: 0 },
   completedServices: { type: Number, default: 0 },
   reputationScore: { type: Number, default: 50, min: 0, max: 100 }, // 0-100
-  trustLevel: { 
-    type: String, 
-    enum: ['new', 'regular', 'trusted', 'suspicious', 'banned'], 
-    default: 'new' 
+  trustLevel: {
+    type: String,
+    enum: ['new', 'regular', 'trusted', 'suspicious', 'banned'],
+    default: 'new'
   },
   lastCheckInAt: { type: Date },
   lastNoShowAt: { type: Date },
@@ -203,10 +204,10 @@ const checkInLogSchema = new mongoose.Schema({
   },
   distance: { type: Number }, // meters
   // Verification details
-  method: { 
-    type: String, 
-    enum: ['gps_auto', 'manual', 'admin_override'], 
-    required: true 
+  method: {
+    type: String,
+    enum: ['gps_auto', 'manual', 'admin_override'],
+    required: true
   },
   autoApproved: { type: Boolean, required: true },
   requiresConfirmation: { type: Boolean, required: true },
@@ -229,17 +230,17 @@ const notificationLogSchema = new mongoose.Schema({
   salonId: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
   // Notification details
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: [
-      'queue_notification', 
-      'arrival_verified', 
-      'service_starting', 
-      'service_completed', 
+      'queue_notification',
+      'arrival_verified',
+      'service_starting',
+      'service_completed',
       'no_show',
       'position_update'
-    ], 
-    required: true 
+    ],
+    required: true
   },
   title: { type: String, required: true },
   body: { type: String, required: true },

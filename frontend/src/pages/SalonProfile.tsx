@@ -4,7 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Heart, ShoppingCart, Zap } from "lucide-react";
+import { Star, MapPin, Clock, Heart, ShoppingCart, Zap, ImageIcon, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -33,6 +34,9 @@ export default function SalonProfile() {
   const { addItem, items, getItemCount } = useCart();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const reviewsScrollRef = useRef<HTMLDivElement>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -181,23 +185,71 @@ export default function SalonProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 pb-24 md:pb-8">
-      {/* Hero Banner - Using salon's uploaded photos */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-r from-teal-600 to-cyan-600 overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+      {/* Hero Banner - Main Photo with Category Thumbnails */}
+      <div className="relative h-64 md:h-80 bg-gradient-to-r from-teal-600 to-cyan-600 overflow-hidden">
         {(salon as any).photos && (salon as any).photos.length > 0 ? (
-          <img
-            src={(salon as any).photos[0].url}
-            alt={salon.name}
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
-          />
+          <>
+            <img
+              src={(salon as any).photos[0].url}
+              alt={salon.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30"></div>
+
+            {/* Photo Count Badge */}
+            <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1.5 rounded-lg flex items-center space-x-1 backdrop-blur-sm z-10">
+              <ImageIcon className="h-4 w-4" />
+              <span className="text-sm font-medium">1/{(salon as any).photos.length}</span>
+            </div>
+
+            {/* Category Thumbnails - Premium Style */}
+            <div className="absolute bottom-4 left-4 right-4 flex gap-3 overflow-x-auto scrollbar-hide z-10 pb-1">
+              {['Interior', 'Services', 'Exterior'].map((category) => {
+                const categoryPhotos = (salon as any).photos.filter((p: any) => p.category === category.toLowerCase());
+
+                // Skip categories with no photos
+                if (categoryPhotos.length === 0) return null;
+
+                const photo = categoryPhotos[0];
+
+                return (
+                  <div
+                    key={category}
+                    onClick={() => {
+                      setSelectedCategory(category.toLowerCase());
+                      setCurrentPhotoIndex(0);
+                      setIsGalleryOpen(true);
+                    }}
+                    className="flex-shrink-0 relative rounded-xl overflow-hidden border-3 border-white shadow-2xl cursor-pointer hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:scale-[1.08] active:scale-95 transition-all duration-300"
+                    style={{ width: '90px', height: '68px' }}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={category}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Gradient overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                    {/* Category label */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white text-[11px] font-bold drop-shadow-lg tracking-wide">{category}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920')] bg-cover bg-center opacity-30"></div>
+          <>
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920')] bg-cover bg-center"></div>
+            <div className="absolute inset-0 bg-black/30"></div>
+          </>
         )}
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Salon Header */}
-        <div className="mb-8 -mt-16 relative z-10">
+        {/* Salon Header - positioned below hero banner */}
+        <div className="mb-8 mt-6">
           <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-teal-100">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
@@ -482,6 +534,111 @@ export default function SalonProfile() {
           )}
         </div>
       </div>
+
+      {/* Photo Gallery Modal */}
+      <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+        <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-black">
+          <div className="relative w-full h-full flex flex-col">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsGalleryOpen(false)}
+              className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Category Title */}
+            <div className="absolute top-4 left-4 z-50 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-lg">
+              <h3 className="text-lg font-semibold capitalize">{selectedCategory}</h3>
+            </div>
+
+            {/* Main Image Display */}
+            <div className="flex-1 flex items-center justify-center relative">
+              {(() => {
+                const categoryPhotos = (salon as any).photos?.filter(
+                  (p: any) => p.category === selectedCategory
+                ) || [];
+                // Only show photos from the selected category, no fallback
+                const displayPhotos = categoryPhotos;
+                const currentPhoto = displayPhotos[currentPhotoIndex];
+
+                return currentPhoto ? (
+                  <>
+                    <img
+                      src={currentPhoto.url}
+                      alt={`${selectedCategory} ${currentPhotoIndex + 1}`}
+                      className="max-w-full max-h-full object-contain"
+                    />
+
+                    {/* Navigation Arrows */}
+                    {displayPhotos.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentPhotoIndex((prev) =>
+                            prev === 0 ? displayPhotos.length - 1 : prev - 1
+                          )}
+                          className="absolute left-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentPhotoIndex((prev) =>
+                            prev === displayPhotos.length - 1 ? 0 : prev + 1
+                          )}
+                          className="absolute right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Photo Counter */}
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-lg">
+                      <span className="text-sm font-medium">
+                        {currentPhotoIndex + 1} / {displayPhotos.length}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-white text-center">
+                    <p>No photos available</p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Thumbnail Strip */}
+            <div className="bg-black/80 backdrop-blur-sm p-4 overflow-x-auto">
+              <div className="flex gap-2 justify-center">
+                {(() => {
+                  const categoryPhotos = (salon as any).photos?.filter(
+                    (p: any) => p.category === selectedCategory
+                  ) || [];
+                  // Only show photos from the selected category, no fallback
+                  const displayPhotos = categoryPhotos;
+
+                  return displayPhotos.map((photo: any, index: number) => (
+                    <button
+                      key={photo.id || index}
+                      onClick={() => setCurrentPhotoIndex(index)}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${currentPhotoIndex === index
+                        ? 'border-teal-500 scale-110'
+                        : 'border-white/30 hover:border-white/60'
+                        }`}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ));
+                })()}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

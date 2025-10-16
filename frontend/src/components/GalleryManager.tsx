@@ -12,6 +12,7 @@ interface SalonPhoto {
   salonId: string;
   url: string;
   publicId: string;
+  category?: string;
   createdAt: string;
 }
 
@@ -19,9 +20,13 @@ interface GalleryManagerProps {
   salonId: string;
 }
 
+const PHOTO_CATEGORIES = ['interior', 'services', 'exterior'] as const;
+type PhotoCategory = typeof PHOTO_CATEGORIES[number];
+
 export default function GalleryManager({ salonId }: GalleryManagerProps) {
   const { toast } = useToast();
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<PhotoCategory>('interior');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   // Fetch salon photos
@@ -40,11 +45,12 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
 
   // Upload photos mutation
   const uploadPhotosMutation = useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async ({ files, category }: { files: File[], category: PhotoCategory }) => {
       const token = localStorage.getItem('smartq_token');
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('category', category);
         
         const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
         const response = await fetch(`${baseURL}/api/salons/${salonId}/photos`, {
@@ -119,7 +125,7 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
 
   const handleUpload = () => {
     if (selectedImages.length > 0) {
-      uploadPhotosMutation.mutate(selectedImages);
+      uploadPhotosMutation.mutate({ files: selectedImages, category: selectedCategory });
     }
   };
 
@@ -141,17 +147,19 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex-1 min-w-0">
             <CardTitle className="flex items-center space-x-2">
               <ImageIcon className="h-5 w-5" />
               <span>Photo Gallery</span>
             </CardTitle>
-            <CardDescription>Manage your salon photos</CardDescription>
+            <CardDescription className="text-xs sm:text-sm break-words">
+              Upload photos in categories: Interior, Services & Exterior
+            </CardDescription>
           </div>
           <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto flex-shrink-0">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Photos
               </Button>
@@ -164,6 +172,28 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                {/* Category Selection */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Photo Category
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PHOTO_CATEGORIES.map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setSelectedCategory(category)}
+                        className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
+                          selectedCategory === category
+                            ? 'border-primary bg-primary/10 text-primary font-medium'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="border-2 border-dashed border-border rounded-lg p-4">
                   <input
                     type="file"
@@ -238,39 +268,96 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
             ))}
           </div>
         ) : photos.length === 0 ? (
-          <div className="text-center py-8">
-            <ImageIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No photos uploaded yet</p>
+          <div className="text-center py-12 px-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+              <ImageIcon className="h-10 w-10 text-teal-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Photos Yet</h3>
+            <p className="text-muted-foreground text-sm mb-4 max-w-md mx-auto">
+              Start by uploading photos in different categories to showcase your salon to customers
+            </p>
+            <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-2 rounded-lg">
+              <span className="font-medium">💡 Tip:</span>
+              <span>Upload at least one photo in each category for best results</span>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {photos.map((photo) => (
-              <div key={photo.id} className="relative group">
-                <img
-                  src={photo.url}
-                  alt="Salon photo"
-                  className="w-full aspect-square object-cover rounded-lg border"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    onClick={() => handleDelete(photo.id)}
-                    disabled={deletePhotoMutation.isPending || photos.length <= 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                {photos.length <= 1 && (
-                  <div className="absolute top-2 left-2">
-                    <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                      Required
-                    </span>
+          <div className="space-y-6">
+            {PHOTO_CATEGORIES.map((category) => {
+              const categoryPhotos = photos.filter(p => p.category === category);
+              if (categoryPhotos.length === 0) return null;
+              
+              return (
+                <div key={category}>
+                  <h3 className="text-lg font-semibold capitalize mb-3 text-foreground">
+                    {category} ({categoryPhotos.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {categoryPhotos.map((photo) => (
+                      <div key={photo.id} className="relative group">
+                        <img
+                          src={photo.url}
+                          alt={`${category} photo`}
+                          className="w-full aspect-square object-cover rounded-lg border"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={() => handleDelete(photo.id)}
+                            disabled={deletePhotoMutation.isPending || photos.length <= 1}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {photos.length <= 1 && (
+                          <div className="absolute top-2 left-2">
+                            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                              Required
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              );
+            })}
+            
+            {/* Banner/Cover Images (uncategorized photos) */}
+            {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-foreground">
+                  Banner Image ({photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length})
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Main cover image displayed on salon listings and search results
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).map((photo) => (
+                    <div key={photo.id} className="relative group">
+                      <img
+                        src={photo.url}
+                        alt="Banner image"
+                        className="w-full aspect-square object-cover rounded-lg border"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          onClick={() => handleDelete(photo.id)}
+                          disabled={deletePhotoMutation.isPending || photos.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </CardContent>
