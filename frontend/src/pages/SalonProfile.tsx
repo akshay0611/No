@@ -202,11 +202,15 @@ export default function SalonProfile() {
               <span className="text-sm font-medium">1/{(salon as any).photos.length}</span>
             </div>
 
-            {/* Category Thumbnails */}
-            <div className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto scrollbar-hide z-10">
+            {/* Category Thumbnails - Premium Style */}
+            <div className="absolute bottom-4 left-4 right-4 flex gap-3 overflow-x-auto scrollbar-hide z-10 pb-1">
               {['Interior', 'Reception', 'Services', 'Exterior'].map((category) => {
                 const categoryPhotos = (salon as any).photos.filter((p: any) => p.category === category.toLowerCase());
-                const photo = categoryPhotos[0] || (salon as any).photos[0];
+
+                // Skip categories with no photos
+                if (categoryPhotos.length === 0) return null;
+
+                const photo = categoryPhotos[0];
 
                 return (
                   <div
@@ -216,16 +220,19 @@ export default function SalonProfile() {
                       setCurrentPhotoIndex(0);
                       setIsGalleryOpen(true);
                     }}
-                    className="flex-shrink-0 relative rounded-lg overflow-hidden border-2 border-white/80 shadow-lg cursor-pointer hover:border-white hover:scale-105 transition-all"
-                    style={{ width: '80px', height: '60px' }}
+                    className="flex-shrink-0 relative rounded-xl overflow-hidden border-3 border-white shadow-2xl cursor-pointer hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:scale-[1.08] active:scale-95 transition-all duration-300"
+                    style={{ width: '90px', height: '68px' }}
                   >
                     <img
                       src={photo.url}
                       alt={category}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <span className="text-white text-xs font-semibold">{category}</span>
+                    {/* Gradient overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                    {/* Category label */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white text-[11px] font-bold drop-shadow-lg tracking-wide">{category}</span>
                     </div>
                   </div>
                 );
@@ -551,7 +558,8 @@ export default function SalonProfile() {
                 const categoryPhotos = (salon as any).photos?.filter(
                   (p: any) => p.category === selectedCategory
                 ) || [];
-                const displayPhotos = categoryPhotos.length > 0 ? categoryPhotos : (salon as any).photos || [];
+                // Only show photos from the selected category, no fallback
+                const displayPhotos = categoryPhotos;
                 const currentPhoto = displayPhotos[currentPhotoIndex];
 
                 return currentPhoto ? (
@@ -606,15 +614,16 @@ export default function SalonProfile() {
                   const categoryPhotos = (salon as any).photos?.filter(
                     (p: any) => p.category === selectedCategory
                   ) || [];
-                  const displayPhotos = categoryPhotos.length > 0 ? categoryPhotos : (salon as any).photos || [];
+                  // Only show photos from the selected category, no fallback
+                  const displayPhotos = categoryPhotos;
 
                   return displayPhotos.map((photo: any, index: number) => (
                     <button
                       key={photo.id || index}
                       onClick={() => setCurrentPhotoIndex(index)}
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${currentPhotoIndex === index
-                          ? 'border-teal-500 scale-110'
-                          : 'border-white/30 hover:border-white/60'
+                        ? 'border-teal-500 scale-110'
+                        : 'border-white/30 hover:border-white/60'
                         }`}
                     >
                       <img
