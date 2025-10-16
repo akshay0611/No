@@ -127,11 +127,12 @@ export async function sendSubscriptionToBackend(
   userId: string
 ): Promise<boolean> {
   try {
+    const token = localStorage.getItem('smartq_token') || localStorage.getItem('token');
     const response = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
         subscription,

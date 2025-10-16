@@ -48,6 +48,7 @@ import { insertSalonSchema, insertServiceSchema, insertOfferSchema } from "../li
 import type { QueueWithDetails, Analytics } from "../types";
 import GalleryManager from "../components/GalleryManager";
 import LocationPicker from "../components/LocationPicker";
+import VoiceNotificationSettings from "../components/VoiceNotificationSettings";
 import LocationInputModal from "../components/LocationInputModal";
 import QuickServiceTemplates from "../components/QuickServiceTemplates";
 
@@ -664,20 +665,32 @@ export default function Dashboard() {
                 <User className="h-20 text-black" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>My Account</SheetTitle>
-                <SheetDescription>
-                  Manage your account settings and preferences.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="py-4">
+            <SheetContent side="right" className="flex flex-col h-full w-full sm:w-[440px] sm:max-w-[440px] p-0">
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-br from-teal-600 to-teal-700 px-6 pt-8 pb-6">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-bold text-white text-left">
+                    Settings
+                  </SheetTitle>
+                  <SheetDescription className="text-teal-50 text-left mt-1">
+                    Manage your notifications and preferences
+                  </SheetDescription>
+                </SheetHeader>
+              </div>
+              
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 bg-white">
+                <VoiceNotificationSettings />
+              </div>
+              
+              {/* Fixed Logout Button at Bottom */}
+              <div className="border-t bg-gray-50 px-6 py-4">
                 <Button
                   variant="ghost"
                   onClick={() => logout()}
-                  className="w-full justify-start p-2 text-left font-normal"
+                  className="w-full justify-center h-12 text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-5 w-5" />
                   Logout
                 </Button>
               </div>

@@ -24,6 +24,7 @@ import dotenv from "dotenv";
 import { OAuth2Client } from 'google-auth-library';
 import { generateServiceDescription } from "./geminiService";
 import pushRoutes from "./routes/pushRoutes";
+import { pushNotificationService } from "./services/pushNotificationService";
 import auditRoutes from "./routes/auditRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import healthRoutes from "./routes/healthRoutes";
@@ -1297,9 +1298,59 @@ app.post('/api/services', authenticateToken, async (req, res) => {
         }
       }
 
-      // Broadcast queue update
+      // Get user details for notification
+      const queueUser = await storage.getUser(queueData.userId);
+      
+      // Get service details
+      const services = await Promise.all(
+        queueData.serviceIds.map(async (serviceId: string) => {
+          const service = await storage.getService(serviceId);
+          return service;
+        })
+      );
+      const validServices = services.filter(Boolean);
+      
+      console.log(`Salon queue ${queue.id} services:`, validServices);
+      
+      // Broadcast queue_join event for voice notifications
+      console.log('🚀 About to call broadcastQueueJoin with:', {
+        salonId: queueData.salonId,
+        queueId: queue.id,
+        customerName: queueUser?.name || 'A customer',
+        serviceName: validServices.length > 0 ? validServices[0].name : 'a service'
+      });
+      
+      wsManager.broadcastQueueJoin(queueData.salonId, {
+        queueId: queue.id,
+        customerName: queueUser?.name || 'A customer',
+        serviceName: validServices.length > 0 ? validServices[0].name : 'a service',
+        position: queue.position
+      });
+      
+      console.log('✅ broadcastQueueJoin called successfully');
+      
+      // Send push notification to salon owner
+      const salon = await storage.getSalon(queueData.salonId);
+      if (salon && salon.ownerId) {
+        await pushNotificationService.sendQueueJoinNotification(
+          salon.ownerId,
+          queueUser?.name || 'A customer',
+          validServices.length > 0 ? validServices[0].name : 'a service',
+          salon.name
+        );
+      }
+      
+      // Broadcast general queue update with customer details
       const salonQueues = await storage.getQueuesBySalon(queueData.salonId);
-      broadcastQueueUpdate(queueData.salonId, { queues: salonQueues });
+      broadcastQueueUpdate(queueData.salonId, { 
+        queues: salonQueues,
+        newQueue: {
+          id: queue.id,
+          userName: queueUser?.name,
+          serviceName: validServices.length > 0 ? validServices[0].name : undefined,
+          status: 'waiting'
+        }
+      });
 
       res.status(201).json(queue);
     } catch (error) {
