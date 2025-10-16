@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Clock, Heart, ShoppingCart, Zap, ImageIcon, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast"; 
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { api } from "../lib/api";
