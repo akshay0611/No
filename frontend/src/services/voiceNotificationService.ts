@@ -10,6 +10,8 @@ class VoiceNotificationService {
     private volume: number = 1.0;
     private rate: number = 1.0;
     private pitch: number = 1.0;
+    private preferredVoiceName: string | null = null;
+    private events: { [key: string]: Function[] } = {};
 
     constructor() {
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -57,25 +59,39 @@ class VoiceNotificationService {
 
         const loadVoiceList = () => {
             const voices = this.synthesis!.getVoices();
+            if (voices.length === 0) return;
 
-            // Try to find a good English voice
-            const preferredVoice = voices.find(v =>
-                v.lang.startsWith('en') && v.name.includes('Google')
-            ) || voices.find(v =>
-                v.lang.startsWith('en')
-            ) || voices[0];
+            let selectedVoice: SpeechSynthesisVoice | undefined;
 
-            if (preferredVoice) {
-                this.voice = preferredVoice;
-                console.log('Voice loaded:', preferredVoice.name);
+            if (this.preferredVoiceName) {
+                selectedVoice = voices.find(v => v.name === this.preferredVoiceName);
+            }
+
+            if (selectedVoice) {
+                this.voice = selectedVoice;
+                console.log('Loaded saved voice:', this.voice.name);
+                this.emit('voice-changed', this.voice);
+            } else if (!this.voice) {
+                // Fallback to default if no voice is loaded yet
+                const defaultVoice = voices.find(v =>
+                    v.lang.startsWith('en') && v.name.includes('Google')
+                ) || voices.find(v =>
+                    v.lang.startsWith('en')
+                ) || voices[0];
+
+                if (defaultVoice) {
+                    this.voice = defaultVoice;
+                    console.log('Loaded default voice:', this.voice.name);
+                    this.emit('voice-changed', this.voice);
+                }
             }
         };
 
-        // Load voices immediately if available
-        loadVoiceList();
-
-        // Also listen for voiceschanged event (some browsers need this)
-        if (this.synthesis.onvoiceschanged !== undefined) {
+        // The voices might not be loaded initially. 
+        // We need to wait for the `voiceschanged` event.
+        if (this.synthesis.getVoices().length > 0) {
+            loadVoiceList();
+        } else {
             this.synthesis.onvoiceschanged = loadVoiceList;
         }
     }
@@ -92,6 +108,7 @@ class VoiceNotificationService {
                 this.volume = parsed.volume ?? 1.0;
                 this.rate = parsed.rate ?? 1.0;
                 this.pitch = parsed.pitch ?? 1.0;
+                this.preferredVoiceName = parsed.voice || null;
             }
         } catch (error) {
             console.error('Failed to load voice settings:', error);
@@ -108,6 +125,7 @@ class VoiceNotificationService {
                 volume: this.volume,
                 rate: this.rate,
                 pitch: this.pitch,
+                voice: this.voice ? this.voice.name : null,
             };
             localStorage.setItem('voice_notification_settings', JSON.stringify(settings));
         } catch (error) {
@@ -164,12 +182,29 @@ class VoiceNotificationService {
         this.saveSettings();
     }
 
+    on(eventName: string, callback: Function) {
+        if (!this.events[eventName]) {
+            this.events[eventName] = [];
+        }
+        this.events[eventName].push(callback);
+    }
+
+    emit(eventName: string, data: any) {
+        if (this.events[eventName]) {
+            this.events[eventName].forEach(callback => callback(data));
+        }
+    }
+
     /**
      * Get available voices
      */
     getAvailableVoices(): SpeechSynthesisVoice[] {
         if (!this.synthesis) return [];
         return this.synthesis.getVoices();
+    }
+
+    getVoice(): SpeechSynthesisVoice | null {
+        return this.voice;
     }
 
     /**
@@ -180,7 +215,9 @@ class VoiceNotificationService {
         const selectedVoice = voices.find(v => v.name === voiceName);
         if (selectedVoice) {
             this.voice = selectedVoice;
+            this.saveSettings();
             console.log('Voice changed to:', voiceName);
+            this.emit('voice-changed', this.voice);
         }
     }
 
@@ -248,13 +285,30 @@ class VoiceNotificationService {
     }
 
     /**
+     * Check if current voice is Hindi
+     */
+    private isHindiVoice(): boolean {
+        return this.voice?.lang === 'hi-IN' || this.voice?.name.includes('Hindi') || false;
+    }
+
+    /**
      * Speak queue join notification
      */
     speakQueueJoin(customerName: string, serviceName?: string) {
-        let message = `Hello admin, ${customerName} has joined the queue`;
-        if (serviceName) {
-            message += ` for ${serviceName}`;
+        let message: string;
+
+        if (this.isHindiVoice()) {
+            message = `नमस्ते एडमिन, ${customerName} कतार में शामिल हो गए हैं`;
+            if (serviceName) {
+                message += ` ${serviceName} सेवा के लिए`;
+            }
+        } else {
+            message = `Hello admin, ${customerName} has joined the queue`;
+            if (serviceName) {
+                message += ` for ${serviceName}`;
+            }
         }
+
         this.speak(message);
     }
 
@@ -262,10 +316,20 @@ class VoiceNotificationService {
      * Speak customer arrival notification
      */
     speakCustomerArrival(customerName: string, verificationStatus?: string) {
-        let message = `${customerName} has arrived at the salon`;
-        if (verificationStatus === 'pending verification') {
-            message += ', verification needed';
+        let message: string;
+
+        if (this.isHindiVoice()) {
+            message = `${customerName} सैलून पर पहुंच गए हैं`;
+            if (verificationStatus === 'pending verification') {
+                message += ', सत्यापन की आवश्यकता है';
+            }
+        } else {
+            message = `${customerName} has arrived at the salon`;
+            if (verificationStatus === 'pending verification') {
+                message += ', verification needed';
+            }
         }
+
         this.speak(message);
     }
 
@@ -273,7 +337,11 @@ class VoiceNotificationService {
      * Speak check-in verification needed
      */
     speakVerificationNeeded(customerName: string) {
-        this.speak(`${customerName} needs arrival verification`);
+        const message = this.isHindiVoice()
+            ? `${customerName} को आगमन सत्यापन की आवश्यकता है`
+            : `${customerName} needs arrival verification`;
+
+        this.speak(message);
     }
 
     /**
@@ -287,7 +355,11 @@ class VoiceNotificationService {
      * Test voice with sample message
      */
     testVoice() {
-        this.speak('Hello admin, this is a test notification. Voice notifications are working correctly.');
+        if (this.isHindiVoice()) {
+            this.speak('नमस्ते एडमिन, यह एक परीक्षण सूचना है। वॉइस नोटिफिकेशन सही से काम कर रहे हैं।');
+        } else {
+            this.speak('Hello admin, this is a test notification. Voice notifications are working correctly.');
+        }
     }
 }
 

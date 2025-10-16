@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Volume2, VolumeX, Play, Bell, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, Play, Bell, Sparkles, Mic } from 'lucide-react';
 import { voiceNotificationService } from '../services/voiceNotificationService';
 
 export default function VoiceNotificationSettings() {
@@ -10,8 +10,18 @@ export default function VoiceNotificationSettings() {
   const [volume, setVolume] = useState(1.0);
   const [rate, setRate] = useState(1.0);
   const [isTesting, setIsTesting] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('');
 
   useEffect(() => {
+    const handleVoiceChange = (voice: SpeechSynthesisVoice) => {
+      if (voice) {
+        setSelectedVoice(voice.name);
+      }
+    };
+
+    voiceNotificationService.on('voice-changed', handleVoiceChange);
+
     // Load current settings
     const settings = localStorage.getItem('voice_notification_settings');
     if (settings) {
@@ -23,6 +33,23 @@ export default function VoiceNotificationSettings() {
         console.error('Failed to load settings:', error);
       }
     }
+
+    const availableVoices = voiceNotificationService.getAvailableVoices();
+    // Filter to only show Google US English and Google Hindi
+    const filteredVoices = availableVoices.filter(voice =>
+      (voice.name.includes('Google') && voice.lang === 'en-US') ||
+      (voice.name.includes('Google') && voice.lang === 'hi-IN')
+    );
+    setVoices(filteredVoices);
+
+    const currentVoice = voiceNotificationService.getVoice();
+    if (currentVoice) {
+      setSelectedVoice(currentVoice.name);
+    }
+
+    return () => {
+      // a future implementation should remove the event listener
+    };
   }, []);
 
   const handleToggle = (checked: boolean) => {
@@ -44,6 +71,12 @@ export default function VoiceNotificationSettings() {
     const newRate = value[0];
     setRate(newRate);
     voiceNotificationService.setRate(newRate);
+  };
+
+  const handleVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newVoice = event.target.value;
+    setSelectedVoice(newVoice);
+    voiceNotificationService.setVoice(newVoice);
   };
 
   const handleTest = () => {
@@ -137,6 +170,27 @@ export default function VoiceNotificationSettings() {
               step={0.1}
               className="w-full [&_[role=slider]]:bg-teal-600 [&_[role=slider]]:border-teal-600"
             />
+          </div>
+
+          {/* Voice Selection */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Mic className="w-4 h-4 text-gray-400" />
+                Voice
+              </label>
+            </div>
+            <select
+              value={selectedVoice}
+              onChange={handleVoiceChange}
+              className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block p-2.5"
+            >
+              {voices.map((voice) => (
+                <option key={voice.name} value={voice.name}>
+                  {voice.name} ({voice.lang})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Test Button */}
