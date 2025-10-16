@@ -108,8 +108,8 @@ export default function Dashboard() {
   useEffect(() => {
     const handleQueueUpdate = () => {
       if (selectedSalonId) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['/api/salons', selectedSalonId, 'queues'] 
+        queryClient.invalidateQueries({
+          queryKey: ['/api/salons', selectedSalonId, 'queues']
         });
       }
     };
@@ -1029,8 +1029,8 @@ export default function Dashboard() {
                       <ArrivalVerificationPanel
                         salonId={selectedSalonId}
                         onVerificationComplete={() => {
-                          queryClient.invalidateQueries({ 
-                            queryKey: ['/api/salons', selectedSalonId, 'queues'] 
+                          queryClient.invalidateQueries({
+                            queryKey: ['/api/salons', selectedSalonId, 'queues']
                           });
                         }}
                       />
@@ -1070,65 +1070,65 @@ export default function Dashboard() {
                     ) : (
                       <div className="space-y-3">
                         {filteredQueues.map((queue) => (
-                            <div key={queue.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`queue-item-${queue.id}`}>
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${queue.status === 'in-progress'
-                                    ? 'bg-black text-white'
-                                    : 'border-2 border-dashed border-gray-300 text-gray-500'
-                                    }`}>
-                                    {queue.position}
+                          <div key={queue.id} className="bg-white border border-teal-200 rounded-2xl p-4 shadow-sm" data-testid={`queue-item-${queue.id}`}>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${queue.status === 'in-progress'
+                                  ? 'bg-black text-white'
+                                  : 'border-2 border-dashed border-gray-300 text-gray-500'
+                                  }`}>
+                                  {queue.position}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-black text-sm" data-testid={`text-customer-name-${queue.id}`}>
+                                    {queue.user?.name || 'Customer'}
                                   </div>
-                                  <div>
-                                    <div className="font-medium text-black text-sm" data-testid={`text-customer-name-${queue.id}`}>
-                                      {queue.user?.name || 'Customer'}
+                                  {queue.user?.phone && (
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                      {queue.user.phone}
                                     </div>
-                                    {queue.user?.phone && (
-                                      <div className="text-xs text-gray-500 mt-0.5">
-                                        {queue.user.phone}
-                                      </div>
-                                    )}
-                                    <div className="mt-1">
-                                      <QueueStatusBadge status={queue.status} />
-                                    </div>
+                                  )}
+                                  <div className="mt-1">
+                                    <QueueStatusBadge status={queue.status} />
                                   </div>
                                 </div>
                               </div>
-
-                              {/* Services */}
-                              <div className="mb-4" data-testid={`text-services-${queue.id}`}>
-                                {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {queue.services.map((service) => (
-                                      <div key={service.id} className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-700">{service.name}</span>
-                                        <span className="text-black font-medium">₹{service.price}</span>
-                                      </div>
-                                    ))}
-                                    <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-                                      <span className="text-sm font-medium text-black">Total</span>
-                                      <span className="font-bold text-black">₹{queue.totalPrice}</span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-700">{queue.service?.name}</span>
-                                    <span className="text-black font-medium">₹{queue.service?.price}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Action Buttons */}
-                              <QueueActionButtons
-                                queue={queue}
-                                onActionComplete={() => {
-                                  queryClient.invalidateQueries({ 
-                                    queryKey: ['/api/salons', selectedSalonId, 'queues'] 
-                                  });
-                                }}
-                              />
                             </div>
-                          ))}
+
+                            {/* Services */}
+                            <div className="mb-4" data-testid={`text-services-${queue.id}`}>
+                              {queue.services && Array.isArray(queue.services) && queue.services.length > 0 ? (
+                                <div className="space-y-2">
+                                  {queue.services.map((service) => (
+                                    <div key={service.id} className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-700">{service.name}</span>
+                                      <span className="text-black font-medium">₹{service.price}</span>
+                                    </div>
+                                  ))}
+                                  <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                                    <span className="text-sm font-medium text-black">Total</span>
+                                    <span className="font-bold text-black">₹{queue.totalPrice}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-gray-700">{queue.service?.name}</span>
+                                  <span className="text-black font-medium">₹{queue.service?.price}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <QueueActionButtons
+                              queue={queue}
+                              onActionComplete={() => {
+                                queryClient.invalidateQueries({
+                                  queryKey: ['/api/salons', selectedSalonId, 'queues']
+                                });
+                              }}
+                            />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -1238,9 +1238,9 @@ export default function Dashboard() {
                                       <FormItem>
                                         <div className="flex justify-between items-center">
                                           <FormLabel className="text-sm font-medium text-teal-900">Description</FormLabel>
-                                          <Button 
-                                            type="button" 
-                                            variant="outline" 
+                                          <Button
+                                            type="button"
+                                            variant="outline"
                                             size="sm"
                                             className="text-xs flex items-center gap-1 h-7 px-2 text-teal-600 border-teal-300 hover:bg-teal-50"
                                             onClick={async () => {
@@ -1253,7 +1253,7 @@ export default function Dashboard() {
                                                 });
                                                 return;
                                               }
-                                              
+
                                               try {
                                                 const response = await fetch(`${import.meta.env.VITE_API_URL}/api/generate-description`, {
                                                   method: "POST",
@@ -1262,14 +1262,14 @@ export default function Dashboard() {
                                                   },
                                                   body: JSON.stringify({ serviceName }),
                                                 });
-                                                
+
                                                 if (!response.ok) {
                                                   throw new Error("Failed to generate description");
                                                 }
-                                                
+
                                                 const data = await response.json();
                                                 field.onChange(data.description);
-                                                
+
                                                 toast({
                                                   title: "Description generated",
                                                   description: "AI has created a description for your service",

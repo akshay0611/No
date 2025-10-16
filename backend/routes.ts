@@ -1664,6 +1664,7 @@ app.post('/api/services', authenticateToken, async (req, res) => {
         salonId: req.params.salonId,
         url,
         publicId,
+        category: req.body.category || 'interior', // Default to interior if not provided
       };
       console.log('Photo data to save:', photoData);
 

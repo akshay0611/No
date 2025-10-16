@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock, Heart, ShoppingCart, Zap } from "lucide-react";
+import { Star, MapPin, Clock, Heart, ShoppingCart, Zap, ImageIcon } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -181,17 +181,53 @@ export default function SalonProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 pb-24 md:pb-8">
-      {/* Hero Banner - Using salon's uploaded photos */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-r from-teal-600 to-cyan-600 overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+      {/* Hero Banner - Main Photo with Category Thumbnails */}
+      <div className="relative h-64 md:h-80 bg-gradient-to-r from-teal-600 to-cyan-600 overflow-hidden">
         {(salon as any).photos && (salon as any).photos.length > 0 ? (
-          <img
-            src={(salon as any).photos[0].url}
-            alt={salon.name}
-            className="absolute inset-0 w-full h-full object-cover opacity-40"
-          />
+          <>
+            <img
+              src={(salon as any).photos[0].url}
+              alt={salon.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30"></div>
+            
+            {/* Photo Count Badge */}
+            <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1.5 rounded-lg flex items-center space-x-1 backdrop-blur-sm">
+              <ImageIcon className="h-4 w-4" />
+              <span className="text-sm font-medium">1/{(salon as any).photos.length}</span>
+            </div>
+
+            {/* Category Thumbnails */}
+            <div className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto scrollbar-hide">
+              {['Interior', 'Reception', 'Services', 'Exterior'].map((category) => {
+                const categoryPhotos = (salon as any).photos.filter((p: any) => p.category === category.toLowerCase());
+                const photo = categoryPhotos[0] || (salon as any).photos[0];
+                
+                return (
+                  <div
+                    key={category}
+                    className="flex-shrink-0 relative rounded-lg overflow-hidden border-2 border-white/80 shadow-lg cursor-pointer hover:border-white transition-all"
+                    style={{ width: '80px', height: '60px' }}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={category}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="text-white text-xs font-semibold">{category}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920')] bg-cover bg-center opacity-30"></div>
+          <>
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920')] bg-cover bg-center"></div>
+            <div className="absolute inset-0 bg-black/30"></div>
+          </>
         )}
       </div>
 

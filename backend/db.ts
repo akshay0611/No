@@ -160,6 +160,7 @@ const salonPhotoSchema = new mongoose.Schema({
   salonId: { type: String, required: true },
   url: { type: String, required: true },
   publicId: { type: String, required: true }, // Cloudinary public_id for deletion
+  category: { type: String, enum: ['interior', 'reception', 'services', 'exterior'], default: 'interior' },
   createdAt: { type: Date, default: Date.now }
 });
 

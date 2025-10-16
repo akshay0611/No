@@ -12,6 +12,7 @@ interface SalonPhoto {
   salonId: string;
   url: string;
   publicId: string;
+  category?: string;
   createdAt: string;
 }
 
@@ -19,9 +20,13 @@ interface GalleryManagerProps {
   salonId: string;
 }
 
+const PHOTO_CATEGORIES = ['interior', 'reception', 'services', 'exterior'] as const;
+type PhotoCategory = typeof PHOTO_CATEGORIES[number];
+
 export default function GalleryManager({ salonId }: GalleryManagerProps) {
   const { toast } = useToast();
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<PhotoCategory>('interior');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   // Fetch salon photos
@@ -40,11 +45,12 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
 
   // Upload photos mutation
   const uploadPhotosMutation = useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async ({ files, category }: { files: File[], category: PhotoCategory }) => {
       const token = localStorage.getItem('smartq_token');
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('image', file);
+        formData.append('category', category);
         
         const baseURL = import.meta.env.VITE_API_URL || 'https://no-production-d4fc.up.railway.app';
         const response = await fetch(`${baseURL}/api/salons/${salonId}/photos`, {
@@ -119,7 +125,7 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
 
   const handleUpload = () => {
     if (selectedImages.length > 0) {
-      uploadPhotosMutation.mutate(selectedImages);
+      uploadPhotosMutation.mutate({ files: selectedImages, category: selectedCategory });
     }
   };
 
@@ -164,6 +170,28 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                {/* Category Selection */}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Photo Category
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PHOTO_CATEGORIES.map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setSelectedCategory(category)}
+                        className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
+                          selectedCategory === category
+                            ? 'border-primary bg-primary/10 text-primary font-medium'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="border-2 border-dashed border-border rounded-lg p-4">
                   <input
                     type="file"
@@ -243,34 +271,79 @@ export default function GalleryManager({ salonId }: GalleryManagerProps) {
             <p className="text-muted-foreground">No photos uploaded yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {photos.map((photo) => (
-              <div key={photo.id} className="relative group">
-                <img
-                  src={photo.url}
-                  alt="Salon photo"
-                  className="w-full aspect-square object-cover rounded-lg border"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    onClick={() => handleDelete(photo.id)}
-                    disabled={deletePhotoMutation.isPending || photos.length <= 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                {photos.length <= 1 && (
-                  <div className="absolute top-2 left-2">
-                    <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                      Required
-                    </span>
+          <div className="space-y-6">
+            {PHOTO_CATEGORIES.map((category) => {
+              const categoryPhotos = photos.filter(p => p.category === category);
+              if (categoryPhotos.length === 0) return null;
+              
+              return (
+                <div key={category}>
+                  <h3 className="text-lg font-semibold capitalize mb-3 text-foreground">
+                    {category} ({categoryPhotos.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {categoryPhotos.map((photo) => (
+                      <div key={photo.id} className="relative group">
+                        <img
+                          src={photo.url}
+                          alt={`${category} photo`}
+                          className="w-full aspect-square object-cover rounded-lg border"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={() => handleDelete(photo.id)}
+                            disabled={deletePhotoMutation.isPending || photos.length <= 1}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {photos.length <= 1 && (
+                          <div className="absolute top-2 left-2">
+                            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                              Required
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              );
+            })}
+            
+            {/* Uncategorized photos */}
+            {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-foreground">
+                  Other ({photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).length})
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {photos.filter(p => !p.category || !PHOTO_CATEGORIES.includes(p.category as PhotoCategory)).map((photo) => (
+                    <div key={photo.id} className="relative group">
+                      <img
+                        src={photo.url}
+                        alt="Salon photo"
+                        className="w-full aspect-square object-cover rounded-lg border"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          onClick={() => handleDelete(photo.id)}
+                          disabled={deletePhotoMutation.isPending || photos.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </CardContent>
