@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { useToast } from "@/hooks/use-toast"; 
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/CartContext"; 
 import { api } from "../lib/api";
 import type { SalonDetails } from "../types";
 
